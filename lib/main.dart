@@ -35,35 +35,60 @@ class WorldMapScreen extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          const PrairieBackground(),
+          // Custom Background Image
+          Positioned.fill(
+            child: Image.asset(
+              'monde1_background.png',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return const PrairieBackground(); // Fallback if image not found
+              },
+            ),
+          ),
+
+          // Top Header
           SafeArea(
-            child: Center(
+            child: Align(
+              alignment: Alignment.topCenter,
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.only(top: 20.0),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       'MONDE 1',
                       style: TextStyle(
-                        fontSize: 40,
+                        fontSize: 44,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
+                        letterSpacing: 2,
                         shadows: [
                           Shadow(
-                            blurRadius: 10,
+                            blurRadius: 15,
+                            color: Colors.black.withOpacity(0.5),
+                            offset: const Offset(0, 4),
+                          ),
+                          Shadow(
+                            blurRadius: 2,
                             color: Colors.green.shade900,
                             offset: const Offset(2, 2),
                           ),
                         ],
                       ),
                     ),
-                    Text(
-                      'La Prairie Enchantée',
-                      style: TextStyle(
-                        fontSize: 22,
-                        color: Colors.white.withOpacity(0.9),
-                        fontWeight: FontWeight.w500,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black26,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'La Prairie Enchantée',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
@@ -71,23 +96,56 @@ class WorldMapScreen extends StatelessWidget {
               ),
             ),
           ),
+
+          // Top Right Action Buttons
+          Positioned(
+            top: 50,
+            right: 20,
+            child: Column(
+              children: [
+                const MenuButton(
+                  icon: Icons.settings,
+                  color: Colors.blueGrey,
+                  label: 'Paramètres',
+                ),
+                const SizedBox(height: 16),
+                const MenuButton(
+                  icon: Icons.calendar_today_rounded,
+                  color: Colors.deepPurpleAccent,
+                  label: 'Défi Quotidien',
+                  isDaily: true,
+                ),
+              ],
+            ),
+          ),
+
+          // Bottom Play Section
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 80.0),
+              padding: const EdgeInsets.only(bottom: 60.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'NIVEAU 1',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      shadows: [Shadow(blurRadius: 5, color: Colors.black45, offset: Offset(2, 2))],
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade800.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4))
+                      ],
+                    ),
+                    child: const Text(
+                      'JOUER NIVEAU 1',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   const LevelButton(level: 1),
                 ],
               ),
@@ -95,6 +153,66 @@ class WorldMapScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class MenuButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final bool isDaily;
+
+  const MenuButton({
+    super.key,
+    required this.icon,
+    required this.color,
+    required this.label,
+    this.isDaily = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(isDaily ? 'Ouverture du défi quotidien...' : 'Ouverture des paramètres...'),
+                backgroundColor: color,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.9),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 3),
+              boxShadow: const [
+                BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4))
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: 30),
+          ),
+        ),
+        if (isDaily)
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.redAccent,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Text(
+              'NEW',
+              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -137,66 +255,6 @@ class PrairieBackground extends StatelessWidget {
       ),
     );
   }
-}
-
-class LevelPath extends StatelessWidget {
-  const LevelPath({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size.infinite,
-      painter: PathPainter(),
-    );
-  }
-}
-
-class PathPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.brown.shade300.withOpacity(0.6)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 30
-      ..strokeCap = StrokeCap.round;
-
-    final shadowPaint = Paint()
-      ..color = Colors.black26
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 35
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
-
-    final path = Path();
-    path.moveTo(size.width * 0.5, size.height * 0.9);
-    path.quadraticBezierTo(
-      size.width * 0.2,
-      size.height * 0.7,
-      size.width * 0.5,
-      size.height * 0.5,
-    );
-    path.quadraticBezierTo(
-      size.width * 0.8,
-      size.height * 0.3,
-      size.width * 0.5,
-      size.height * 0.1,
-    );
-
-    canvas.drawPath(path, shadowPaint);
-    canvas.drawPath(path, paint);
-
-    // Dotted line on top
-    final dotPaint = Paint()
-      ..color = Colors.white.withOpacity(0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawPath(path, dotPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class LevelButton extends StatefulWidget {
@@ -248,8 +306,8 @@ class _LevelButtonState extends State<LevelButton> with SingleTickerProviderStat
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
-          width: 80,
-          height: 80,
+          width: 100,
+          height: 100,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: const RadialGradient(
@@ -258,24 +316,24 @@ class _LevelButtonState extends State<LevelButton> with SingleTickerProviderStat
               radius: 0.8,
             ),
             boxShadow: [
-              BoxShadow(
+              const BoxShadow(
                 color: Colors.black45,
-                offset: const Offset(0, 6),
-                blurRadius: 8,
+                offset: Offset(0, 8),
+                blurRadius: 10,
               ),
               BoxShadow(
                 color: Colors.white.withOpacity(0.5),
-                offset: const Offset(-2, -2),
-                blurRadius: 4,
+                offset: const Offset(-3, -3),
+                blurRadius: 6,
               ),
             ],
-            border: Border.all(color: Colors.white, width: 4),
+            border: Border.all(color: Colors.white, width: 5),
           ),
           child: Center(
             child: Text(
               '${widget.level}',
               style: const TextStyle(
-                fontSize: 36,
+                fontSize: 42,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
                 shadows: [
