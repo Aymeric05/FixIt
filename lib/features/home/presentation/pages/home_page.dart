@@ -121,7 +121,7 @@ class HomePage extends StatelessWidget {
       width: 320,
       height: 40,
       decoration: BoxDecoration(
-        color: const Color(0xFF3E2723), // Opaque dark brown
+        color: Colors.blue.withOpacity(0.3), // Transparent blue background
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white, width: 3),
         boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 8)],
@@ -131,19 +131,15 @@ class HomePage extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Progress Fill
+            // Progress Fill (Solid Yellow)
             Align(
               alignment: Alignment.centerLeft,
               child: FractionallySizedBox(
                 widthFactor: progress.clamp(0.0, 1.0),
                 child: Container(
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Colors.blue, Colors.cyan],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                    boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.5), blurRadius: 6)],
+                    color: Colors.yellow, // Solid yellow fill
+                    boxShadow: [BoxShadow(color: Colors.yellow.withOpacity(0.5), blurRadius: 6)],
                   ),
                 ),
               ),
