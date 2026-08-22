@@ -1,62 +1,57 @@
 # Game Project Context & Requirements
 
-## 1. Vue d'ensemble du Projet
-Ce projet est un jeu mobile de type puzzle/casse-tête (inspiré du modèle de progression de Candy Crush). Il est développé avec **Flutter** et **Dart**, avec pour objectif un déploiement multiplateforme sur le **Google Play Store** et l'**Apple App Store**.
+## 1. Project Overview
+This project is a mobile puzzle game (inspired by the progression model of Candy Crush). It is developed using **Flutter** and **Dart**, with the goal of multi-platform deployment on the **Google Play Store** and **Apple App Store**.
 
-L'application intègre des mécaniques de progression par niveaux, un système de vies limité dans le temps, des fonctionnalités sociales (amis et classements quotidiens) et une monétisation hybride.
+**IMPORTANT: The entire application, including UI, code documentation, and assets, must be in English.**
 
-## 2. Stack Technique Globale
-*   **Frontend :** Flutter / Dart
-*   **Gestionnaire d'état :** BLoC (Business Logic Component). Utilisé pour séparer strictement l'interface (UI) de la logique métier, fonctionnant de manière similaire à un pattern MVVM (le BLoC agissant comme le ViewModel).
-*   **Backend & Base de données :** Supabase (PostgreSQL, Auth, Edge Functions). Les règles de sécurité (RLS) et les triggers SQL seront utilisés pour sécuriser les données.
-*   **Stockage Local :** Isar Database (très performant pour mettre en cache la progression, l'état des vies et les paramètres hors-ligne).
-*   **Monétisation (Ads) :** Google Mobile Ads (AdMob) intégré en standalone, sans dépendance à Firebase.
-*   **Monétisation (IAP) :** RevenueCat pour la gestion sécurisée et unifiée des achats in-app (indices, skip de niveaux).
+The application integrates level progression mechanics, a time-limited life system, social features (friends and daily leaderboards), and hybrid monetization.
 
-## 3. Interface Utilisateur (UI) - Écran d'Accueil
-L'écran principal (Home Screen) est le hub central du joueur. Sa disposition est la suivante :
-*   **En haut à gauche :** Icône de profil ouvrant une modale avec le pseudo du joueur, ses statistiques et la gestion de ses amis.
-*   **En haut au centre :** Indicateur de vies (ex: ❤️ 3/5) avec un compte à rebours si les vies sont en cours de rechargement.
-*   **En haut à droite :** Bouton Paramètres (engrenage).
-*   **En bas au centre :** Bouton d'action principal "JOUER", affichant le niveau actuel (ex: "Niveau 201") et sa difficulté (Facile, Medium, Difficile).
+## 2. Global Technical Stack
+*   **Frontend:** Flutter / Dart
+*   **State Management:** BLoC (Business Logic Component). Used to strictly separate UI from business logic, functioning similarly to an MVVM pattern.
+*   **Backend & Database:** Supabase (PostgreSQL, Auth, Edge Functions).
+*   **Local Storage:** Isar Database (high performance for caching progression, lives, and offline settings).
+*   **Monetization (Ads):** Google Mobile Ads (AdMob) integrated standalone.
+*   **Monetization (IAP):** RevenueCat for secure in-app purchases.
 
-## 4. Mécaniques de Jeu Core
-### 4.1. Système de Vies et Timer
-*   Chaque niveau est chronométré.
-*   **Échec :** Si le temps est écoulé, le joueur perd une vie et doit recommencer.
-*   **Blocage :** Si le compteur de vies atteint 0, l'accès aux niveaux est bloqué jusqu'à la recharge ou l'achat de vies.
-*   **Sécurité :** La validation finale du timer et de la recharge des vies doit être vérifiée via le serveur (Supabase) pour empêcher la triche liée à l'horloge locale.
+## 3. User Interface (UI) - Home Screen
+The main hub for the player:
+*   **Top Left:** Profile icon opening a modal with player stats and friends.
+*   **Top Center:** Lives Indicator (e.g., ❤️ 3/5) with a countdown if lives are recharging.
+*   **Top Right:** Settings Button (cog icon).
+*   **Bottom Center:** Main "PLAY" action button, displaying current level and difficulty (Easy, Medium, Hard).
 
-### 4.2. Aides et Indices
-*   Le joueur possède un stock d'indices (hints).
-*   **Acquisition :** Achat via argent réel (RevenueCat) ou visionnage d'une publicité récompensée (AdMob).
-*   Possibilité de passer un niveau (skip) contre de l'argent réel.
+## 4. Core Game Mechanics
+### 4.1. Life System and Timer
+*   Each level is timed.
+*   **Failure:** If the timer expires, the player loses one life and must restart.
+*   **Blocking:** If the life counter reaches 0, level access is blocked until recharge or purchase.
+*   **Security:** Server-side validation (Supabase) for timers and life recharge to prevent local clock cheating.
 
-## 5. Modes de Jeu
-### 5.1. Mode Histoire (Progression principale)
-*   La progression est divisée en **Mondes**. 1 Monde = 1 type de mini-jeu spécifique.
-*   **Monde 1 :** Mini-jeu "Zip". La grille de départ est petite et s'agrandit tous les 100 niveaux, modifiant le level design.
-*   **Génération de la difficulté :** Majorité de niveaux standards, un pourcentage de "Medium" et un très faible pourcentage de "Difficile".
+### 4.2. Hints and Skips
+*   Acquisition via real money (RevenueCat) or rewarded ads (AdMob).
 
-### 5.2. Mode Défi Quotidien (Social)
-*   Un "Jeu du jour" est généré quotidiennement pour chaque Monde débloqué.
-*   Le niveau est strictement identique pour tous les joueurs le même jour.
-*   **Classement :** Un leaderboard compare le temps de résolution du joueur avec celui de ses amis.
+## 5. Game Modes
+### 5.1. Story Mode (Main Progression)
+*   Progression divided into **Worlds**. 1 World = 1 specific mini-game type.
+*   **World 1: "Zip" Mini-game.**
+    *   **Grid Size:** 6x6.
+    *   **Objective:** Connect numbers in sequence (1, 2, 3...) and fill every cell in the grid.
+    *   **Difficulty:**
+        *   **Easy:** 12 numbers to connect, 5:00 timer.
+        *   **Medium:** 8 numbers to connect, 4:00 timer.
+        *   **Hard:** 7 numbers to connect, 3:00 timer.
 
-## 6. Architecture & Logique de Développement
-### 6.1. L'Interface Abstraite (Évolutivité)
-Pour garantir l'évolutivité vers de futurs mondes, l'architecture doit être découplée. Une classe de base abstraite (ex: `MinigameEngine` ou un `MinigameBloc` générique) définira les contrats communs : `initializeGame()`, `useHint()`, `triggerTimeout()`, `onWin()`.
-Le gestionnaire de campagne ne doit jamais connaître les règles spécifiques du jeu "Zip" ou des futurs mondes.
+### 5.2. Daily Challenge Mode (Social)
+*   A "Daily Game" generated for each unlocked World, identical for all players.
 
-### 6.2. Génération Procédurale vs Niveaux Codés en Dur
-Au lieu de stocker des milliers de niveaux en base de données, la structure des niveaux est générée de manière procédurale (en s'appuyant sur des algorithmes de théorie des graphes et de résolution de contraintes).
-*   Chaque niveau est généré à partir d'une *seed* (graine) mathématique et d'un paramètre de taille/difficulté.
-*   Pour le défi quotidien, la *seed* est simplement la date du jour (ex: `20260821`), garantissant que tous les joueurs affrontent exactement la même grille.
+## 6. Architecture & Development Logic
+### 6.1. Abstract Interface
+Base abstract classes for `MinigameEngine` or generic `MinigameBloc` to define contracts: `initializeGame()`, `useHint()`, `triggerTimeout()`, `onWin()`.
 
-### 6.3. Gestion du Temps Imparti (Performances)
-Le compte à rebours de chaque niveau doit être géré avec les `Tickers` natifs de Flutter (via `TickerProviderStateMixin`) ou un Stream dédié, plutôt que via des `setState` globaux. Cela permet de rafraîchir uniquement le widget du chronomètre à 60 fps sans forcer la reconstruction de la grille entière du jeu.
+### 6.2. Procedural Generation
+Levels generated from a mathematical *seed* and difficulty parameters. For Daily Challenges, the *seed* is the current date (e.g., `20260822`).
 
-## 7. Instructions pour l'IA Développeur
-1.  **Feature-First :** Organiser le projet par fonctionnalités (`/features/auth`, `/features/social`, `/features/gameplay`) pour maintenir un code propre.
-2.  **State Management :** Utiliser BLoC de manière stricte pour isoler toute la logique métier des widgets.
-3.  **Validation Serveur :** Prévoir des Edge Functions sur Supabase pour la validation des scores quotidiens et l'attribution/décrémentation des vies.
+### 6.3. Timing Management
+Managed with native Flutter `Tickers` or dedicated Streams for high performance (60 fps).

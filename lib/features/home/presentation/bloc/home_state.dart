@@ -1,6 +1,6 @@
 part of 'home_bloc.dart';
 
-enum GameDifficulty { facile, medium, difficile }
+enum GameDifficulty { easy, medium, hard }
 
 class HomeState extends Equatable {
   final int currentLevel;
@@ -26,7 +26,7 @@ class HomeState extends Equatable {
     this.currentLevel = 1,
     this.lives = 5,
     this.maxLives = 5,
-    this.difficulty = GameDifficulty.facile,
+    this.difficulty = GameDifficulty.easy,
     this.isLoading = false,
     this.username = 'Player123',
     this.isMusicEnabled = true,

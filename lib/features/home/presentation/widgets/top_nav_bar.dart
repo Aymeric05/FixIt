@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../lives/presentation/bloc/lives_bloc.dart';
+import '../../../lives/presentation/bloc/lives_state.dart';
 import '../bloc/home_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/candy_button.dart';
@@ -12,14 +15,7 @@ import 'leaderboard_dialog.dart';
 import 'map_dialog.dart';
 
 class TopNavBar extends StatelessWidget {
-  final int lives;
-  final int maxLives;
-
-  const TopNavBar({
-    super.key,
-    required this.lives,
-    required this.maxLives,
-  });
+  const TopNavBar({super.key});
 
   @override
   Widget build(BuildContext context) {

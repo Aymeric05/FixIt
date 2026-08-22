@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../bloc/home_bloc.dart';
+import '../../../game/presentation/pages/game_page.dart';
 
 class MainPlayButton extends StatefulWidget {
   final int level;
