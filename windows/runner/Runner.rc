@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.aymeric05.fixit" "\0"
-            VALUE "FileDescription", "linkedin_games" "\0"
+            VALUE "FileDescription", "FixIt" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "linkedin_games" "\0"
+            VALUE "InternalName", "FixIt" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.aymeric05.fixit. All rights reserved." "\0"
-            VALUE "OriginalFilename", "linkedin_games.exe" "\0"
-            VALUE "ProductName", "linkedin_games" "\0"
+            VALUE "OriginalFilename", "fixit.exe" "\0"
+            VALUE "ProductName", "FixIt" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

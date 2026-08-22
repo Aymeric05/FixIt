@@ -1,4 +1,4 @@
-# linkedin_games
+# FixIt
 
 A new Flutter project.
 

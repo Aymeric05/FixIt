@@ -8,3 +8,39 @@ abstract class HomeEvent extends Equatable {
 }
 
 class LoadHomeData extends HomeEvent {}
+
+class UpdateUsername extends HomeEvent {
+  final String username;
+  const UpdateUsername(this.username);
+
+  @override
+  List<Object> get props => [username];
+}
+
+class ToggleMusic extends HomeEvent {}
+
+class ToggleSound extends HomeEvent {}
+
+class WatchVideoForLife extends HomeEvent {}
+
+class BuyLives extends HomeEvent {
+  final int count;
+  const BuyLives(this.count);
+  @override
+  List<Object> get props => [count];
+}
+
+class BuyUnlimitedLives extends HomeEvent {}
+
+class BuyNoAds extends HomeEvent {}
+
+class TickLifeRecharge extends HomeEvent {}
+
+class CompleteLevel extends HomeEvent {}
+
+class ChangeWorld extends HomeEvent {
+  final int worldIndex;
+  const ChangeWorld(this.worldIndex);
+  @override
+  List<Object> get props => [worldIndex];
+}
