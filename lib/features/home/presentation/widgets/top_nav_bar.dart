@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../lives/presentation/bloc/lives_bloc.dart';
+import '../../../lives/presentation/bloc/lives_state.dart';
 
 class TopNavBar extends StatelessWidget {
-  final int lives;
-  final int maxLives;
-
-  const TopNavBar({
-    super.key,
-    required this.lives,
-    required this.maxLives,
-  });
+  const TopNavBar({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -28,27 +24,30 @@ class TopNavBar extends StatelessWidget {
           ),
 
           // Top Center: Lives Indicator
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.overlayDark,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.favorite, color: Colors.red, size: 24),
-                const SizedBox(width: 6),
-                Text(
-                  '$lives/$maxLives',
-                  style: const TextStyle(
-                    color: AppColors.textWhite,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+          BlocBuilder<LivesBloc, LivesState>(
+            builder: (context, state) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.overlayDark,
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                // TODO: Add countdown timer if lives < maxLives
-              ],
-            ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.favorite, color: Colors.red, size: 24),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${state.currentLives}/${state.maxLives}',
+                      style: const TextStyle(
+                        color: AppColors.textWhite,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
 
           // Top Right: Settings Button

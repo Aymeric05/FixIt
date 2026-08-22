@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/home_bloc.dart';
 import '../widgets/top_nav_bar.dart';
 import '../widgets/main_play_button.dart';
-import '../../../../core/theme/app_colors.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -46,12 +45,34 @@ class HomePage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Header Section
-                      TopNavBar(
-                        lives: state.lives,
-                        maxLives: state.maxLives,
+                      const TopNavBar(),
+
+                      // Title
+                      Padding(
+                        padding: const EdgeInsets.only(top: 20),
+                        child: Column(
+                          children: [
+                            const Text(
+                              'WORLD 1',
+                              style: TextStyle(
+                                fontSize: 44,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                shadows: [Shadow(blurRadius: 10, color: Colors.black45, offset: Offset(2, 2))],
+                              ),
+                            ),
+                            Text(
+                              'The Enchanted Prairie',
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: Colors.white.withOpacity(0.9),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
 
-                      // Middle Section (Empty for now, can be world elements)
                       const Spacer(),
 
                       // Bottom Section

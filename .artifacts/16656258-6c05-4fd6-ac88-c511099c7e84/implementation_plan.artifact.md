@@ -1,38 +1,33 @@
-# Implementation Plan: Foundation & Home Screen UI
+# Implementation Plan: Flexible Validation & Wall Obstacles
 
-Establish a solid architectural foundation and implement the Home Screen UI according to the requirements in `PROJECT_CONTEXT.md`. This iteration focuses on the layout and structure without the full backend integration.
-
-## User Review Required
-
-> [!IMPORTANT]
-> This will involve creating a new directory structure and moving logic into BLoCs. I will start with `flutter_bloc` and `google_fonts`.
+Improve the "Zip" game by making validation more flexible (accepting any valid Hamiltonian path that respects hint order) and adding "walls" to guide players and create more unique puzzles.
 
 ## Proposed Changes
 
-### 1. Project Infrastructure
-- **Dependencies**: Add `flutter_bloc`, `equatable`, and `google_fonts` to `pubspec.yaml`.
-- **Directory Structure**:
-    - `lib/core/theme/` (Colors, Typography)
-    - `lib/features/home/presentation/` (Pages, Widgets, Bloc)
-    - `lib/features/lives/presentation/` (Widgets, Bloc)
+### 1. Logic & State Management
 
-### 2. UI Alignment (Section 3 of PROJECT_CONTEXT.md)
-#### [NEW] [home_page.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/features/home/presentation/pages/home_page.dart)
-- **Top Left**: Profile icon button (Placeholder).
-- **Top Center**: Lives Indicator (❤️ 3/5) with a placeholder countdown.
-- **Top Right**: Settings button (Cog icon).
-- **Bottom Center**: Large "JOUER" button displaying:
-    - Current Level (e.g., "Niveau 1")
-    - Difficulty (e.g., "Facile")
-- **Background**: Integration of `monde1_background.png`.
+#### [MODIFY] [game_state.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/features/game/presentation/bloc/game_state.dart)
+- Add `walls`: A collection of pairs of adjacent cells between which a wall exists.
+- A wall between `Cell A` and `Cell B` prevents the user from moving directly from A to B.
 
-### 3. State Management (Initial)
-#### [NEW] [home_bloc.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/features/home/presentation/bloc/home_bloc.dart)
-- Manage the state of the Home Screen (Current Level, Life count).
+#### [MODIFY] [game_bloc.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/features/game/presentation/bloc/game_bloc.dart)
+- **Flexible Validation**: Update `_validatePath` to check if hints are visited in the correct sequence (1 -> 2 -> 3...), regardless of the exact step count between them.
+- **Wall Generation**:
+    - After generating the Hamiltonian path, randomly select pairs of adjacent cells that are **not** consecutive in the path and place a wall between them.
+    - This increases difficulty and forces the player into the intended path.
+- **Enforce Walls**: In `_onSelectCell`, check if a wall exists between the `last` cell and the `tapped` cell. If so, ignore the move.
+
+### 2. Interaction & UI
+
+#### [MODIFY] [game_page.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/features/game/presentation/pages/game_page.dart)
+- **Wall Rendering**:
+    - Update the `GridView` cell rendering to display a thick black border on the edge(s) where a wall exists.
+    - This will match the visual style of the provided reference image.
 
 ## Verification Plan
 
 ### Manual Verification
-- Confirm the new UI layout matches the specified requirements.
-- Verify that the "PLAY" button displays the correct level and difficulty.
-- Ensure the background image is still correctly integrated.
+- **Validation**: Find a path that fills the grid and respects hint order but differs from the generator's path. Verify it now triggers a win.
+- **Walls**: Start a game and verify that thick black lines appear between some cells.
+- **Wall Interaction**: Try to drag your finger across a wall. Verify the path does not cross it.
+- **Solvability**: Ensure that even with walls, a valid path (the one generated initially) is always possible.

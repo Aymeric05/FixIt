@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../bloc/home_bloc.dart';
+import '../../../game/presentation/pages/game_page.dart';
 
 class MainPlayButton extends StatelessWidget {
   final int level;
@@ -14,12 +15,12 @@ class MainPlayButton extends StatelessWidget {
 
   String get _difficultyText {
     switch (difficulty) {
-      case GameDifficulty.facile:
-        return 'Facile';
+      case GameDifficulty.easy:
+        return 'Easy';
       case GameDifficulty.medium:
         return 'Medium';
-      case GameDifficulty.difficile:
-        return 'Difficile';
+      case GameDifficulty.hard:
+        return 'Hard';
     }
   }
 
@@ -30,7 +31,15 @@ class MainPlayButton extends StatelessWidget {
       children: [
         GestureDetector(
           onTap: () {
-            // TODO: Start game
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => GamePage(
+                  level: level,
+                  difficulty: difficulty,
+                ),
+              ),
+            );
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
@@ -51,7 +60,7 @@ class MainPlayButton extends StatelessWidget {
               ],
             ),
             child: const Text(
-              'JOUER',
+              'PLAY',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
@@ -63,7 +72,7 @@ class MainPlayButton extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'Niveau $level',
+          'Level $level',
           style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -72,7 +81,7 @@ class MainPlayButton extends StatelessWidget {
           ),
         ),
         Text(
-          'Difficulté : $_difficultyText',
+          'Difficulty : $_difficultyText',
           style: TextStyle(
             fontSize: 16,
             color: AppColors.textWhite.withOpacity(0.9),
