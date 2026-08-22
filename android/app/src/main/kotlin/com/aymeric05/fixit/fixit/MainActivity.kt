@@ -1,4 +1,4 @@
-package com.aymeric05.fixit.linkedin_games
+package com.aymeric05.fixit.fixit
 
 import io.flutter.embedding.android.FlutterActivity
 
