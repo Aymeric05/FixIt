@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../lives/presentation/bloc/lives_bloc.dart';
 import '../../../lives/presentation/bloc/lives_state.dart';
 import '../bloc/home_bloc.dart';

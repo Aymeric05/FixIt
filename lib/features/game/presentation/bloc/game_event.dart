@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:linkedin_games/features/home/presentation/bloc/home_bloc.dart';
+import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 
 abstract class GameEvent extends Equatable {
   const GameEvent();

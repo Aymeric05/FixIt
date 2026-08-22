@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:linkedin_games/features/home/presentation/bloc/home_bloc.dart';
+import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'game_event.dart';
 import 'game_state.dart';
 

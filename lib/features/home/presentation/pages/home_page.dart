@@ -1,13 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../bloc/home_bloc.dart';
-import '../widgets/top_nav_bar.dart';
-import '../widgets/main_play_button.dart';
-import '../widgets/lives_store_dialog.dart';
-import '../../../game/presentation/pages/game_page.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/candy_button.dart';
+import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
+import 'package:fixit/features/home/presentation/widgets/top_nav_bar.dart';
+import 'package:fixit/features/home/presentation/widgets/main_play_button.dart';
+import 'package:fixit/features/home/presentation/widgets/lives_store_dialog.dart';
+import 'package:fixit/features/game/presentation/pages/game_page.dart';
+import 'package:fixit/core/theme/app_colors.dart';
+import 'package:fixit/core/widgets/candy_button.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -54,10 +54,7 @@ class HomePage extends StatelessWidget {
                   children: [
                     Column(
                       children: [
-                        TopNavBar(
-                          lives: state.lives,
-                          maxLives: state.maxLives,
-                        ),
+                        const TopNavBar(),
                         Expanded(
                           child: Stack(
                             children: [
@@ -77,13 +74,16 @@ class HomePage extends StatelessWidget {
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          const SizedBox(width: 80), // Balanced width
+                                          const SizedBox(width: 100), // Perfect balance for the 80 width heart + 20 gap
                                           MainPlayButton(
                                             level: state.currentLevel,
                                             onTap: () {
                                               Navigator.of(context).push(
                                                 MaterialPageRoute(
-                                                  builder: (context) => const GamePage(),
+                                                  builder: (context) => GamePage(
+                                                    level: state.currentLevel,
+                                                    difficulty: state.difficulty,
+                                                  ),
                                                 ),
                                               );
                                             },
