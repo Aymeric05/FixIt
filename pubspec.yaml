@@ -60,7 +60,7 @@ flutter:
 
   assets:
     - monde1_background.png
-    - parchemin.avif
+    - parchemin.png
     - nuages.png
 
   # An image asset can refer to one or more resolution-specific "variants", see

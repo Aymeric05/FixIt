@@ -11,7 +11,7 @@ class MapDialog extends StatelessWidget {
     return CandyDialog(
       title: 'WORLD MAP',
       content: Container(
-        height: 380,
+        height: 450,
         width: 340,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(25),
@@ -26,56 +26,47 @@ class MapDialog extends StatelessWidget {
           borderRadius: BorderRadius.circular(25),
           child: Stack(
             children: [
-              // Parchment Image
+              // Parchment Background Image
               Positioned.fill(
-                child: RotatedBox(
-                  quarterTurns: 1,
-                  child: Image.asset(
-                    'parchemin.avif',
-                    fit: BoxFit.cover,
-                  ),
+                child: Image.asset(
+                  'parchemin.png',
+                  fit: BoxFit.cover,
                 ),
               ),
 
-              // World 1 Button (Bottom Left)
+              // Invisible Clickable Worlds (Placeholders)
+              // World 1 (Meadow) - Bottom Left
               Positioned(
-                left: 20,
-                bottom: 30,
-                child: GestureDetector(
+                left: 30,
+                bottom: 40,
+                child: _buildWorldPoint(
+                  context,
+                  label: 'MEADOW WORLD',
+                  isUnlocked: true,
                   onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    width: 90,
-                    height: 90,
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade700,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 4),
-                      boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
-                    ),
-                    alignment: Alignment.center,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Text(
-                          'WORLD 1',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 12,
-                          ),
-                        ),
-                        Text(
-                          'MEADOW',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 9,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
+              ),
+
+              // Other Worlds (Locked for now)
+              Positioned(
+                right: 50,
+                bottom: 80,
+                child: _buildWorldPoint(context, label: 'LOCKED', isUnlocked: false),
+              ),
+              Positioned(
+                top: 80,
+                left: 60,
+                child: _buildWorldPoint(context, label: 'LOCKED', isUnlocked: false),
+              ),
+              Positioned(
+                top: 50,
+                right: 40,
+                child: _buildWorldPoint(context, label: 'LOCKED', isUnlocked: false),
+              ),
+              Positioned(
+                top: 180,
+                left: 150,
+                child: _buildWorldPoint(context, label: 'LOCKED', isUnlocked: false),
               ),
 
               // Cloud Fog (Scattered on everything EXCEPT World 1 zone)
@@ -94,17 +85,48 @@ class MapDialog extends StatelessWidget {
     );
   }
 
+  Widget _buildWorldPoint(BuildContext context, {required String label, required bool isUnlocked, VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 70,
+            height: 70,
+            decoration: const BoxDecoration(
+              color: Colors.transparent, // Invisible button area
+              shape: BoxShape.circle,
+            ),
+          ),
+          if (isUnlocked)
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.green,
+                fontWeight: FontWeight.w900,
+                fontSize: 12,
+                shadows: [Shadow(color: Colors.white, blurRadius: 4)],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   List<Widget> _buildClouds() {
     return [
-      _positionedCloud(top: -10, left: -10, size: 150),
-      _positionedCloud(top: -20, right: -20, size: 180),
-      _positionedCloud(top: 60, left: 120, size: 140),
-      _positionedCloud(top: 140, left: -30, size: 160),
-      _positionedCloud(top: 130, right: -10, size: 170),
-      _positionedCloud(top: 180, left: 90, size: 150),
+      _positionedCloud(top: -20, left: -20, size: 160),
+      _positionedCloud(top: -10, right: -30, size: 180),
+      _positionedCloud(top: 60, left: 120, size: 150),
+      _positionedCloud(top: 140, left: -30, size: 170),
+      _positionedCloud(top: 130, right: -10, size: 190),
+      _positionedCloud(top: 180, left: 90, size: 140),
       _positionedCloud(bottom: -10, right: -10, size: 180),
       _positionedCloud(bottom: 70, right: 10, size: 140),
       _positionedCloud(bottom: 10, left: 130, size: 160),
+      _positionedCloud(top: 250, left: 20, size: 150),
+      _positionedCloud(top: 100, right: 80, size: 160),
     ];
   }
 
