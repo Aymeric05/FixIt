@@ -9,15 +9,43 @@ import 'package:fixit/features/game/presentation/pages/game_page.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 
-class HomePage extends StatelessWidget {
+import 'package:fixit/core/theme/app_colors.dart';
+import 'package:fixit/core/widgets/candy_button.dart';
+import 'package:confetti/confetti.dart';
+
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  late ConfettiController _confettiController;
+
+  @override
+  void initState() {
+    super.initState();
+    _confettiController = ConfettiController(duration: const Duration(milliseconds: 800));
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => HomeBloc()..add(LoadHomeData()),
-      child: Scaffold(
-        body: Stack(
+    return Scaffold(
+      body: BlocListener<HomeBloc, HomeState>(
+        listenWhen: (previous, current) => 
+            previous.levelsCompletedInWorld != current.levelsCompletedInWorld,
+        listener: (context, state) {
+          // Play confetti when a level is completed
+          _confettiController.play();
+        },
+        child: Stack(
           children: [
             // Background Image with slight blur
             Positioned.fill(
@@ -74,7 +102,7 @@ class HomePage extends StatelessWidget {
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          const SizedBox(width: 100), // Perfect balance for the 80 width heart + 20 gap
+                                          const SizedBox(width: 80), // Offset to keep Play button perfectly centered
                                           MainPlayButton(
                                             level: state.currentLevel,
                                             onTap: () {
@@ -92,7 +120,7 @@ class HomePage extends StatelessWidget {
                                           _FloatingBuyButton(),
                                         ],
                                       ),
-                                      const SizedBox(height: 30),
+                                      const SizedBox(height: 20),
                                       _buildExperienceBar(state),
                                       const SizedBox(height: 10),
                                     ],
@@ -107,6 +135,46 @@ class HomePage extends StatelessWidget {
                   ],
                 );
               },
+            ),
+            // Confetti Overlay (More intense)
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirectionality: BlastDirectionality.explosive,
+                shouldLoop: false,
+                colors: const [
+                  Colors.green,
+                  Colors.blue,
+                  Colors.pink,
+                  Colors.orange,
+                  Colors.purple,
+                  Colors.yellow,
+                  Colors.red,
+                ],
+                numberOfParticles: 60, // Increased
+                gravity: 0.1,
+              ),
+            ),
+            Align(
+              alignment: const Alignment(-0.8, -1.0),
+              child: ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirectionality: BlastDirectionality.explosive,
+                shouldLoop: false,
+                numberOfParticles: 20,
+                gravity: 0.1,
+              ),
+            ),
+            Align(
+              alignment: const Alignment(0.8, -1.0),
+              child: ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirectionality: BlastDirectionality.explosive,
+                shouldLoop: false,
+                numberOfParticles: 20,
+                gravity: 0.1,
+              ),
             ),
           ],
         ),
@@ -200,8 +268,8 @@ class _FloatingBuyButtonState extends State<_FloatingBuyButton>
         );
       },
       child: CandyButton(
-        width: 80,
-        height: 80,
+        width: 60,
+        height: 60,
         color: AppColors.candyPink,
         darkColor: AppColors.candyPinkDark,
         onPressed: () {
@@ -216,14 +284,14 @@ class _FloatingBuyButtonState extends State<_FloatingBuyButton>
         child: const Stack(
           alignment: Alignment.center,
           children: [
-            Icon(Icons.favorite, color: Colors.white, size: 40),
+            Icon(Icons.favorite, color: Colors.white, size: 30),
             Positioned(
               right: 0,
               bottom: 0,
               child: CircleAvatar(
-                radius: 12,
+                radius: 9,
                 backgroundColor: AppColors.candyGreen,
-                child: Icon(Icons.add, color: Colors.white, size: 18),
+                child: Icon(Icons.add, color: Colors.white, size: 14),
               ),
             ),
           ],

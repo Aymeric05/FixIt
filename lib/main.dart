@@ -5,10 +5,10 @@ import 'features/home/presentation/pages/home_page.dart';
 import 'features/lives/presentation/bloc/lives_bloc.dart';
 import 'features/lives/presentation/bloc/lives_event.dart';
 
+import 'features/home/presentation/bloc/home_bloc.dart';
+
 void main() {
-  // Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
-  
   runApp(const CandyPuzzleGame());
 }
 
@@ -17,8 +17,11 @@ class CandyPuzzleGame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => LivesBloc()..add(LoadLives()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => LivesBloc()..add(LoadLives())),
+        BlocProvider(create: (context) => HomeBloc()..add(LoadHomeData())),
+      ],
       child: MaterialApp(
         title: 'Puzzle Quest',
         debugShowCheckedModeBanner: false,

@@ -54,20 +54,20 @@ class _MainPlayButtonState extends State<MainPlayButton>
             onTapCancel: () => _controller.repeat(reverse: true),
             onTap: widget.onTap,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
               decoration: BoxDecoration(
                 gradient: const RadialGradient(
                   colors: [AppColors.secondaryOrange, Colors.deepOrange],
                   center: Alignment(-0.2, -0.3),
                   radius: 1.2,
                 ),
-                borderRadius: BorderRadius.circular(45),
-                border: Border.all(color: AppColors.textWhite, width: 8),
+                borderRadius: BorderRadius.circular(40),
+                border: Border.all(color: AppColors.textWhite, width: 6),
                 boxShadow: const [
                   BoxShadow(
                     color: Colors.black45,
-                    offset: Offset(0, 10),
-                    blurRadius: 18,
+                    offset: Offset(0, 8),
+                    blurRadius: 15,
                   )
                 ],
               ),
@@ -77,10 +77,10 @@ class _MainPlayButtonState extends State<MainPlayButton>
                   // Gloss effect
                   Positioned(
                     top: 2,
-                    left: 20,
+                    left: 15,
                     child: Container(
-                      width: 80,
-                      height: 12,
+                      width: 60,
+                      height: 10,
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(20),
@@ -90,10 +90,10 @@ class _MainPlayButtonState extends State<MainPlayButton>
                   Text(
                     'PLAY LEVEL ${widget.level}',
                     style: const TextStyle(
-                      fontSize: 28,
+                      fontSize: 24,
                       fontWeight: FontWeight.w900,
                       color: AppColors.textWhite,
-                      letterSpacing: 1.5,
+                      letterSpacing: 1.2,
                       shadows: [Shadow(color: Colors.black45, blurRadius: 6, offset: Offset(3, 3))],
                     ),
                   ),
