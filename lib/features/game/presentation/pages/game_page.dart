@@ -13,6 +13,7 @@ import 'package:fixit/core/theme/app_colors.dart';
 
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:confetti/confetti.dart';
+import 'package:fixit/core/widgets/tutorial_dialog.dart';
 
 class GamePage extends StatefulWidget {
   final int level;
@@ -31,6 +32,16 @@ class _GamePageState extends State<GamePage> {
   void initState() {
     super.initState();
     _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+    
+    // Show tutorial if it's the first time
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      TutorialDialog.showIfFirstTime(
+        context,
+        title: 'HOW TO PLAY',
+        description: 'Connect all numbers in order (1, 2, 3...) to fill the entire grid!',
+        tutorialKey: 'snake_tutorial_seen',
+      );
+    });
   }
 
   @override
@@ -52,7 +63,7 @@ class _GamePageState extends State<GamePage> {
               _showGameOverDialog(context);
             } else if (state.status == GameStatus.won) {
               _confettiController.play();
-              _showWinDialog(context);
+              _showWinDialog(context, state);
             }
           },
           child: Stack(
@@ -375,7 +386,19 @@ class _GamePageState extends State<GamePage> {
     });
   }
 
-  void _showWinDialog(BuildContext context) {
+  void _showWinDialog(BuildContext context, GameState state) {
+    final timeTaken = state.initialSeconds - state.remainingSeconds;
+    final timeStr = "${(timeTaken / 60).floor()}:${(timeTaken % 60).toString().padLeft(2, '0')}";
+    
+    // Mock statistics data
+    const averageTimeSeconds = 65; 
+    const averageTimeStr = "1:05";
+    const bestTimeSeconds = 42; 
+    const bestTimeStr = "0:42";
+    
+    final isNewRecord = timeTaken < bestTimeSeconds;
+    final isFasterThanAverage = timeTaken < averageTimeSeconds;
+
     Future.delayed(Duration.zero, () {
       if (!context.mounted) return;
       showDialog(
@@ -393,7 +416,59 @@ class _GamePageState extends State<GamePage> {
               },
               content: Column(
                 children: [
-                  const Icon(Icons.star, color: Colors.amber, size: 80),
+                  // Replacing the star with stats
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text(
+                          "YOUR TIME",
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.candyGreenDark),
+                        ),
+                        Text(
+                          timeStr,
+                          style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: AppColors.candyGreenDark),
+                        ),
+                        const Divider(color: Colors.white, height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Average Time:", style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(averageTimeStr, style: const TextStyle(fontWeight: FontWeight.w900)),
+                          ],
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Best Time:", style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(bestTimeStr, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.blue)),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        if (isNewRecord)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(10)),
+                            child: const Text("NEW WORLD RECORD!", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, fontSize: 12)),
+                          )
+                        else if (isFasterThanAverage)
+                          const Text(
+                            "You are faster than average!",
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.candyGreenDark),
+                          )
+                        else
+                          Text(
+                            "Average is ${timeTaken - averageTimeSeconds}s faster than you",
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.redAccent),
+                          ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 20),
                   const Text(
                     "GREAT JOB! YOU SOLVED THE PUZZLE!",

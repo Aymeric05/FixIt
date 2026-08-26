@@ -48,6 +48,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       hintSteps: result.hintSteps,
       walls: result.walls,
       remainingSeconds: seconds,
+      initialSeconds: seconds,
       status: GameStatus.playing,
       currentPath: [],
       pathColor: randomColor,
