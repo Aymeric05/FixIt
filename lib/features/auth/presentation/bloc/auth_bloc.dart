@@ -1,0 +1,50 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fixit/core/services/database_service.dart';
+import 'package:fixit/core/repositories/profile_repository.dart';
+import 'auth_event.dart';
+import 'auth_state.dart';
+
+class AuthBloc extends Bloc<AuthEvent, AuthState> {
+  final _supabase = DatabaseService().supabase;
+  final _profileRepository = ProfileRepository();
+
+  AuthBloc() : super(AuthInitial()) {
+    on<AuthCheckRequested>((event, emit) async {
+      final user = _supabase.auth.currentUser;
+      if (user != null) {
+        try {
+          final profile = await _profileRepository.getOrCreateProfile(user.id);
+          emit(AuthAuthenticated(user, profile));
+        } catch (e) {
+          emit(AuthFailure(e.toString()));
+        }
+      } else {
+        // Auto-sign in anonymously if no user is found
+        add(AuthSignInAnonymous());
+      }
+    });
+
+    on<AuthSignInAnonymous>((event, emit) async {
+      emit(AuthLoading());
+      try {
+        final authResponse = await _supabase.auth.signInAnonymously();
+        final user = authResponse.user;
+        if (user != null) {
+          final profile = await _profileRepository.getOrCreateProfile(user.id);
+          emit(AuthAuthenticated(user, profile));
+        } else {
+          emit(const AuthFailure('Failed to sign in.'));
+        }
+      } catch (e) {
+        emit(AuthFailure(e.toString()));
+      }
+    });
+
+    on<AuthSignOutRequested>((event, emit) async {
+      await _supabase.auth.signOut();
+      emit(AuthUnauthenticated());
+      // Re-sign in anonymously after sign out to keep a session
+      add(AuthSignInAnonymous());
+    });
+  }
+}

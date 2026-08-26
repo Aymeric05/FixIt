@@ -1,28 +1,27 @@
-# Walkthrough: Flexible Validation & Wall Obstacles
+# Walkthrough: Unified Identity & Social Tab Sync
 
-I have improved the "Zip" game mechanics by making the validation more intelligent and adding "walls" to the levels to guide the player and increase the puzzle quality.
+I have synchronized the "Social" tab with the new profile system, ensuring that your real identity (e.g., **Guest#XXXX**) is consistent across the entire application and that all identity management follows the same business rules.
 
-## Key Enhancements
+## Key Accomplishments
 
-### ✅ Flexible Path Validation
-- **Accept Any Valid Path**: The game no longer requires you to follow the *exact* path imagined by the generator.
-- **Requirement**: As long as you fill all 36 cells and visit the hints in the correct order (1, then 2, then 3, etc.), your solution will be accepted. This fixes the issue where valid solutions were sometimes rejected.
+### 🔗 Social Tab Synchronization
+- **Real Pseudo Visibility**: The "Social" tab now correctly displays your auto-generated `Guest#XXXX` nickname instead of the old placeholder.
+- **Unified Logic**: Updating your nickname in the "Social" tab now uses the same robust `ProfileRepository` as the "Profile" modal, including the **uniqueness check** against other players in Supabase.
+- **Global UI Refresh**: When you change your nickname in the "Social" tab, the Home Screen header and the "Profile" modal update instantly.
 
-### 🧱 Wall Obstacles
-- **Guided Puzzles**: Thick black lines now appear between certain cells. These are "walls" that you cannot cross.
-- **Improved Design**: Walls are strategically placed during generation to block "short cuts" and ensure that the puzzle has a more intentional flow, similar to the reference image you provided.
-- **Enforcement**: The drag-to-fill interaction now respects these boundaries, preventing the path from jumping through a wall.
+### 🧹 State Cleanup
+- **Removed Redundancy**: Deleted the old, separate `username` and `UpdateUsername` logic from `HomeBloc`.
+- **Single Source of Truth**: All identity data is now managed exclusively through the `AuthBloc` (which holds the `Player` profile) and the `ProfileRepository`.
 
 ## Technical Details
 
-- **`GameState`**: Now tracks a `Set<String>` of wall keys (e.g., "0,0-0,1") representing undirected edges that are blocked.
-- **`GameBloc`**:
-    - **Wall Generator**: Randomly places walls between adjacent cells that are not neighbors in the generated solution.
-    - **Validator**: Sorts hints by value and checks their indices in the user's path to ensure a strictly increasing sequence.
-- **`GamePage`**: Uses the `Border` property of each grid cell to dynamically render `wallSide` (thick black) or `defaultSide` (thin grey) based on the state.
+- **`SocialDialog`**: Refactored to use `AuthBloc` for its initial state and handle updates through the shared profile service. Added a loading indicator and error handling for taken usernames.
+- **`HomeState` & `HomeBloc`**: Cleaned up to remove the legacy identity fields.
+- **Improved Imports**: Standardized all package imports to prevent build issues across different environments.
 
 ## Verification
 
-1. **Start a Game**: Notice the thick black borders between some cells.
-2. **Test Walls**: Try dragging through a wall. The path should stop or ignore that movement.
-3. **Alternative Solutions**: If you find a path that fills the grid and hits hints in order but is different from the "obvious" path, verify that it still triggers a win.
+1. **Check Identity**: Open the **Social** tab. You should immediately see your `Guest#XXXX` name.
+2. **Test Updates**: Change your name in the Social tab. Observe the "Username updated successfully!" message and verify the Home Screen header reflects the change.
+3. **Cross-Tab Consistency**: Change your name in the **Profile** modal (top-left icon) and then check the **Social** tab; it will stay perfectly in sync.
+4. **Error Validation**: Try to change your name to one that is already taken. You will see a clear error message and your previous name will be restored.

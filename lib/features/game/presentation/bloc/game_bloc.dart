@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'game_event.dart';
@@ -29,6 +30,18 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
     final result = _generatePuzzle(hintsCount);
 
+    final colors = [
+      Colors.orange,
+      Colors.pink,
+      Colors.purple,
+      Colors.blue,
+      Colors.green,
+      Colors.red,
+      Colors.teal,
+      Colors.indigo,
+    ];
+    final randomColor = colors[Random().nextInt(colors.length)];
+
     emit(state.copyWith(
       hints: result.hints,
       solutionPath: result.solution,
@@ -37,6 +50,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       remainingSeconds: seconds,
       status: GameStatus.playing,
       currentPath: [],
+      pathColor: randomColor,
+      isAngry: false,
     ));
 
     _startTimer(seconds);
@@ -175,7 +190,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
     final existingIndex = currentPath.indexOf(tapped);
     if (existingIndex != -1) {
-      emit(state.copyWith(currentPath: currentPath.sublist(0, existingIndex + 1)));
+      final newPath = currentPath.sublist(0, existingIndex + 1);
+      emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
       return;
     }
 
@@ -189,15 +205,32 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       }
 
       final newPath = [...currentPath, tapped];
-      emit(state.copyWith(currentPath: newPath));
+      emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
 
       if (newPath.length == 36) {
         if (_validatePath(newPath)) {
-          emit(state.copyWith(status: GameStatus.won));
+          emit(state.copyWith(status: GameStatus.won, isAngry: false));
           _timer?.cancel();
         }
       }
     }
+  }
+
+  bool _checkIfAngry(List<GridOffset> path) {
+    int maxHintSeen = 0;
+    int hintsCounted = 0;
+    
+    for (var pos in path) {
+      final val = state.hints[pos.row][pos.col];
+      if (val != null) {
+        hintsCounted++;
+        if (val > maxHintSeen) maxHintSeen = val;
+        
+        // If we seen hint 3 but we only have 1 hint total in path, we skipped one.
+        if (maxHintSeen > hintsCounted) return true;
+      }
+    }
+    return false;
   }
 
   bool _validatePath(List<GridOffset> path) {

@@ -10,7 +10,6 @@ class HomeState extends Equatable {
   final bool isLoading;
   
   // New Fields
-  final String username;
   final bool isMusicEnabled;
   final bool isSoundEnabled;
   final bool isNoAdsActive;
@@ -28,7 +27,6 @@ class HomeState extends Equatable {
     this.maxLives = 5,
     this.difficulty = GameDifficulty.easy,
     this.isLoading = false,
-    this.username = 'Player123',
     this.isMusicEnabled = true,
     this.isSoundEnabled = true,
     this.isNoAdsActive = false,
@@ -45,7 +43,6 @@ class HomeState extends Equatable {
     int? maxLives,
     GameDifficulty? difficulty,
     bool? isLoading,
-    String? username,
     bool? isMusicEnabled,
     bool? isSoundEnabled,
     bool? isNoAdsActive,
@@ -61,7 +58,6 @@ class HomeState extends Equatable {
       maxLives: maxLives ?? this.maxLives,
       difficulty: difficulty ?? this.difficulty,
       isLoading: isLoading ?? this.isLoading,
-      username: username ?? this.username,
       isMusicEnabled: isMusicEnabled ?? this.isMusicEnabled,
       isSoundEnabled: isSoundEnabled ?? this.isSoundEnabled,
       isNoAdsActive: isNoAdsActive ?? this.isNoAdsActive,
@@ -80,7 +76,6 @@ class HomeState extends Equatable {
         maxLives,
         difficulty,
         isLoading,
-        username,
         isMusicEnabled,
         isSoundEnabled,
         isNoAdsActive,

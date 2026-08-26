@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../lives/presentation/bloc/lives_bloc.dart';
 import '../../../lives/presentation/bloc/lives_state.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../profile/presentation/widgets/profile_modal.dart';
 import '../bloc/home_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/candy_button.dart';
@@ -27,10 +30,13 @@ class TopNavBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Left side: Leaderboard, Map, Social
+              // Left side: Profile, Social, Map, Rank
               Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildProfileSection(context),
+                  const SizedBox(height: 12),
                   _buildNavButton(
                     context,
                     icon: Icons.people,
@@ -89,6 +95,27 @@ class TopNavBar extends StatelessWidget {
             ],
           ),
         );
+      },
+    );
+  }
+
+  Widget _buildProfileSection(BuildContext context) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        if (state is AuthAuthenticated) {
+          return _buildNavButton(
+            context,
+            icon: Icons.person,
+            label: 'Profile',
+            color: AppColors.candyBlue,
+            darkColor: AppColors.candyBlueDark,
+            onPressed: () => showDialog(
+              context: context,
+              builder: (dialogContext) => ProfileModal(player: state.profile),
+            ),
+          );
+        }
+        return const SizedBox.shrink();
       },
     );
   }
@@ -228,14 +255,4 @@ class TopNavBar extends StatelessWidget {
       ],
     );
   }
-}
-
-class _StripedPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    // No longer used, but kept to avoid compilation errors if referenced
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

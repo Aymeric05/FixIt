@@ -1,8 +1,6 @@
-# Task List: Flexible Validation & Wall Obstacles
+# Task List: Synchronize Social Tab
 
-- [x] Update `GameState` to include a `walls` collection <!-- id: 0 -->
-- [x] Relax validation logic in `GameBloc` (accept any path with correct hint order) <!-- id: 1 -->
-- [x] Implement wall generation logic in `GameBloc` <!-- id: 2 -->
-- [x] Update `_onSelectCell` to enforce wall boundaries <!-- id: 3 -->
-- [x] Update `GamePage` to render thick black walls between cells <!-- id: 4 -->
-- [x] Verify that multiple solutions are accepted if they respect hint order <!-- id: 5 -->
+- [x] Update `SocialDialog` to use `AuthBloc` as source of truth for username <!-- id: 0 -->
+- [x] Connect `SocialDialog` username update to `ProfileRepository` with uniqueness check <!-- id: 1 -->
+- [x] Remove redundant `username` and `UpdateUsername` from `HomeBloc` <!-- id: 2 -->
+- [x] Verify synchronization across Home Screen, Social Tab, and Profile Modal <!-- id: 3 -->
