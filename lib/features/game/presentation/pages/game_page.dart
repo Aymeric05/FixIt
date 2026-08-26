@@ -7,31 +7,66 @@ import 'package:fixit/features/game/presentation/bloc/game_state.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'package:fixit/features/lives/presentation/bloc/lives_bloc.dart';
 import 'package:fixit/features/lives/presentation/bloc/lives_event.dart';
+import 'package:fixit/features/home/presentation/widgets/candy_dialog.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 
-class GamePage extends StatelessWidget {
+import 'package:fixit/core/theme/app_colors.dart';
+import 'package:confetti/confetti.dart';
+import 'package:fixit/core/widgets/tutorial_dialog.dart';
+
+class GamePage extends StatefulWidget {
   final int level;
   final GameDifficulty difficulty;
 
   const GamePage({super.key, required this.level, required this.difficulty});
 
   @override
+  State<GamePage> createState() => _GamePageState();
+}
+
+class _GamePageState extends State<GamePage> {
+  late ConfettiController _confettiController;
+
+  @override
+  void initState() {
+    super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+    
+    // Show tutorial if it's the first time
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      TutorialDialog.showIfFirstTime(
+        context,
+        title: 'HOW TO PLAY',
+        description: 'Connect all numbers in order (1, 2, 3...) to fill the entire grid!',
+        tutorialKey: 'snake_tutorial_seen',
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => GameBloc()..add(StartGame(level: level, difficulty: difficulty)),
-      child: BlocListener<GameBloc, GameState>(
-        listener: (context, state) {
-          if (state.status == GameStatus.lost) {
-            context.read<LivesBloc>().add(DecrementLife());
-            _showGameOverDialog(context);
-          } else if (state.status == GameStatus.won) {
-            context.read<HomeBloc>().add(CompleteLevel());
-            _showWinDialog(context);
-          }
-        },
-        child: Scaffold(
-          body: Stack(
+      create: (context) => GameBloc()..add(StartGame(level: widget.level, difficulty: widget.difficulty)),
+      child: Scaffold(
+        body: BlocListener<GameBloc, GameState>(
+          listenWhen: (previous, current) => previous.status != current.status,
+          listener: (context, state) {
+            if (state.status == GameStatus.lost) {
+              context.read<LivesBloc>().add(DecrementLife());
+              _showGameOverDialog(context);
+            } else if (state.status == GameStatus.won) {
+              _confettiController.play();
+              _showWinDialog(context, state);
+            }
+          },
+          child: Stack(
             children: [
               Positioned.fill(
                 child: Image.asset(
@@ -123,7 +158,7 @@ class GamePage extends StatelessWidget {
                       ),
                       alignment: Alignment.center,
                       child: Text(
-                        'LEVEL $level',
+                        'LEVEL ${widget.level}',
                         style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w900,
@@ -173,84 +208,93 @@ class GamePage extends StatelessWidget {
       builder: (context, state) {
         if (state.hints.isEmpty) return const SizedBox.shrink();
 
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 15)],
-          ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final cellSize = constraints.maxWidth / 6;
-
-              return GestureDetector(
-                onPanStart: (details) => _handleDrag(context, details.localPosition, cellSize),
-                onPanUpdate: (details) => _handleDrag(context, details.localPosition, cellSize),
-                child: Container(
-                  width: constraints.maxWidth,
-                  height: constraints.maxWidth,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    image: const DecorationImage(
-                      image: AssetImage('jeu_serpent_contour_pas_ouf.png'),
-                      fit: BoxFit.fill,
-                    ),
-                  ),
-                  child: Stack(
-                    children: [
-                      _buildGridLines(state, cellSize),
-                      CustomPaint(
-                        size: Size(constraints.maxWidth, constraints.maxWidth),
-                        painter: _BushWallPainter(walls: state.walls, cellSize: cellSize),
-                      ),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 6,
-                        ),
-                        itemCount: 36,
-                        itemBuilder: (context, index) {
-                          final row = index ~/ 6;
-                          final col = index % 6;
-                          final value = state.hints[row][col];
-                          return Container(
-                            alignment: Alignment.center,
-                            child: value != null
-                                ? Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Text(
-                                        '$value',
-                                        style: TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w900,
-                                          foreground: Paint()
-                                            ..style = PaintingStyle.stroke
-                                            ..strokeWidth = 3
-                                            ..color = Colors.white,
-                                        ),
-                                      ),
-                                      Text(
-                                        '$value',
-                                        style: TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w900,
-                                          color: value == 1 ? Colors.red.shade700 : const Color(0xFF3E2723),
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                : null,
-                          );
-                        },
-                      ),
-                      _buildSerpentHead(state, cellSize),
-                    ],
+        return AspectRatio(
+          aspectRatio: 1,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // The frame image - enlarged to touch screen edges
+              Positioned.fill(
+                child: Transform.scale(
+                  scale: 1.08,
+                  child: Image.asset(
+                    'jeu_serpent_contour_pas_ouf.png',
+                    fit: BoxFit.fill,
                   ),
                 ),
-              );
-            },
+              ),
+              // The Grid itself - slightly inset so it doesn't overlap the lianes
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final cellSize = constraints.maxWidth / 6;
+
+                    return GestureDetector(
+                      onPanStart: (details) => _handleDrag(context, details.localPosition, cellSize),
+                      onPanUpdate: (details) => _handleDrag(context, details.localPosition, cellSize),
+                      child: Container(
+                        width: constraints.maxWidth,
+                        height: constraints.maxWidth,
+                        color: Colors.transparent,
+                        child: Stack(
+                          children: [
+                            _buildGridLines(state, cellSize),
+                            CustomPaint(
+                              size: Size(constraints.maxWidth, constraints.maxWidth),
+                              painter: _WallPainter(walls: state.walls, cellSize: cellSize),
+                            ),
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 6,
+                              ),
+                              itemCount: 36,
+                              itemBuilder: (context, index) {
+                                final row = index ~/ 6;
+                                final col = index % 6;
+                                final value = state.hints[row][col];
+                                return Container(
+                                  alignment: Alignment.center,
+                                  child: value != null
+                                      ? Stack(
+                                          alignment: Alignment.center,
+                                          children: [
+                                            Text(
+                                              '$value',
+                                              style: TextStyle(
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.w900,
+                                                foreground: Paint()
+                                                  ..style = PaintingStyle.stroke
+                                                  ..strokeWidth = 3
+                                                  ..color = Colors.white,
+                                              ),
+                                            ),
+                                            Text(
+                                              '$value',
+                                              style: TextStyle(
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.w900,
+                                                color: value == 1 ? Colors.red.shade700 : const Color(0xFF3E2723),
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : null,
+                                );
+                              },
+                            ),
+                            _buildSerpentHead(state, cellSize),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -300,60 +344,250 @@ class GamePage extends StatelessWidget {
   }
 
   void _showGameOverDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const _GameOverDialog(),
-    );
-  }
-
-  void _showWinDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.transparent,
-        content: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: const Color(0xFFE8F5E9),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: Colors.green, width: 10),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+    Future.delayed(Duration.zero, () {
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => CandyDialog(
+          title: 'GAME OVER',
+          content: Column(
             children: [
+              const Icon(Icons.heart_broken, color: Colors.red, size: 80),
+              const SizedBox(height: 20),
               const Text(
-                'GREAT JOB!',
-                style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.green),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                "YOU SOLVED THE PUZZLE!",
+                "IT'S SO SAD... YOU DIDN'T SUCCEED!",
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.brown),
-              ),
-              const SizedBox(height: 32),
-              const Icon(Icons.star, color: Colors.amber, size: 100),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.candyGreen,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.candyPurple,
                 ),
+              ),
+              const SizedBox(height: 30),
+              CandyButton(
+                width: 200,
+                height: 60,
+                color: AppColors.candyPink,
+                darkColor: AppColors.candyPinkDark,
                 onPressed: () {
-                  Navigator.pop(context);
+                  Navigator.pop(dialogContext);
                   Navigator.pop(context);
                 },
-                child: const Text('CONTINUE', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+                child: const Text(
+                  'RETURN HOME',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+                ),
               ),
             ],
           ),
         ),
-      ),
-    );
+      );
+    });
+  }
+
+  void _showWinDialog(BuildContext context, GameState state) {
+    final timeTaken = state.initialSeconds - state.remainingSeconds;
+    final timeStr = "${(timeTaken / 60).floor()}:${(timeTaken % 60).toString().padLeft(2, '0')}";
+    
+    // Mock statistics data
+    const averageTimeSeconds = 65; 
+    const averageTimeStr = "1:05";
+    const bestTimeSeconds = 42; 
+    const bestTimeStr = "0:42";
+    
+    final isNewRecord = timeTaken < bestTimeSeconds;
+    final isFasterThanAverage = timeTaken < averageTimeSeconds;
+
+    Future.delayed(Duration.zero, () {
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => Stack(
+          alignment: Alignment.center,
+          children: [
+            CandyDialog(
+              title: 'VICTORY!',
+              onClose: () {
+                context.read<HomeBloc>().add(CompleteLevel());
+                Navigator.pop(dialogContext);
+                Navigator.pop(context);
+              },
+              content: Column(
+                children: [
+                  // Replacing the star with stats
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text(
+                          "YOUR TIME",
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.candyGreenDark),
+                        ),
+                        Text(
+                          timeStr,
+                          style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: AppColors.candyGreenDark),
+                        ),
+                        const Divider(color: Colors.white, height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Average Time:", style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(averageTimeStr, style: const TextStyle(fontWeight: FontWeight.w900)),
+                          ],
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Best Time:", style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(bestTimeStr, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.blue)),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        if (isNewRecord)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(10)),
+                            child: const Text("NEW WORLD RECORD!", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, fontSize: 12)),
+                          )
+                        else if (isFasterThanAverage)
+                          const Text(
+                            "You are faster than average!",
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.candyGreenDark),
+                          )
+                        else
+                          Text(
+                            "Average is ${timeTaken - averageTimeSeconds}s faster than you",
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.redAccent),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    "GREAT JOB! YOU SOLVED THE PUZZLE!",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.candyGreenDark,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      CandyButton(
+                        width: 140,
+                        height: 60,
+                        color: AppColors.candyPink,
+                        darkColor: AppColors.candyPinkDark,
+                        onPressed: () {
+                          context.read<HomeBloc>().add(CompleteLevel());
+                          Navigator.pop(dialogContext);
+                          Navigator.pop(context);
+                        },
+                        child: const Text(
+                          'HOME',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                        ),
+                      ),
+                      CandyButton(
+                        width: 140,
+                        height: 60,
+                        color: AppColors.candyGreen,
+                        darkColor: AppColors.candyGreenDark,
+                        onPressed: () {
+                          context.read<HomeBloc>().add(CompleteLevel());
+                          Navigator.pop(dialogContext);
+                          // We push a new game page for the next level
+                          final nextLevel = widget.level + 1;
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => GamePage(
+                                level: nextLevel,
+                                difficulty: widget.difficulty,
+                              ),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          'NEXT LEVEL',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Main Firework Burst (Center)
+            IgnorePointer(
+              child: ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirectionality: BlastDirectionality.explosive,
+                shouldLoop: false,
+                createParticlePath: drawFireworkSparkle, // Sparkle shape
+                colors: const [
+                  Colors.yellow,
+                  Colors.white,
+                  Colors.amber,
+                  Colors.orangeAccent,
+                ],
+                numberOfParticles: 8, // Very few particles
+                gravity: 0.1,
+                minBlastForce: 15, // High spread
+                maxBlastForce: 30,
+                blastDirection: 3.14 * 1.5,
+              ),
+            ),
+            // Spread-out burst Left
+            Positioned(
+              left: 30,
+              top: 150,
+              child: IgnorePointer(
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirectionality: BlastDirectionality.explosive,
+                  shouldLoop: false,
+                  createParticlePath: drawFireworkSparkle,
+                  numberOfParticles: 5,
+                  gravity: 0.1,
+                  minBlastForce: 10,
+                  maxBlastForce: 25,
+                  colors: const [Colors.lightBlueAccent, Colors.white],
+                ),
+              ),
+            ),
+            // Spread-out burst Right
+            Positioned(
+              right: 30,
+              top: 150,
+              child: IgnorePointer(
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirectionality: BlastDirectionality.explosive,
+                  shouldLoop: false,
+                  createParticlePath: drawFireworkSparkle,
+                  numberOfParticles: 5,
+                  gravity: 0.1,
+                  minBlastForce: 10,
+                  maxBlastForce: 25,
+                  colors: const [Colors.pinkAccent, Colors.white],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
   }
 }
 
@@ -429,16 +663,19 @@ class PathLinePainter extends CustomPainter {
   bool shouldRepaint(covariant PathLinePainter oldDelegate) => oldDelegate.path != path || oldDelegate.cellSize != cellSize || oldDelegate.color != color || oldDelegate.isAngry != isAngry;
 }
 
-class _BushWallPainter extends CustomPainter {
+class _WallPainter extends CustomPainter {
   final Set<String> walls;
   final double cellSize;
 
-  _BushWallPainter({required this.walls, required this.cellSize});
+  _WallPainter({required this.walls, required this.cellSize});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.green.shade900..style = PaintingStyle.fill;
-    final random = Random(42);
+    final paint = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+
     for (var wall in walls) {
       final parts = wall.split('-');
       final a = parts[0].split(',');
@@ -447,140 +684,47 @@ class _BushWallPainter extends CustomPainter {
       final c1 = int.parse(a[1]);
       final r2 = int.parse(b[0]);
       final c2 = int.parse(b[1]);
-      double x, y, w, h;
+
       if (r1 == r2) {
-        x = max(c1, c2) * cellSize - 4;
-        y = r1 * cellSize;
-        w = 8; h = cellSize;
+        // Vertical wall between columns
+        final x = max(c1, c2) * cellSize;
+        canvas.drawLine(
+          Offset(x, r1 * cellSize),
+          Offset(x, (r1 + 1) * cellSize),
+          paint,
+        );
       } else {
-        x = c1 * cellSize;
-        y = max(r1, r2) * cellSize - 4;
-        w = cellSize; h = 8;
-      }
-      int count = 12;
-      for (int i = 0; i < count; i++) {
-        double px = x + (w == 8 ? (random.nextDouble() - 0.5) * 15 : (i / count) * w);
-        double py = y + (h == 8 ? (random.nextDouble() - 0.5) * 15 : (i / count) * h);
-        canvas.drawCircle(Offset(px, py), 6 + random.nextDouble() * 4, paint);
-        if (random.nextDouble() < 0.3) canvas.drawCircle(Offset(px, py), 3, Paint()..color = Colors.green.shade400);
+        // Horizontal wall between rows
+        final y = max(r1, r2) * cellSize;
+        canvas.drawLine(
+          Offset(c1 * cellSize, y),
+          Offset((c1 + 1) * cellSize, y),
+          paint,
+        );
       }
     }
   }
 
   @override
-  bool shouldRepaint(covariant _BushWallPainter oldDelegate) => oldDelegate.walls != walls;
+  bool shouldRepaint(covariant _WallPainter oldDelegate) => oldDelegate.walls != walls;
 }
 
-class _GameOverDialog extends StatefulWidget {
-  const _GameOverDialog();
-
-  @override
-  State<_GameOverDialog> createState() => _GameOverDialogState();
+/// A thin sparkle path for firework sparks
+Path drawFireworkSparkle(Size size) {
+  final path = Path();
+  final double halfWidth = size.width / 2;
+  final double halfHeight = size.height / 2;
+  
+  // A very thin 4-pointed sparkle
+  path.moveTo(halfWidth, 0); // Top
+  path.lineTo(halfWidth + size.width * 0.05, halfHeight - size.height * 0.05);
+  path.lineTo(size.width, halfHeight); // Right
+  path.lineTo(halfWidth + size.width * 0.05, halfHeight + size.height * 0.05);
+  path.lineTo(halfWidth, size.height); // Bottom
+  path.lineTo(halfWidth - size.width * 0.05, halfHeight + size.height * 0.05);
+  path.lineTo(0, halfHeight); // Left
+  path.lineTo(halfWidth - size.width * 0.05, halfHeight - size.height * 0.05);
+  path.close();
+  return path;
 }
 
-class _GameOverDialogState extends State<_GameOverDialog> with TickerProviderStateMixin {
-  late AnimationController _controller;
-  bool _showFinal = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(duration: const Duration(seconds: 2), vsync: this);
-    _controller.forward();
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) setState(() => _showFinal = true);
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: Colors.transparent,
-      content: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF8E1),
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: AppColors.candyPink, width: 10),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('OH NO!', style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.brown)),
-            const SizedBox(height: 16),
-            const Text("IT'S SO SAD... YOU DIDN'T SUCCEED!", textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.brown)),
-            const SizedBox(height: 32),
-            SizedBox(
-              height: 140,
-              width: 140,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  if (!_showFinal)
-                    ScaleTransition(
-                      scale: TweenSequence([
-                        TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 1.2), weight: 30),
-                        TweenSequenceItem(tween: Tween<double>(begin: 1.2, end: 1.0), weight: 20),
-                        TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 0.0), weight: 50),
-                      ]).animate(_controller),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          const Icon(Icons.favorite, color: Colors.red, size: 120),
-                          const Text('5', style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900)),
-                          AnimatedBuilder(
-                            animation: _controller,
-                            builder: (context, child) {
-                              if (_controller.value > 0.5) return const Icon(Icons.heart_broken, color: Colors.black38, size: 130);
-                              return const SizedBox();
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (_showFinal)
-                    TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0.0, end: 1.0),
-                      duration: const Duration(milliseconds: 600),
-                      builder: (context, value, child) {
-                        return Transform.scale(
-                          scale: value,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              const Icon(Icons.favorite, color: Colors.red, size: 100),
-                              const Text('4', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.candyGreen,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              child: const Text('RETURN HOME', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

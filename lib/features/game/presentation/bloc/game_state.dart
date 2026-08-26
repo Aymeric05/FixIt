@@ -8,6 +8,7 @@ class GameState extends Equatable {
   final List<List<int?>> hints; // The pre-filled numbers (1 to N)
   final List<GridOffset> currentPath; // The user's current progress
   final int remainingSeconds;
+  final int initialSeconds; // Added to calculate time taken
   final GameStatus status;
   final List<GridOffset> solutionPath; // The generated 1-36 path
   final Map<GridOffset, int> hintSteps; // Map grid position to step index (0-35)
@@ -19,6 +20,7 @@ class GameState extends Equatable {
     this.hints = const [],
     this.currentPath = const [],
     this.remainingSeconds = 0,
+    this.initialSeconds = 0,
     this.status = GameStatus.initial,
     this.solutionPath = const [],
     this.hintSteps = const {},
@@ -31,6 +33,7 @@ class GameState extends Equatable {
     List<List<int?>>? hints,
     List<GridOffset>? currentPath,
     int? remainingSeconds,
+    int? initialSeconds,
     GameStatus? status,
     List<GridOffset>? solutionPath,
     Map<GridOffset, int>? hintSteps,
@@ -42,6 +45,7 @@ class GameState extends Equatable {
       hints: hints ?? this.hints,
       currentPath: currentPath ?? this.currentPath,
       remainingSeconds: remainingSeconds ?? this.remainingSeconds,
+      initialSeconds: initialSeconds ?? this.initialSeconds,
       status: status ?? this.status,
       solutionPath: solutionPath ?? this.solutionPath,
       hintSteps: hintSteps ?? this.hintSteps,
@@ -52,7 +56,7 @@ class GameState extends Equatable {
   }
 
   @override
-  List<Object> get props => [hints, currentPath, remainingSeconds, status, solutionPath, hintSteps, walls, pathColor, isAngry];
+  List<Object> get props => [hints, currentPath, remainingSeconds, initialSeconds, status, solutionPath, hintSteps, walls, pathColor, isAngry];
 }
 
 class GridOffset extends Equatable {

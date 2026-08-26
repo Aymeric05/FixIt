@@ -8,6 +8,8 @@ import 'features/lives/presentation/bloc/lives_event.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 
+import 'features/home/presentation/bloc/home_bloc.dart';
+
 void main() async {
   // Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +29,7 @@ class CandyPuzzleGame extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => LivesBloc()..add(LoadLives())),
+        BlocProvider(create: (context) => HomeBloc()..add(LoadHomeData())),
         BlocProvider(create: (context) => AuthBloc()..add(AuthCheckRequested())),
       ],
       child: MaterialApp(

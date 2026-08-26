@@ -6,12 +6,14 @@ class CandyDialog extends StatelessWidget {
   final String title;
   final Widget content;
   final List<Widget>? actions;
+  final VoidCallback? onClose;
 
   const CandyDialog({
     super.key,
     required this.title,
     required this.content,
     this.actions,
+    this.onClose,
   });
 
   @override
@@ -100,7 +102,7 @@ class CandyDialog extends StatelessWidget {
               depth: 4,
               color: Colors.redAccent,
               darkColor: Colors.red.shade900,
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: onClose ?? () => Navigator.of(context).pop(),
               child: const Icon(Icons.close, color: Colors.white, size: 30),
             ),
           ),

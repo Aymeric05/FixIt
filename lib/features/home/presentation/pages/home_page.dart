@@ -11,13 +11,39 @@ import 'package:fixit/features/auth/presentation/bloc/auth_state.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 
-class HomePage extends StatelessWidget {
+import 'package:fixit/core/theme/app_colors.dart';
+import 'package:fixit/core/widgets/candy_button.dart';
+import 'package:confetti/confetti.dart';
+
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  late ConfettiController _confettiController;
+
+  @override
+  void initState() {
+    super.initState();
+    _confettiController = ConfettiController(duration: const Duration(milliseconds: 800));
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
   @override
   Widget build(BuildContext context) {
     return MultiBlocListener(
       listeners: [
+        // Garde la gestion des erreurs Auth
         BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
             if (state is AuthFailure) {
@@ -28,6 +54,14 @@ class HomePage extends StatelessWidget {
                 ),
               );
             }
+          },
+        ),
+        // Garde la logique des confettis
+        BlocListener<HomeBloc, HomeState>(
+          listenWhen: (previous, current) => 
+              previous.levelsCompletedInWorld != current.levelsCompletedInWorld,
+          listener: (context, state) {
+            _confettiController.play();
           },
         ),
       ],
@@ -49,6 +83,12 @@ class HomePage extends StatelessWidget {
                           end: Alignment.bottomCenter,
                           colors: [Colors.lightBlue, Colors.green],
                         ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              // ... reste de ton Stack
                       ),
                     );
                   },
@@ -124,14 +164,54 @@ class HomePage extends StatelessWidget {
                               ],
                             ),
                           ),
-                        ],
-                      ),
-                    ],
-                  );
-                },
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+            // Confetti Overlay (More intense)
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirectionality: BlastDirectionality.explosive,
+                shouldLoop: false,
+                colors: const [
+                  Colors.green,
+                  Colors.blue,
+                  Colors.pink,
+                  Colors.orange,
+                  Colors.purple,
+                  Colors.yellow,
+                  Colors.red,
+                ],
+                numberOfParticles: 60, // Increased
+                gravity: 0.1,
               ),
-            ],
-          ),
+            ),
+            Align(
+              alignment: const Alignment(-0.8, -1.0),
+              child: ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirectionality: BlastDirectionality.explosive,
+                shouldLoop: false,
+                numberOfParticles: 20,
+                gravity: 0.1,
+              ),
+            ),
+            Align(
+              alignment: const Alignment(0.8, -1.0),
+              child: ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirectionality: BlastDirectionality.explosive,
+                shouldLoop: false,
+                numberOfParticles: 20,
+                gravity: 0.1,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -223,8 +303,8 @@ class _FloatingBuyButtonState extends State<_FloatingBuyButton>
         );
       },
       child: CandyButton(
-        width: 80,
-        height: 80,
+        width: 60,
+        height: 60,
         color: AppColors.candyPink,
         darkColor: AppColors.candyPinkDark,
         onPressed: () {
@@ -239,14 +319,14 @@ class _FloatingBuyButtonState extends State<_FloatingBuyButton>
         child: const Stack(
           alignment: Alignment.center,
           children: [
-            Icon(Icons.favorite, color: Colors.white, size: 40),
+            Icon(Icons.favorite, color: Colors.white, size: 30),
             Positioned(
               right: 0,
               bottom: 0,
               child: CircleAvatar(
-                radius: 12,
+                radius: 9,
                 backgroundColor: AppColors.candyGreen,
-                child: Icon(Icons.add, color: Colors.white, size: 18),
+                child: Icon(Icons.add, color: Colors.white, size: 14),
               ),
             ),
           ],
