@@ -14,10 +14,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       emit(state.copyWith(isLoading: false));
     });
 
-    on<UpdateUsername>((event, emit) {
-      emit(state.copyWith(username: event.username));
-    });
-
     on<ToggleMusic>((event, emit) {
       emit(state.copyWith(isMusicEnabled: !state.isMusicEnabled));
     });
