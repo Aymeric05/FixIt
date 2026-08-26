@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'package:flutter/material.dart';
+
 enum GameStatus { initial, playing, won, lost }
 
 class GameState extends Equatable {
@@ -10,6 +12,8 @@ class GameState extends Equatable {
   final List<GridOffset> solutionPath; // The generated 1-36 path
   final Map<GridOffset, int> hintSteps; // Map grid position to step index (0-35)
   final Set<String> walls; // "r1,c1-r2,c2" formatted strings for walls between adjacent cells
+  final Color pathColor;
+  final bool isAngry;
 
   const GameState({
     this.hints = const [],
@@ -19,6 +23,8 @@ class GameState extends Equatable {
     this.solutionPath = const [],
     this.hintSteps = const {},
     this.walls = const {},
+    this.pathColor = Colors.orange,
+    this.isAngry = false,
   });
 
   GameState copyWith({
@@ -29,6 +35,8 @@ class GameState extends Equatable {
     List<GridOffset>? solutionPath,
     Map<GridOffset, int>? hintSteps,
     Set<String>? walls,
+    Color? pathColor,
+    bool? isAngry,
   }) {
     return GameState(
       hints: hints ?? this.hints,
@@ -38,11 +46,13 @@ class GameState extends Equatable {
       solutionPath: solutionPath ?? this.solutionPath,
       hintSteps: hintSteps ?? this.hintSteps,
       walls: walls ?? this.walls,
+      pathColor: pathColor ?? this.pathColor,
+      isAngry: isAngry ?? this.isAngry,
     );
   }
 
   @override
-  List<Object> get props => [hints, currentPath, remainingSeconds, status, solutionPath, hintSteps, walls];
+  List<Object> get props => [hints, currentPath, remainingSeconds, status, solutionPath, hintSteps, walls, pathColor, isAngry];
 }
 
 class GridOffset extends Equatable {

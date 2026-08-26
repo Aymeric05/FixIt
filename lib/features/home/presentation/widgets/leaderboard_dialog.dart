@@ -25,9 +25,19 @@ class _LeaderboardDialogState extends State<LeaderboardDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildTabIndicator(0, 'GLOBAL'),
+                GestureDetector(
+                  onTap: () => _pageController.animateToPage(0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut),
+                  child: _buildTabIndicator(0, 'GLOBAL'),
+                ),
                 const SizedBox(width: 20),
-                _buildTabIndicator(1, 'WORLD 1'),
+                GestureDetector(
+                  onTap: () => _pageController.animateToPage(1,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut),
+                  child: _buildTabIndicator(1, 'WORLD 1'),
+                ),
               ],
             ),
             const SizedBox(height: 15),
@@ -39,13 +49,6 @@ class _LeaderboardDialogState extends State<LeaderboardDialog> {
                   _buildLeaderboardList('Global'),
                   _buildLeaderboardList('World 1'),
                 ],
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.only(top: 10),
-              child: Text(
-                'Slide to switch',
-                style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -80,13 +83,20 @@ class _LeaderboardDialogState extends State<LeaderboardDialog> {
   }
 
   Widget _buildLeaderboardList(String scope) {
-    final players = [
-      {'name': 'CandyKing', 'score': '1500', 'rank': 1},
-      {'name': 'PuzzlePro', 'score': '1420', 'rank': 2},
-      {'name': 'SweetTooth', 'score': '1380', 'rank': 3},
-      {'name': 'SugarRush', 'score': '1250', 'rank': 4},
-      {'name': 'CookieMonster', 'score': '1100', 'rank': 5},
-    ];
+    final List<Map<String, dynamic>> players = [];
+
+    if (players.isEmpty) {
+      return Center(
+        child: Text(
+          'NO RANKINGS YET',
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            color: Colors.grey.shade400,
+            fontSize: 16,
+          ),
+        ),
+      );
+    }
 
     return ListView.builder(
       itemCount: players.length,
