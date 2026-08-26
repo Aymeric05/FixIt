@@ -6,6 +6,8 @@ import 'package:fixit/features/home/presentation/widgets/top_nav_bar.dart';
 import 'package:fixit/features/home/presentation/widgets/main_play_button.dart';
 import 'package:fixit/features/home/presentation/widgets/lives_store_dialog.dart';
 import 'package:fixit/features/game/presentation/pages/game_page.dart';
+import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:fixit/features/auth/presentation/bloc/auth_state.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 
@@ -37,97 +39,130 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocListener<HomeBloc, HomeState>(
-        listenWhen: (previous, current) => 
-            previous.levelsCompletedInWorld != current.levelsCompletedInWorld,
-        listener: (context, state) {
-          // Play confetti when a level is completed
-          _confettiController.play();
-        },
-        child: Stack(
-          children: [
-            // Background Image with slight blur
-            Positioned.fill(
-              child: Image.asset(
-                'monde1_background.png',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.lightBlue, Colors.green],
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocListener(
+      listeners: [
+        // Garde la gestion des erreurs Auth
+        BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            if (state is AuthFailure) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Auth Error: ${state.message}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+        ),
+        // Garde la logique des confettis
+        BlocListener<HomeBloc, HomeState>(
+          listenWhen: (previous, current) => 
+              previous.levelsCompletedInWorld != current.levelsCompletedInWorld,
+          listener: (context, state) {
+            _confettiController.play();
+          },
+        ),
+      ],
+      child: BlocProvider(
+        create: (context) => HomeBloc()..add(LoadHomeData()),
+        child: Scaffold(
+          body: Stack(
+            children: [
+              // Background Image with slight blur
+              Positioned.fill(
+                child: Image.asset(
+                  'monde1_background.png',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.lightBlue, Colors.green],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 1.5, sigmaY: 1.5),
-                child: Container(color: Colors.transparent),
+              // ... reste de ton Stack
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
+              Positioned.fill(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 1.5, sigmaY: 1.5),
+                  child: Container(color: Colors.transparent),
+                ),
+              ),
 
-            // Main UI
-            BlocBuilder<HomeBloc, HomeState>(
-              builder: (context, state) {
-                if (state.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                return Stack(
-                  children: [
-                    Column(
-                      children: [
-                        const TopNavBar(),
-                        Expanded(
-                          child: Stack(
-                            children: [
-                              // Middle Section
-                              const Center(
-                                // Place for world elements
-                              ),
-                              
-                              // Bottom Section
-                              Align(
-                                alignment: Alignment.bottomCenter,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(bottom: 20.0),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          const SizedBox(width: 80), // Offset to keep Play button perfectly centered
-                                          MainPlayButton(
-                                            level: state.currentLevel,
-                                            onTap: () {
-                                              Navigator.of(context).push(
-                                                MaterialPageRoute(
-                                                  builder: (context) => GamePage(
-                                                    level: state.currentLevel,
-                                                    difficulty: state.difficulty,
-                                                  ),
-                                                ),
-                                              );
-                                            },
+              // Main UI
+              BlocBuilder<HomeBloc, HomeState>(
+                builder: (context, state) {
+                  if (state.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return Stack(
+                    children: [
+                      Column(
+                        children: [
+                          const TopNavBar(),
+                          Expanded(
+                            child: Stack(
+                              children: [
+                                // Middle Section
+                                const Center(
+                                  // Place for world elements
+                                ),
+                                
+                                // Bottom Section
+                                Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(bottom: 20.0),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        SizedBox(
+                                          width: double.infinity,
+                                          height: 100,
+                                          child: Stack(
+                                            alignment: Alignment.center,
+                                            children: [
+                                              MainPlayButton(
+                                                level: state.currentLevel,
+                                                onTap: () {
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute(
+                                                      builder: (context) => GamePage(
+                                                        level: state.currentLevel,
+                                                        difficulty: state.difficulty,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                              Positioned(
+                                                right: 20,
+                                                child: _FloatingBuyButton(),
+                                              ),
+                                            ],
                                           ),
-                                          const SizedBox(width: 20),
-                                          _FloatingBuyButton(),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 20),
-                                      _buildExperienceBar(state),
-                                      const SizedBox(height: 10),
-                                    ],
+                                        ),
+                                        const SizedBox(height: 30),
+                                        _buildExperienceBar(state),
+                                        const SizedBox(height: 10),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -189,7 +224,7 @@ class _HomePageState extends State<HomePage> {
       width: 320,
       height: 40,
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.3), // Transparent blue background
+        color: Colors.blue.withValues(alpha: 0.3), // Updated syntax for withOpacity
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white, width: 3),
         boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 8)],
@@ -207,7 +242,7 @@ class _HomePageState extends State<HomePage> {
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.yellow, // Solid yellow fill
-                    boxShadow: [BoxShadow(color: Colors.yellow.withOpacity(0.5), blurRadius: 6)],
+                    boxShadow: [BoxShadow(color: Colors.yellow.withValues(alpha: 0.5), blurRadius: 6)],
                   ),
                 ),
               ),
