@@ -62,6 +62,31 @@ class GlobalLevels extends Table {
   ];
 }
 
+class Friends extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get playerId => text()(); 
+  TextColumn get friendId => text()();
+  TextColumn get friendUsername => text()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {playerId, friendId}
+  ];
+}
+
+class FriendRequests extends Table {
+  TextColumn get id => text()(); // Supabase UUID
+  TextColumn get senderId => text()();
+  TextColumn get receiverId => text()();
+  TextColumn get senderUsername => text()();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+  DateTimeColumn get createdAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 class WorldListConverter extends TypeConverter<List<String>, String> {
   const WorldListConverter();
   @override
@@ -76,26 +101,27 @@ class WorldListConverter extends TypeConverter<List<String>, String> {
   }
 }
 
-@DriftDatabase(tables: [Players, Progressions, LevelCompletions, GlobalLevels])
+@DriftDatabase(tables: [Players, Progressions, LevelCompletions, GlobalLevels, Friends, FriendRequests])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2; // Increment version
+  int get schemaVersion => 3; // Increment version
 
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
       onUpgrade: (m, from, to) async {
         if (from < 2) {
-          // Add new columns to Players
           await m.addColumn(players, players.lives);
           await m.addColumn(players, players.hints);
           await m.addColumn(players, players.lastLifeLostAt);
-          
-          // Create new tables
           await m.createTable(levelCompletions);
           await m.createTable(globalLevels);
+        }
+        if (from < 3) {
+          await m.createTable(friends);
+          await m.createTable(friendRequests);
         }
       },
     );

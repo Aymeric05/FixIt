@@ -8,6 +8,8 @@ import 'package:fixit/features/home/presentation/widgets/lives_store_dialog.dart
 import 'package:fixit/features/game/presentation/pages/game_page.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_state.dart';
+import 'package:fixit/features/friends/presentation/bloc/friends_bloc.dart';
+import 'package:fixit/features/friends/presentation/bloc/friends_event.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:confetti/confetti.dart';
@@ -48,8 +50,9 @@ class _HomePageState extends State<HomePage> {
                 ),
               );
             } else if (state is AuthAuthenticated) {
-              // Reload home data when authenticated
+              // Reload home data and friends when authenticated
               context.read<HomeBloc>().add(LoadHomeData(playerId: state.user.id));
+              context.read<FriendsBloc>().add(LoadFriends(state.user.id));
             }
           },
         ),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'package:fixit/features/home/presentation/widgets/candy_dialog.dart';
 import 'package:fixit/core/theme/app_colors.dart';
+import 'package:fixit/core/services/database_service.dart';
 
 class SettingsDialog extends StatelessWidget {
   const SettingsDialog({super.key});
@@ -47,14 +49,8 @@ class SettingsDialog extends StatelessWidget {
                   );
                   if (confirm == true) {
                     await DatabaseService().hardReset();
-                    // Restart app or simply pop and show a snackbar?
-                    // Best is to pop and tell user to restart
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Data cleared. Please RESTART the app.')),
-                      );
-                    }
+                    // Close the app automatically
+                    await SystemChannels.platform.invokeMethod('SystemNavigator.pop');
                   }
                 },
                 child: const Text(

@@ -8,6 +8,7 @@ import 'package:fixit/features/lives/presentation/bloc/lives_event.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_event.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
+import 'package:fixit/features/friends/presentation/bloc/friends_bloc.dart';
 
 void main() async {
   // Ensure Flutter bindings are initialized
@@ -30,6 +31,7 @@ class CandyPuzzleGame extends StatelessWidget {
         BlocProvider(create: (context) => LivesBloc()..add(LoadLives())),
         BlocProvider(create: (context) => AuthBloc()..add(AuthCheckRequested())),
         BlocProvider(create: (context) => HomeBloc()..add(LoadHomeData())),
+        BlocProvider(create: (context) => FriendsBloc()),
       ],
       child: MaterialApp(
         title: 'Puzzle Quest',
