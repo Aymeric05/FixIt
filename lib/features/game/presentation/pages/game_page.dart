@@ -265,10 +265,7 @@ class _GamePageState extends State<GamePage> {
                         child: Stack(
                           children: [
                             _buildGridLines(state, cellSize),
-                            CustomPaint(
-                              size: Size(constraints.maxWidth, constraints.maxWidth),
-                              painter: _WallPainter(walls: state.walls, cellSize: cellSize),
-                            ),
+                            ..._buildWalls(state, cellSize),
                             GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
@@ -324,6 +321,59 @@ class _GamePageState extends State<GamePage> {
         );
       },
     );
+  }
+
+  List<Widget> _buildWalls(GameState state, double cellSize) {
+    final List<Widget> wallWidgets = [];
+    final thickness = cellSize * 0.75; // Much thicker
+    final length = cellSize * 1.2; // Slightly longer to overlap and look continuous
+    final offset = (length - cellSize) / 2;
+
+    for (var wall in state.walls) {
+      final parts = wall.split('-');
+      final a = parts[0].split(',');
+      final b = parts[1].split(',');
+      final r1 = int.parse(a[0]);
+      final c1 = int.parse(a[1]);
+      final r2 = int.parse(b[0]);
+      final c2 = int.parse(b[1]);
+
+      if (r1 == r2) {
+        // Vertical wall between columns
+        final x = max(c1, c2) * cellSize;
+        wallWidgets.add(
+          Positioned(
+            left: x - thickness / 2,
+            top: r1 * cellSize - offset,
+            width: thickness,
+            height: length,
+            child: RotatedBox(
+              quarterTurns: 1, // 90 degrees rotation
+              child: Image.asset(
+                'buisson.png',
+                fit: BoxFit.fill,
+              ),
+            ),
+          ),
+        );
+      } else {
+        // Horizontal wall between rows
+        final y = max(r1, r2) * cellSize;
+        wallWidgets.add(
+          Positioned(
+            left: c1 * cellSize - offset,
+            top: y - thickness / 2,
+            width: length,
+            height: thickness,
+            child: Image.asset(
+              'buisson.png',
+              fit: BoxFit.fill,
+            ),
+          ),
+        );
+      }
+    }
+    return wallWidgets;
   }
 
   Widget _buildSerpentHead(GameState state, double cellSize) {
