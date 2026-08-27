@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fixit/core/database/app_database.dart';
 
 class DatabaseService {
@@ -43,7 +44,12 @@ class DatabaseService {
     await db.customStatement('DELETE FROM progressions');
     await db.customStatement('DELETE FROM players');
     
-    // 3. Sign out from Supabase
+    // 3. Clear SharedPreferences (Tutorials, flags, etc.)
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    print('Local flags and tutorials cleared.');
+
+    // 4. Sign out from Supabase
     await supabase.auth.signOut();
   }
 }
