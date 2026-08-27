@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/candy_button.dart';
+import 'package:fixit/core/theme/app_colors.dart';
+import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:fixit/core/database/app_database.dart';
-import '../../../auth/presentation/bloc/auth_bloc.dart';
-import '../../../auth/presentation/bloc/auth_event.dart';
-import '../bloc/profile_bloc.dart';
-import '../bloc/profile_event.dart';
-import '../bloc/profile_state.dart';
+import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:fixit/features/auth/presentation/bloc/auth_state.dart';
+import 'package:fixit/features/auth/presentation/bloc/auth_event.dart';
+import 'package:fixit/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:fixit/features/profile/presentation/bloc/profile_event.dart';
+import 'package:fixit/features/profile/presentation/bloc/profile_state.dart';
 
 class ProfileModal extends StatefulWidget {
   final Player player;
@@ -45,7 +46,7 @@ class _ProfileModalState extends State<ProfileModal> {
             if (state is ProfileUpdated) {
               setState(() => _isEditing = false);
               // Refresh Auth state to update the header
-              context.read<AuthBloc>().add(AuthCheckRequested());
+              context.read<AuthBloc>().add(RefreshProfileRequested());
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Nickname updated!')),
               );
@@ -94,7 +95,7 @@ class _ProfileModalState extends State<ProfileModal> {
       width: 80,
       height: 80,
       decoration: BoxDecoration(
-        color: AppColors.candyBlue.withOpacity(0.2),
+        color: AppColors.candyBlue.withValues(alpha: 0.2),
         shape: BoxShape.circle,
         border: Border.all(color: AppColors.candyBlue, width: 3),
       ),
@@ -103,56 +104,65 @@ class _ProfileModalState extends State<ProfileModal> {
   }
 
   Widget _buildNicknameSection() {
-    return BlocBuilder<ProfileBloc, ProfileState>(
-      builder: (context, state) {
-        if (_isEditing) {
-          return Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _nicknameController,
-                  autofocus: true,
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(vertical: 8),
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.check, color: Colors.green),
-                onPressed: () {
-                  context.read<ProfileBloc>().add(
-                    UpdateNicknameRequested(_nicknameController.text),
-                  );
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.red),
-                onPressed: () => setState(() => _isEditing = false),
-              ),
-            ],
-          );
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, authState) {
+        String currentUsername = widget.player.username;
+        if (authState is AuthAuthenticated) {
+          currentUsername = authState.profile.username;
         }
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Flexible(
-              child: Text(
-                'Nickname: ${widget.player.username}',
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.dialogTitle,
+        return BlocBuilder<ProfileBloc, ProfileState>(
+          builder: (context, state) {
+            if (_isEditing) {
+              return Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _nicknameController,
+                      autofocus: true,
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(vertical: 8),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.check, color: Colors.green),
+                    onPressed: () {
+                      context.read<ProfileBloc>().add(
+                            UpdateNicknameRequested(_nicknameController.text),
+                          );
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.red),
+                    onPressed: () => setState(() => _isEditing = false),
+                  ),
+                ],
+              );
+            }
+
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Text(
+                    'Pseudo: $currentUsername',
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.dialogTitle,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.edit, size: 20),
-              onPressed: () => setState(() => _isEditing = true),
-            ),
-          ],
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 20),
+                  onPressed: () => setState(() => _isEditing = true),
+                ),
+              ],
+            );
+          },
         );
       },
     );

@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../lives/presentation/bloc/lives_bloc.dart';
-import '../../../lives/presentation/bloc/lives_state.dart';
-import '../../../auth/presentation/bloc/auth_bloc.dart';
-import '../../../auth/presentation/bloc/auth_state.dart';
-import '../../../profile/presentation/widgets/profile_modal.dart';
-import '../bloc/home_bloc.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/candy_button.dart';
-import '../../../../core/widgets/candy_icons.dart';
-import 'settings_dialog.dart';
-import 'social_dialog.dart';
-import 'no_ads_dialog.dart';
-import 'lives_store_dialog.dart';
-import 'leaderboard_dialog.dart';
-import 'map_dialog.dart';
+import 'package:fixit/features/lives/presentation/bloc/lives_bloc.dart';
+import 'package:fixit/features/lives/presentation/bloc/lives_state.dart';
+import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:fixit/features/auth/presentation/bloc/auth_state.dart';
+import 'package:fixit/features/profile/presentation/widgets/profile_modal.dart';
+import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
+import 'package:fixit/core/theme/app_colors.dart';
+import 'package:fixit/core/widgets/candy_button.dart';
+import 'package:fixit/core/widgets/candy_icons.dart';
+import 'package:fixit/features/home/presentation/widgets/settings_dialog.dart';
+import 'package:fixit/features/home/presentation/widgets/social_dialog.dart';
+import 'package:fixit/features/home/presentation/widgets/no_ads_dialog.dart';
+import 'package:fixit/features/home/presentation/widgets/lives_store_dialog.dart';
+import 'package:fixit/features/home/presentation/widgets/leaderboard_dialog.dart';
+import 'package:fixit/features/home/presentation/widgets/map_dialog.dart';
 
 class TopNavBar extends StatelessWidget {
   const TopNavBar({super.key});
@@ -66,8 +66,15 @@ class TopNavBar extends StatelessWidget {
                 ],
               ),
 
-              // Center: Juicy Heart
-              _buildJuicyHeart(context, state),
+              // Center: Juicy Heart & Hints
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildJuicyHeart(context, state),
+                  const SizedBox(width: 15),
+                  _buildHintIndicator(context, state),
+                ],
+              ),
 
               // Right side: No Ads & Settings
               Column(
@@ -117,6 +124,43 @@ class TopNavBar extends StatelessWidget {
         }
         return const SizedBox.shrink();
       },
+    );
+  }
+
+  Widget _buildHintIndicator(BuildContext context, HomeState state) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            const Icon(Icons.lightbulb, color: Colors.black26, size: 74),
+            ShaderMask(
+              shaderCallback: (bounds) => const RadialGradient(
+                center: Alignment(-0.3, -0.3),
+                colors: [Colors.white, Colors.amber, Color(0xFFB8860B)],
+                radius: 0.8,
+              ).createShader(bounds),
+              child: const Icon(Icons.lightbulb, color: Colors.white, size: 70),
+            ),
+            Text(
+              '${state.hints}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 24,
+                shadows: [Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(2, 2))],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        const Text(
+          'HINTS',
+          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900),
+        ),
+      ],
     );
   }
 

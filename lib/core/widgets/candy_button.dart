@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import 'package:fixit/core/theme/app_colors.dart';
 
 class CandyButton extends StatefulWidget {
   final Widget child;
@@ -63,7 +63,7 @@ class _CandyButtonState extends State<CandyButton> {
                 height: widget.height,
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
-                    colors: [widget.color.withOpacity(0.8), widget.color],
+                    colors: [widget.color.withValues(alpha: 0.8), widget.color],
                     center: const Alignment(-0.3, -0.3),
                     radius: 0.8,
                   ),
@@ -81,7 +81,7 @@ class _CandyButtonState extends State<CandyButton> {
                         width: widget.width * 0.4,
                         height: widget.height * 0.15,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.4),
+                          color: Colors.white.withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(widget.borderRadius),
                         ),
                       ),

@@ -1,27 +1,39 @@
-# Walkthrough: Unified Identity & Social Tab Sync
+# Walkthrough: Full Game Reset for Testing
 
-I have synchronized the "Social" tab with the new profile system, ensuring that your real identity (e.g., **Guest#XXXX**) is consistent across the entire application and that all identity management follows the same business rules.
+I have provided both manual and automated ways to reset the game data so you can test as a brand-new player.
 
-## Key Accomplishments
+## 🛠️ How to Reset
 
-### 🔗 Social Tab Synchronization
-- **Real Pseudo Visibility**: The "Social" tab now correctly displays your auto-generated `Guest#XXXX` nickname instead of the old placeholder.
-- **Unified Logic**: Updating your nickname in the "Social" tab now uses the same robust `ProfileRepository` as the "Profile" modal, including the **uniqueness check** against other players in Supabase.
-- **Global UI Refresh**: When you change your nickname in the "Social" tab, the Home Screen header and the "Profile" modal update instantly.
+### 1. Remote Reset (Supabase)
+To clear all player data from the cloud, run this in your **Supabase SQL Editor**:
+```sql
+TRUNCATE TABLE public.level_completions CASCADE;
+TRUNCATE TABLE public.progression CASCADE;
+TRUNCATE TABLE public.profiles CASCADE;
+```
+> [!NOTE]
+> This deletes all players, their progress, and their records. The levels themselves (in `global_levels`) will remain unless you truncate that table too.
 
-### 🧹 State Cleanup
-- **Removed Redundancy**: Deleted the old, separate `username` and `UpdateUsername` logic from `HomeBloc`.
-- **Single Source of Truth**: All identity data is now managed exclusively through the `AuthBloc` (which holds the `Player` profile) and the `ProfileRepository`.
+### 2. Local Reset (In-App)
+I've added a "Hidden" developer button to make testing easier:
+1. Open the **Settings** (⚙️) on the Home Screen.
+2. At the bottom, you'll see a red button: **DEBUG: RESET ALL DATA**.
+3. Click it and confirm.
+4. **Restart the app**.
 
-## Technical Details
+### 3. Native Reset (Android)
+Alternatively, you can use the standard Android way:
+1. Long press the app icon on your device.
+2. Go to **App Info** > **Storage & Cache**.
+3. Click **Clear Storage** (or Clear Data).
 
-- **`SocialDialog`**: Refactored to use `AuthBloc` for its initial state and handle updates through the shared profile service. Added a loading indicator and error handling for taken usernames.
-- **`HomeState` & `HomeBloc`**: Cleaned up to remove the legacy identity fields.
-- **Improved Imports**: Standardized all package imports to prevent build issues across different environments.
+## Changes Made
+
+### Logic
+- **`DatabaseService`**: Added `hardReset()` which wipes all local Drift tables and logs out of Supabase Auth.
+- **`SettingsDialog`**: Added the UI trigger for the hard reset flow with a confirmation dialog.
 
 ## Verification
-
-1. **Check Identity**: Open the **Social** tab. You should immediately see your `Guest#XXXX` name.
-2. **Test Updates**: Change your name in the Social tab. Observe the "Username updated successfully!" message and verify the Home Screen header reflects the change.
-3. **Cross-Tab Consistency**: Change your name in the **Profile** modal (top-left icon) and then check the **Social** tab; it will stay perfectly in sync.
-4. **Error Validation**: Try to change your name to one that is already taken. You will see a clear error message and your previous name will be restored.
+1. **Trigger Reset**: Use the button in Settings.
+2. **Restart**: Close and reopen the app.
+3. **Confirm**: You should see a new Guest ID (e.g., `Guest#5678`) and the Play button should show **LEVEL 1**.

@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:drift/drift.dart';
-import '../database/app_database.dart';
-import '../services/database_service.dart';
+import 'package:fixit/core/database/app_database.dart';
+import 'package:fixit/core/services/database_service.dart';
 
 class ProfileRepository {
   final _supabase = DatabaseService().supabase;
@@ -36,9 +36,16 @@ class ProfileRepository {
     final randomDigits = Random().nextInt(9000) + 1000;
     final defaultUsername = 'Guest#$randomDigits';
 
-    await _supabase.from('profiles').insert({
+    // Ensure profile exists on Supabase
+    await _supabase.from('profiles').upsert({
       'id': supabaseId,
       'username': defaultUsername,
+    });
+
+    // Ensure progression exists on Supabase
+    await _supabase.from('progression').upsert({
+      'player_id': supabaseId,
+      'current_level': 1,
     });
 
     final companion = PlayersCompanion.insert(
@@ -47,7 +54,15 @@ class ProfileRepository {
       updatedAt: Value(DateTime.now()),
     );
 
-    final id = await _db.into(_db.players).insert(companion);
+    final id = await _db.into(_db.players).insertOnConflictUpdate(companion);
+    
+    // Ensure progression exists on Drift
+    await _db.into(_db.progressions).insertOnConflictUpdate(ProgressionsCompanion.insert(
+      playerSupabaseId: Value(supabaseId),
+      currentLevel: const Value(1),
+      unlockedWorlds: const ['world_1'],
+    ));
+
     return (await (_db.select(_db.players)..where((t) => t.id.equals(id))).getSingle());
   }
 

@@ -25,11 +25,20 @@ late final GeneratedColumn<int> totalGamesPlayed = GeneratedColumn<int>('total_g
 static const VerificationMeta _highscoreMeta = const VerificationMeta('highscore');
 @override
 late final GeneratedColumn<int> highscore = GeneratedColumn<int>('highscore', aliasedName, false, type: DriftSqlType.int, requiredDuringInsert: false, defaultValue: const Constant(0));
+static const VerificationMeta _livesMeta = const VerificationMeta('lives');
+@override
+late final GeneratedColumn<int> lives = GeneratedColumn<int>('lives', aliasedName, false, type: DriftSqlType.int, requiredDuringInsert: false, defaultValue: const Constant(5));
+static const VerificationMeta _hintsMeta = const VerificationMeta('hints');
+@override
+late final GeneratedColumn<int> hints = GeneratedColumn<int>('hints', aliasedName, false, type: DriftSqlType.int, requiredDuringInsert: false, defaultValue: const Constant(10));
+static const VerificationMeta _lastLifeLostAtMeta = const VerificationMeta('lastLifeLostAt');
+@override
+late final GeneratedColumn<DateTime> lastLifeLostAt = GeneratedColumn<DateTime>('last_life_lost_at', aliasedName, true, type: DriftSqlType.dateTime, requiredDuringInsert: false);
 static const VerificationMeta _updatedAtMeta = const VerificationMeta('updatedAt');
 @override
 late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>('updated_at', aliasedName, true, type: DriftSqlType.dateTime, requiredDuringInsert: false);
 @override
-List<GeneratedColumn> get $columns => [id, supabaseId, username, avatarUrl, totalGamesPlayed, highscore, updatedAt];
+List<GeneratedColumn> get $columns => [id, supabaseId, username, avatarUrl, totalGamesPlayed, highscore, lives, hints, lastLifeLostAt, updatedAt];
 @override
 String get aliasedName => _alias ?? actualTableName;
 @override
@@ -48,13 +57,16 @@ context.missing(_usernameMeta);
 if (data.containsKey('avatar_url')) {
 context.handle(_avatarUrlMeta, avatarUrl.isAcceptableOrUnknown(data['avatar_url']!, _avatarUrlMeta));}if (data.containsKey('total_games_played')) {
 context.handle(_totalGamesPlayedMeta, totalGamesPlayed.isAcceptableOrUnknown(data['total_games_played']!, _totalGamesPlayedMeta));}if (data.containsKey('highscore')) {
-context.handle(_highscoreMeta, highscore.isAcceptableOrUnknown(data['highscore']!, _highscoreMeta));}if (data.containsKey('updated_at')) {
+context.handle(_highscoreMeta, highscore.isAcceptableOrUnknown(data['highscore']!, _highscoreMeta));}if (data.containsKey('lives')) {
+context.handle(_livesMeta, lives.isAcceptableOrUnknown(data['lives']!, _livesMeta));}if (data.containsKey('hints')) {
+context.handle(_hintsMeta, hints.isAcceptableOrUnknown(data['hints']!, _hintsMeta));}if (data.containsKey('last_life_lost_at')) {
+context.handle(_lastLifeLostAtMeta, lastLifeLostAt.isAcceptableOrUnknown(data['last_life_lost_at']!, _lastLifeLostAtMeta));}if (data.containsKey('updated_at')) {
 context.handle(_updatedAtMeta, updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));}return context;
 }
 @override
 Set<GeneratedColumn> get $primaryKey => {id};
 @override Player map(Map<String, dynamic> data, {String? tablePrefix})  {
-final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';return Player(id: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}id'])!, supabaseId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}supabase_id']), username: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}username'])!, avatarUrl: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}avatar_url']), totalGamesPlayed: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}total_games_played'])!, highscore: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}highscore'])!, updatedAt: attachedDatabase.typeMapping.read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']), );
+final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';return Player(id: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}id'])!, supabaseId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}supabase_id']), username: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}username'])!, avatarUrl: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}avatar_url']), totalGamesPlayed: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}total_games_played'])!, highscore: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}highscore'])!, lives: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}lives'])!, hints: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}hints'])!, lastLifeLostAt: attachedDatabase.typeMapping.read(DriftSqlType.dateTime, data['${effectivePrefix}last_life_lost_at']), updatedAt: attachedDatabase.typeMapping.read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']), );
 }
 @override
 $PlayersTable createAlias(String alias) {
@@ -66,8 +78,11 @@ final String username;
 final String? avatarUrl;
 final int totalGamesPlayed;
 final int highscore;
+final int lives;
+final int hints;
+final DateTime? lastLifeLostAt;
 final DateTime? updatedAt;
-const Player({required this.id, this.supabaseId, required this.username, this.avatarUrl, required this.totalGamesPlayed, required this.highscore, this.updatedAt});@override
+const Player({required this.id, this.supabaseId, required this.username, this.avatarUrl, required this.totalGamesPlayed, required this.highscore, required this.lives, required this.hints, this.lastLifeLostAt, this.updatedAt});@override
 Map<String, Expression> toColumns(bool nullToAbsent) {
 final map = <String, Expression> {};map['id'] = Variable<int>(id);
 if (!nullToAbsent || supabaseId != null){map['supabase_id'] = Variable<String>(supabaseId);
@@ -75,27 +90,30 @@ if (!nullToAbsent || supabaseId != null){map['supabase_id'] = Variable<String>(s
 if (!nullToAbsent || avatarUrl != null){map['avatar_url'] = Variable<String>(avatarUrl);
 }map['total_games_played'] = Variable<int>(totalGamesPlayed);
 map['highscore'] = Variable<int>(highscore);
-if (!nullToAbsent || updatedAt != null){map['updated_at'] = Variable<DateTime>(updatedAt);
+map['lives'] = Variable<int>(lives);
+map['hints'] = Variable<int>(hints);
+if (!nullToAbsent || lastLifeLostAt != null){map['last_life_lost_at'] = Variable<DateTime>(lastLifeLostAt);
+}if (!nullToAbsent || updatedAt != null){map['updated_at'] = Variable<DateTime>(updatedAt);
 }return map; 
 }
 PlayersCompanion toCompanion(bool nullToAbsent) {
-return PlayersCompanion(id: Value(id),supabaseId: supabaseId == null && nullToAbsent ? const Value.absent() : Value(supabaseId),username: Value(username),avatarUrl: avatarUrl == null && nullToAbsent ? const Value.absent() : Value(avatarUrl),totalGamesPlayed: Value(totalGamesPlayed),highscore: Value(highscore),updatedAt: updatedAt == null && nullToAbsent ? const Value.absent() : Value(updatedAt),);
+return PlayersCompanion(id: Value(id),supabaseId: supabaseId == null && nullToAbsent ? const Value.absent() : Value(supabaseId),username: Value(username),avatarUrl: avatarUrl == null && nullToAbsent ? const Value.absent() : Value(avatarUrl),totalGamesPlayed: Value(totalGamesPlayed),highscore: Value(highscore),lives: Value(lives),hints: Value(hints),lastLifeLostAt: lastLifeLostAt == null && nullToAbsent ? const Value.absent() : Value(lastLifeLostAt),updatedAt: updatedAt == null && nullToAbsent ? const Value.absent() : Value(updatedAt),);
 }
 factory Player.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
 serializer ??= driftRuntimeOptions.defaultSerializer;
-return Player(id: serializer.fromJson<int>(json['id']),supabaseId: serializer.fromJson<String?>(json['supabaseId']),username: serializer.fromJson<String>(json['username']),avatarUrl: serializer.fromJson<String?>(json['avatarUrl']),totalGamesPlayed: serializer.fromJson<int>(json['totalGamesPlayed']),highscore: serializer.fromJson<int>(json['highscore']),updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),);}
+return Player(id: serializer.fromJson<int>(json['id']),supabaseId: serializer.fromJson<String?>(json['supabaseId']),username: serializer.fromJson<String>(json['username']),avatarUrl: serializer.fromJson<String?>(json['avatarUrl']),totalGamesPlayed: serializer.fromJson<int>(json['totalGamesPlayed']),highscore: serializer.fromJson<int>(json['highscore']),lives: serializer.fromJson<int>(json['lives']),hints: serializer.fromJson<int>(json['hints']),lastLifeLostAt: serializer.fromJson<DateTime?>(json['lastLifeLostAt']),updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),);}
 @override Map<String, dynamic> toJson({ValueSerializer? serializer}) {
 serializer ??= driftRuntimeOptions.defaultSerializer;
 return <String, dynamic>{
-'id': serializer.toJson<int>(id),'supabaseId': serializer.toJson<String?>(supabaseId),'username': serializer.toJson<String>(username),'avatarUrl': serializer.toJson<String?>(avatarUrl),'totalGamesPlayed': serializer.toJson<int>(totalGamesPlayed),'highscore': serializer.toJson<int>(highscore),'updatedAt': serializer.toJson<DateTime?>(updatedAt),};}Player copyWith({int? id,Value<String?> supabaseId = const Value.absent(),String? username,Value<String?> avatarUrl = const Value.absent(),int? totalGamesPlayed,int? highscore,Value<DateTime?> updatedAt = const Value.absent()}) => Player(id: id ?? this.id,supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,username: username ?? this.username,avatarUrl: avatarUrl.present ? avatarUrl.value : this.avatarUrl,totalGamesPlayed: totalGamesPlayed ?? this.totalGamesPlayed,highscore: highscore ?? this.highscore,updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,);Player copyWithCompanion(PlayersCompanion data) {
+'id': serializer.toJson<int>(id),'supabaseId': serializer.toJson<String?>(supabaseId),'username': serializer.toJson<String>(username),'avatarUrl': serializer.toJson<String?>(avatarUrl),'totalGamesPlayed': serializer.toJson<int>(totalGamesPlayed),'highscore': serializer.toJson<int>(highscore),'lives': serializer.toJson<int>(lives),'hints': serializer.toJson<int>(hints),'lastLifeLostAt': serializer.toJson<DateTime?>(lastLifeLostAt),'updatedAt': serializer.toJson<DateTime?>(updatedAt),};}Player copyWith({int? id,Value<String?> supabaseId = const Value.absent(),String? username,Value<String?> avatarUrl = const Value.absent(),int? totalGamesPlayed,int? highscore,int? lives,int? hints,Value<DateTime?> lastLifeLostAt = const Value.absent(),Value<DateTime?> updatedAt = const Value.absent()}) => Player(id: id ?? this.id,supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,username: username ?? this.username,avatarUrl: avatarUrl.present ? avatarUrl.value : this.avatarUrl,totalGamesPlayed: totalGamesPlayed ?? this.totalGamesPlayed,highscore: highscore ?? this.highscore,lives: lives ?? this.lives,hints: hints ?? this.hints,lastLifeLostAt: lastLifeLostAt.present ? lastLifeLostAt.value : this.lastLifeLostAt,updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,);Player copyWithCompanion(PlayersCompanion data) {
 return Player(
-id: data.id.present ? data.id.value : this.id,supabaseId: data.supabaseId.present ? data.supabaseId.value : this.supabaseId,username: data.username.present ? data.username.value : this.username,avatarUrl: data.avatarUrl.present ? data.avatarUrl.value : this.avatarUrl,totalGamesPlayed: data.totalGamesPlayed.present ? data.totalGamesPlayed.value : this.totalGamesPlayed,highscore: data.highscore.present ? data.highscore.value : this.highscore,updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,);
+id: data.id.present ? data.id.value : this.id,supabaseId: data.supabaseId.present ? data.supabaseId.value : this.supabaseId,username: data.username.present ? data.username.value : this.username,avatarUrl: data.avatarUrl.present ? data.avatarUrl.value : this.avatarUrl,totalGamesPlayed: data.totalGamesPlayed.present ? data.totalGamesPlayed.value : this.totalGamesPlayed,highscore: data.highscore.present ? data.highscore.value : this.highscore,lives: data.lives.present ? data.lives.value : this.lives,hints: data.hints.present ? data.hints.value : this.hints,lastLifeLostAt: data.lastLifeLostAt.present ? data.lastLifeLostAt.value : this.lastLifeLostAt,updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,);
 }
 @override
-String toString() {return (StringBuffer('Player(')..write('id: $id, ')..write('supabaseId: $supabaseId, ')..write('username: $username, ')..write('avatarUrl: $avatarUrl, ')..write('totalGamesPlayed: $totalGamesPlayed, ')..write('highscore: $highscore, ')..write('updatedAt: $updatedAt')..write(')')).toString();}
+String toString() {return (StringBuffer('Player(')..write('id: $id, ')..write('supabaseId: $supabaseId, ')..write('username: $username, ')..write('avatarUrl: $avatarUrl, ')..write('totalGamesPlayed: $totalGamesPlayed, ')..write('highscore: $highscore, ')..write('lives: $lives, ')..write('hints: $hints, ')..write('lastLifeLostAt: $lastLifeLostAt, ')..write('updatedAt: $updatedAt')..write(')')).toString();}
 @override
- int get hashCode => Object.hash(id, supabaseId, username, avatarUrl, totalGamesPlayed, highscore, updatedAt);@override
-bool operator ==(Object other) => identical(this, other) || (other is Player && other.id == this.id && other.supabaseId == this.supabaseId && other.username == this.username && other.avatarUrl == this.avatarUrl && other.totalGamesPlayed == this.totalGamesPlayed && other.highscore == this.highscore && other.updatedAt == this.updatedAt);
+ int get hashCode => Object.hash(id, supabaseId, username, avatarUrl, totalGamesPlayed, highscore, lives, hints, lastLifeLostAt, updatedAt);@override
+bool operator ==(Object other) => identical(this, other) || (other is Player && other.id == this.id && other.supabaseId == this.supabaseId && other.username == this.username && other.avatarUrl == this.avatarUrl && other.totalGamesPlayed == this.totalGamesPlayed && other.highscore == this.highscore && other.lives == this.lives && other.hints == this.hints && other.lastLifeLostAt == this.lastLifeLostAt && other.updatedAt == this.updatedAt);
 }class PlayersCompanion extends UpdateCompanion<Player> {
 final Value<int> id;
 final Value<String?> supabaseId;
@@ -103,20 +121,26 @@ final Value<String> username;
 final Value<String?> avatarUrl;
 final Value<int> totalGamesPlayed;
 final Value<int> highscore;
+final Value<int> lives;
+final Value<int> hints;
+final Value<DateTime?> lastLifeLostAt;
 final Value<DateTime?> updatedAt;
-const PlayersCompanion({this.id = const Value.absent(),this.supabaseId = const Value.absent(),this.username = const Value.absent(),this.avatarUrl = const Value.absent(),this.totalGamesPlayed = const Value.absent(),this.highscore = const Value.absent(),this.updatedAt = const Value.absent(),});
-PlayersCompanion.insert({this.id = const Value.absent(),this.supabaseId = const Value.absent(),required String username,this.avatarUrl = const Value.absent(),this.totalGamesPlayed = const Value.absent(),this.highscore = const Value.absent(),this.updatedAt = const Value.absent(),}): username = Value(username);
+const PlayersCompanion({this.id = const Value.absent(),this.supabaseId = const Value.absent(),this.username = const Value.absent(),this.avatarUrl = const Value.absent(),this.totalGamesPlayed = const Value.absent(),this.highscore = const Value.absent(),this.lives = const Value.absent(),this.hints = const Value.absent(),this.lastLifeLostAt = const Value.absent(),this.updatedAt = const Value.absent(),});
+PlayersCompanion.insert({this.id = const Value.absent(),this.supabaseId = const Value.absent(),required String username,this.avatarUrl = const Value.absent(),this.totalGamesPlayed = const Value.absent(),this.highscore = const Value.absent(),this.lives = const Value.absent(),this.hints = const Value.absent(),this.lastLifeLostAt = const Value.absent(),this.updatedAt = const Value.absent(),}): username = Value(username);
 static Insertable<Player> custom({Expression<int>? id, 
 Expression<String>? supabaseId, 
 Expression<String>? username, 
 Expression<String>? avatarUrl, 
 Expression<int>? totalGamesPlayed, 
 Expression<int>? highscore, 
+Expression<int>? lives, 
+Expression<int>? hints, 
+Expression<DateTime>? lastLifeLostAt, 
 Expression<DateTime>? updatedAt, 
 }) {
-return RawValuesInsertable({if (id != null)'id': id,if (supabaseId != null)'supabase_id': supabaseId,if (username != null)'username': username,if (avatarUrl != null)'avatar_url': avatarUrl,if (totalGamesPlayed != null)'total_games_played': totalGamesPlayed,if (highscore != null)'highscore': highscore,if (updatedAt != null)'updated_at': updatedAt,});
-}PlayersCompanion copyWith({Value<int>? id, Value<String?>? supabaseId, Value<String>? username, Value<String?>? avatarUrl, Value<int>? totalGamesPlayed, Value<int>? highscore, Value<DateTime?>? updatedAt}) {
-return PlayersCompanion(id: id ?? this.id,supabaseId: supabaseId ?? this.supabaseId,username: username ?? this.username,avatarUrl: avatarUrl ?? this.avatarUrl,totalGamesPlayed: totalGamesPlayed ?? this.totalGamesPlayed,highscore: highscore ?? this.highscore,updatedAt: updatedAt ?? this.updatedAt,);
+return RawValuesInsertable({if (id != null)'id': id,if (supabaseId != null)'supabase_id': supabaseId,if (username != null)'username': username,if (avatarUrl != null)'avatar_url': avatarUrl,if (totalGamesPlayed != null)'total_games_played': totalGamesPlayed,if (highscore != null)'highscore': highscore,if (lives != null)'lives': lives,if (hints != null)'hints': hints,if (lastLifeLostAt != null)'last_life_lost_at': lastLifeLostAt,if (updatedAt != null)'updated_at': updatedAt,});
+}PlayersCompanion copyWith({Value<int>? id, Value<String?>? supabaseId, Value<String>? username, Value<String?>? avatarUrl, Value<int>? totalGamesPlayed, Value<int>? highscore, Value<int>? lives, Value<int>? hints, Value<DateTime?>? lastLifeLostAt, Value<DateTime?>? updatedAt}) {
+return PlayersCompanion(id: id ?? this.id,supabaseId: supabaseId ?? this.supabaseId,username: username ?? this.username,avatarUrl: avatarUrl ?? this.avatarUrl,totalGamesPlayed: totalGamesPlayed ?? this.totalGamesPlayed,highscore: highscore ?? this.highscore,lives: lives ?? this.lives,hints: hints ?? this.hints,lastLifeLostAt: lastLifeLostAt ?? this.lastLifeLostAt,updatedAt: updatedAt ?? this.updatedAt,);
 }
 @override
 Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -132,12 +156,18 @@ if (totalGamesPlayed.present) {
 map['total_games_played'] = Variable<int>(totalGamesPlayed.value);}
 if (highscore.present) {
 map['highscore'] = Variable<int>(highscore.value);}
+if (lives.present) {
+map['lives'] = Variable<int>(lives.value);}
+if (hints.present) {
+map['hints'] = Variable<int>(hints.value);}
+if (lastLifeLostAt.present) {
+map['last_life_lost_at'] = Variable<DateTime>(lastLifeLostAt.value);}
 if (updatedAt.present) {
 map['updated_at'] = Variable<DateTime>(updatedAt.value);}
 return map; 
 }
 @override
-String toString() {return (StringBuffer('PlayersCompanion(')..write('id: $id, ')..write('supabaseId: $supabaseId, ')..write('username: $username, ')..write('avatarUrl: $avatarUrl, ')..write('totalGamesPlayed: $totalGamesPlayed, ')..write('highscore: $highscore, ')..write('updatedAt: $updatedAt')..write(')')).toString();}
+String toString() {return (StringBuffer('PlayersCompanion(')..write('id: $id, ')..write('supabaseId: $supabaseId, ')..write('username: $username, ')..write('avatarUrl: $avatarUrl, ')..write('totalGamesPlayed: $totalGamesPlayed, ')..write('highscore: $highscore, ')..write('lives: $lives, ')..write('hints: $hints, ')..write('lastLifeLostAt: $lastLifeLostAt, ')..write('updatedAt: $updatedAt')..write(')')).toString();}
 }
 class $ProgressionsTable extends Progressions with TableInfo<$ProgressionsTable, Progression>{
 @override final GeneratedDatabase attachedDatabase;
@@ -251,18 +281,309 @@ return map;
 @override
 String toString() {return (StringBuffer('ProgressionsCompanion(')..write('id: $id, ')..write('playerSupabaseId: $playerSupabaseId, ')..write('currentLevel: $currentLevel, ')..write('unlockedWorlds: $unlockedWorlds, ')..write('updatedAt: $updatedAt')..write(')')).toString();}
 }
+class $LevelCompletionsTable extends LevelCompletions with TableInfo<$LevelCompletionsTable, LevelCompletion>{
+@override final GeneratedDatabase attachedDatabase;
+final String? _alias;
+$LevelCompletionsTable(this.attachedDatabase, [this._alias]);
+static const VerificationMeta _idMeta = const VerificationMeta('id');
+@override
+late final GeneratedColumn<int> id = GeneratedColumn<int>('id', aliasedName, false, hasAutoIncrement: true, type: DriftSqlType.int, requiredDuringInsert: false, defaultConstraints: GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+static const VerificationMeta _playerSupabaseIdMeta = const VerificationMeta('playerSupabaseId');
+@override
+late final GeneratedColumn<String> playerSupabaseId = GeneratedColumn<String>('player_supabase_id', aliasedName, false, type: DriftSqlType.string, requiredDuringInsert: true);
+static const VerificationMeta _worldIdMeta = const VerificationMeta('worldId');
+@override
+late final GeneratedColumn<String> worldId = GeneratedColumn<String>('world_id', aliasedName, false, type: DriftSqlType.string, requiredDuringInsert: true);
+static const VerificationMeta _levelNumberMeta = const VerificationMeta('levelNumber');
+@override
+late final GeneratedColumn<int> levelNumber = GeneratedColumn<int>('level_number', aliasedName, false, type: DriftSqlType.int, requiredDuringInsert: true);
+static const VerificationMeta _completionTimeSecondsMeta = const VerificationMeta('completionTimeSeconds');
+@override
+late final GeneratedColumn<int> completionTimeSeconds = GeneratedColumn<int>('completion_time_seconds', aliasedName, false, type: DriftSqlType.int, requiredDuringInsert: true);
+static const VerificationMeta _completedAtMeta = const VerificationMeta('completedAt');
+@override
+late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>('completed_at', aliasedName, false, type: DriftSqlType.dateTime, requiredDuringInsert: false, defaultValue: currentDateAndTime);
+@override
+List<GeneratedColumn> get $columns => [id, playerSupabaseId, worldId, levelNumber, completionTimeSeconds, completedAt];
+@override
+String get aliasedName => _alias ?? actualTableName;
+@override
+ String get actualTableName => $name;
+static const String $name = 'level_completions';
+@override
+VerificationContext validateIntegrity(Insertable<LevelCompletion> instance, {bool isInserting = false}) {
+final context = VerificationContext();
+final data = instance.toColumns(true);
+if (data.containsKey('id')) {
+context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));}if (data.containsKey('player_supabase_id')) {
+context.handle(_playerSupabaseIdMeta, playerSupabaseId.isAcceptableOrUnknown(data['player_supabase_id']!, _playerSupabaseIdMeta));} else if (isInserting) {
+context.missing(_playerSupabaseIdMeta);
+}
+if (data.containsKey('world_id')) {
+context.handle(_worldIdMeta, worldId.isAcceptableOrUnknown(data['world_id']!, _worldIdMeta));} else if (isInserting) {
+context.missing(_worldIdMeta);
+}
+if (data.containsKey('level_number')) {
+context.handle(_levelNumberMeta, levelNumber.isAcceptableOrUnknown(data['level_number']!, _levelNumberMeta));} else if (isInserting) {
+context.missing(_levelNumberMeta);
+}
+if (data.containsKey('completion_time_seconds')) {
+context.handle(_completionTimeSecondsMeta, completionTimeSeconds.isAcceptableOrUnknown(data['completion_time_seconds']!, _completionTimeSecondsMeta));} else if (isInserting) {
+context.missing(_completionTimeSecondsMeta);
+}
+if (data.containsKey('completed_at')) {
+context.handle(_completedAtMeta, completedAt.isAcceptableOrUnknown(data['completed_at']!, _completedAtMeta));}return context;
+}
+@override
+Set<GeneratedColumn> get $primaryKey => {id};
+@override
+List<Set<GeneratedColumn>> get uniqueKeys => [{playerSupabaseId, worldId, levelNumber},
+];
+@override LevelCompletion map(Map<String, dynamic> data, {String? tablePrefix})  {
+final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';return LevelCompletion(id: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}id'])!, playerSupabaseId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}player_supabase_id'])!, worldId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}world_id'])!, levelNumber: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}level_number'])!, completionTimeSeconds: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}completion_time_seconds'])!, completedAt: attachedDatabase.typeMapping.read(DriftSqlType.dateTime, data['${effectivePrefix}completed_at'])!, );
+}
+@override
+$LevelCompletionsTable createAlias(String alias) {
+return $LevelCompletionsTable(attachedDatabase, alias);}}class LevelCompletion extends DataClass implements Insertable<LevelCompletion> 
+{
+final int id;
+final String playerSupabaseId;
+final String worldId;
+final int levelNumber;
+final int completionTimeSeconds;
+final DateTime completedAt;
+const LevelCompletion({required this.id, required this.playerSupabaseId, required this.worldId, required this.levelNumber, required this.completionTimeSeconds, required this.completedAt});@override
+Map<String, Expression> toColumns(bool nullToAbsent) {
+final map = <String, Expression> {};map['id'] = Variable<int>(id);
+map['player_supabase_id'] = Variable<String>(playerSupabaseId);
+map['world_id'] = Variable<String>(worldId);
+map['level_number'] = Variable<int>(levelNumber);
+map['completion_time_seconds'] = Variable<int>(completionTimeSeconds);
+map['completed_at'] = Variable<DateTime>(completedAt);
+return map; 
+}
+LevelCompletionsCompanion toCompanion(bool nullToAbsent) {
+return LevelCompletionsCompanion(id: Value(id),playerSupabaseId: Value(playerSupabaseId),worldId: Value(worldId),levelNumber: Value(levelNumber),completionTimeSeconds: Value(completionTimeSeconds),completedAt: Value(completedAt),);
+}
+factory LevelCompletion.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
+serializer ??= driftRuntimeOptions.defaultSerializer;
+return LevelCompletion(id: serializer.fromJson<int>(json['id']),playerSupabaseId: serializer.fromJson<String>(json['playerSupabaseId']),worldId: serializer.fromJson<String>(json['worldId']),levelNumber: serializer.fromJson<int>(json['levelNumber']),completionTimeSeconds: serializer.fromJson<int>(json['completionTimeSeconds']),completedAt: serializer.fromJson<DateTime>(json['completedAt']),);}
+@override Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+serializer ??= driftRuntimeOptions.defaultSerializer;
+return <String, dynamic>{
+'id': serializer.toJson<int>(id),'playerSupabaseId': serializer.toJson<String>(playerSupabaseId),'worldId': serializer.toJson<String>(worldId),'levelNumber': serializer.toJson<int>(levelNumber),'completionTimeSeconds': serializer.toJson<int>(completionTimeSeconds),'completedAt': serializer.toJson<DateTime>(completedAt),};}LevelCompletion copyWith({int? id,String? playerSupabaseId,String? worldId,int? levelNumber,int? completionTimeSeconds,DateTime? completedAt}) => LevelCompletion(id: id ?? this.id,playerSupabaseId: playerSupabaseId ?? this.playerSupabaseId,worldId: worldId ?? this.worldId,levelNumber: levelNumber ?? this.levelNumber,completionTimeSeconds: completionTimeSeconds ?? this.completionTimeSeconds,completedAt: completedAt ?? this.completedAt,);LevelCompletion copyWithCompanion(LevelCompletionsCompanion data) {
+return LevelCompletion(
+id: data.id.present ? data.id.value : this.id,playerSupabaseId: data.playerSupabaseId.present ? data.playerSupabaseId.value : this.playerSupabaseId,worldId: data.worldId.present ? data.worldId.value : this.worldId,levelNumber: data.levelNumber.present ? data.levelNumber.value : this.levelNumber,completionTimeSeconds: data.completionTimeSeconds.present ? data.completionTimeSeconds.value : this.completionTimeSeconds,completedAt: data.completedAt.present ? data.completedAt.value : this.completedAt,);
+}
+@override
+String toString() {return (StringBuffer('LevelCompletion(')..write('id: $id, ')..write('playerSupabaseId: $playerSupabaseId, ')..write('worldId: $worldId, ')..write('levelNumber: $levelNumber, ')..write('completionTimeSeconds: $completionTimeSeconds, ')..write('completedAt: $completedAt')..write(')')).toString();}
+@override
+ int get hashCode => Object.hash(id, playerSupabaseId, worldId, levelNumber, completionTimeSeconds, completedAt);@override
+bool operator ==(Object other) => identical(this, other) || (other is LevelCompletion && other.id == this.id && other.playerSupabaseId == this.playerSupabaseId && other.worldId == this.worldId && other.levelNumber == this.levelNumber && other.completionTimeSeconds == this.completionTimeSeconds && other.completedAt == this.completedAt);
+}class LevelCompletionsCompanion extends UpdateCompanion<LevelCompletion> {
+final Value<int> id;
+final Value<String> playerSupabaseId;
+final Value<String> worldId;
+final Value<int> levelNumber;
+final Value<int> completionTimeSeconds;
+final Value<DateTime> completedAt;
+const LevelCompletionsCompanion({this.id = const Value.absent(),this.playerSupabaseId = const Value.absent(),this.worldId = const Value.absent(),this.levelNumber = const Value.absent(),this.completionTimeSeconds = const Value.absent(),this.completedAt = const Value.absent(),});
+LevelCompletionsCompanion.insert({this.id = const Value.absent(),required String playerSupabaseId,required String worldId,required int levelNumber,required int completionTimeSeconds,this.completedAt = const Value.absent(),}): playerSupabaseId = Value(playerSupabaseId), worldId = Value(worldId), levelNumber = Value(levelNumber), completionTimeSeconds = Value(completionTimeSeconds);
+static Insertable<LevelCompletion> custom({Expression<int>? id, 
+Expression<String>? playerSupabaseId, 
+Expression<String>? worldId, 
+Expression<int>? levelNumber, 
+Expression<int>? completionTimeSeconds, 
+Expression<DateTime>? completedAt, 
+}) {
+return RawValuesInsertable({if (id != null)'id': id,if (playerSupabaseId != null)'player_supabase_id': playerSupabaseId,if (worldId != null)'world_id': worldId,if (levelNumber != null)'level_number': levelNumber,if (completionTimeSeconds != null)'completion_time_seconds': completionTimeSeconds,if (completedAt != null)'completed_at': completedAt,});
+}LevelCompletionsCompanion copyWith({Value<int>? id, Value<String>? playerSupabaseId, Value<String>? worldId, Value<int>? levelNumber, Value<int>? completionTimeSeconds, Value<DateTime>? completedAt}) {
+return LevelCompletionsCompanion(id: id ?? this.id,playerSupabaseId: playerSupabaseId ?? this.playerSupabaseId,worldId: worldId ?? this.worldId,levelNumber: levelNumber ?? this.levelNumber,completionTimeSeconds: completionTimeSeconds ?? this.completionTimeSeconds,completedAt: completedAt ?? this.completedAt,);
+}
+@override
+Map<String, Expression> toColumns(bool nullToAbsent) {
+final map = <String, Expression> {};if (id.present) {
+map['id'] = Variable<int>(id.value);}
+if (playerSupabaseId.present) {
+map['player_supabase_id'] = Variable<String>(playerSupabaseId.value);}
+if (worldId.present) {
+map['world_id'] = Variable<String>(worldId.value);}
+if (levelNumber.present) {
+map['level_number'] = Variable<int>(levelNumber.value);}
+if (completionTimeSeconds.present) {
+map['completion_time_seconds'] = Variable<int>(completionTimeSeconds.value);}
+if (completedAt.present) {
+map['completed_at'] = Variable<DateTime>(completedAt.value);}
+return map; 
+}
+@override
+String toString() {return (StringBuffer('LevelCompletionsCompanion(')..write('id: $id, ')..write('playerSupabaseId: $playerSupabaseId, ')..write('worldId: $worldId, ')..write('levelNumber: $levelNumber, ')..write('completionTimeSeconds: $completionTimeSeconds, ')..write('completedAt: $completedAt')..write(')')).toString();}
+}
+class $GlobalLevelsTable extends GlobalLevels with TableInfo<$GlobalLevelsTable, GlobalLevel>{
+@override final GeneratedDatabase attachedDatabase;
+final String? _alias;
+$GlobalLevelsTable(this.attachedDatabase, [this._alias]);
+static const VerificationMeta _idMeta = const VerificationMeta('id');
+@override
+late final GeneratedColumn<int> id = GeneratedColumn<int>('id', aliasedName, false, hasAutoIncrement: true, type: DriftSqlType.int, requiredDuringInsert: false, defaultConstraints: GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+static const VerificationMeta _worldIdMeta = const VerificationMeta('worldId');
+@override
+late final GeneratedColumn<String> worldId = GeneratedColumn<String>('world_id', aliasedName, false, type: DriftSqlType.string, requiredDuringInsert: true);
+static const VerificationMeta _levelNumberMeta = const VerificationMeta('levelNumber');
+@override
+late final GeneratedColumn<int> levelNumber = GeneratedColumn<int>('level_number', aliasedName, false, type: DriftSqlType.int, requiredDuringInsert: true);
+static const VerificationMeta _hintsJsonMeta = const VerificationMeta('hintsJson');
+@override
+late final GeneratedColumn<String> hintsJson = GeneratedColumn<String>('hints_json', aliasedName, false, type: DriftSqlType.string, requiredDuringInsert: true);
+static const VerificationMeta _wallsJsonMeta = const VerificationMeta('wallsJson');
+@override
+late final GeneratedColumn<String> wallsJson = GeneratedColumn<String>('walls_json', aliasedName, false, type: DriftSqlType.string, requiredDuringInsert: true);
+static const VerificationMeta _solutionJsonMeta = const VerificationMeta('solutionJson');
+@override
+late final GeneratedColumn<String> solutionJson = GeneratedColumn<String>('solution_json', aliasedName, false, type: DriftSqlType.string, requiredDuringInsert: true);
+static const VerificationMeta _createdAtMeta = const VerificationMeta('createdAt');
+@override
+late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>('created_at', aliasedName, false, type: DriftSqlType.dateTime, requiredDuringInsert: false, defaultValue: currentDateAndTime);
+@override
+List<GeneratedColumn> get $columns => [id, worldId, levelNumber, hintsJson, wallsJson, solutionJson, createdAt];
+@override
+String get aliasedName => _alias ?? actualTableName;
+@override
+ String get actualTableName => $name;
+static const String $name = 'global_levels';
+@override
+VerificationContext validateIntegrity(Insertable<GlobalLevel> instance, {bool isInserting = false}) {
+final context = VerificationContext();
+final data = instance.toColumns(true);
+if (data.containsKey('id')) {
+context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));}if (data.containsKey('world_id')) {
+context.handle(_worldIdMeta, worldId.isAcceptableOrUnknown(data['world_id']!, _worldIdMeta));} else if (isInserting) {
+context.missing(_worldIdMeta);
+}
+if (data.containsKey('level_number')) {
+context.handle(_levelNumberMeta, levelNumber.isAcceptableOrUnknown(data['level_number']!, _levelNumberMeta));} else if (isInserting) {
+context.missing(_levelNumberMeta);
+}
+if (data.containsKey('hints_json')) {
+context.handle(_hintsJsonMeta, hintsJson.isAcceptableOrUnknown(data['hints_json']!, _hintsJsonMeta));} else if (isInserting) {
+context.missing(_hintsJsonMeta);
+}
+if (data.containsKey('walls_json')) {
+context.handle(_wallsJsonMeta, wallsJson.isAcceptableOrUnknown(data['walls_json']!, _wallsJsonMeta));} else if (isInserting) {
+context.missing(_wallsJsonMeta);
+}
+if (data.containsKey('solution_json')) {
+context.handle(_solutionJsonMeta, solutionJson.isAcceptableOrUnknown(data['solution_json']!, _solutionJsonMeta));} else if (isInserting) {
+context.missing(_solutionJsonMeta);
+}
+if (data.containsKey('created_at')) {
+context.handle(_createdAtMeta, createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));}return context;
+}
+@override
+Set<GeneratedColumn> get $primaryKey => {id};
+@override
+List<Set<GeneratedColumn>> get uniqueKeys => [{worldId, levelNumber},
+];
+@override GlobalLevel map(Map<String, dynamic> data, {String? tablePrefix})  {
+final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';return GlobalLevel(id: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}id'])!, worldId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}world_id'])!, levelNumber: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}level_number'])!, hintsJson: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}hints_json'])!, wallsJson: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}walls_json'])!, solutionJson: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}solution_json'])!, createdAt: attachedDatabase.typeMapping.read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!, );
+}
+@override
+$GlobalLevelsTable createAlias(String alias) {
+return $GlobalLevelsTable(attachedDatabase, alias);}}class GlobalLevel extends DataClass implements Insertable<GlobalLevel> 
+{
+final int id;
+final String worldId;
+final int levelNumber;
+final String hintsJson;
+final String wallsJson;
+final String solutionJson;
+final DateTime createdAt;
+const GlobalLevel({required this.id, required this.worldId, required this.levelNumber, required this.hintsJson, required this.wallsJson, required this.solutionJson, required this.createdAt});@override
+Map<String, Expression> toColumns(bool nullToAbsent) {
+final map = <String, Expression> {};map['id'] = Variable<int>(id);
+map['world_id'] = Variable<String>(worldId);
+map['level_number'] = Variable<int>(levelNumber);
+map['hints_json'] = Variable<String>(hintsJson);
+map['walls_json'] = Variable<String>(wallsJson);
+map['solution_json'] = Variable<String>(solutionJson);
+map['created_at'] = Variable<DateTime>(createdAt);
+return map; 
+}
+GlobalLevelsCompanion toCompanion(bool nullToAbsent) {
+return GlobalLevelsCompanion(id: Value(id),worldId: Value(worldId),levelNumber: Value(levelNumber),hintsJson: Value(hintsJson),wallsJson: Value(wallsJson),solutionJson: Value(solutionJson),createdAt: Value(createdAt),);
+}
+factory GlobalLevel.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
+serializer ??= driftRuntimeOptions.defaultSerializer;
+return GlobalLevel(id: serializer.fromJson<int>(json['id']),worldId: serializer.fromJson<String>(json['worldId']),levelNumber: serializer.fromJson<int>(json['levelNumber']),hintsJson: serializer.fromJson<String>(json['hintsJson']),wallsJson: serializer.fromJson<String>(json['wallsJson']),solutionJson: serializer.fromJson<String>(json['solutionJson']),createdAt: serializer.fromJson<DateTime>(json['createdAt']),);}
+@override Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+serializer ??= driftRuntimeOptions.defaultSerializer;
+return <String, dynamic>{
+'id': serializer.toJson<int>(id),'worldId': serializer.toJson<String>(worldId),'levelNumber': serializer.toJson<int>(levelNumber),'hintsJson': serializer.toJson<String>(hintsJson),'wallsJson': serializer.toJson<String>(wallsJson),'solutionJson': serializer.toJson<String>(solutionJson),'createdAt': serializer.toJson<DateTime>(createdAt),};}GlobalLevel copyWith({int? id,String? worldId,int? levelNumber,String? hintsJson,String? wallsJson,String? solutionJson,DateTime? createdAt}) => GlobalLevel(id: id ?? this.id,worldId: worldId ?? this.worldId,levelNumber: levelNumber ?? this.levelNumber,hintsJson: hintsJson ?? this.hintsJson,wallsJson: wallsJson ?? this.wallsJson,solutionJson: solutionJson ?? this.solutionJson,createdAt: createdAt ?? this.createdAt,);GlobalLevel copyWithCompanion(GlobalLevelsCompanion data) {
+return GlobalLevel(
+id: data.id.present ? data.id.value : this.id,worldId: data.worldId.present ? data.worldId.value : this.worldId,levelNumber: data.levelNumber.present ? data.levelNumber.value : this.levelNumber,hintsJson: data.hintsJson.present ? data.hintsJson.value : this.hintsJson,wallsJson: data.wallsJson.present ? data.wallsJson.value : this.wallsJson,solutionJson: data.solutionJson.present ? data.solutionJson.value : this.solutionJson,createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,);
+}
+@override
+String toString() {return (StringBuffer('GlobalLevel(')..write('id: $id, ')..write('worldId: $worldId, ')..write('levelNumber: $levelNumber, ')..write('hintsJson: $hintsJson, ')..write('wallsJson: $wallsJson, ')..write('solutionJson: $solutionJson, ')..write('createdAt: $createdAt')..write(')')).toString();}
+@override
+ int get hashCode => Object.hash(id, worldId, levelNumber, hintsJson, wallsJson, solutionJson, createdAt);@override
+bool operator ==(Object other) => identical(this, other) || (other is GlobalLevel && other.id == this.id && other.worldId == this.worldId && other.levelNumber == this.levelNumber && other.hintsJson == this.hintsJson && other.wallsJson == this.wallsJson && other.solutionJson == this.solutionJson && other.createdAt == this.createdAt);
+}class GlobalLevelsCompanion extends UpdateCompanion<GlobalLevel> {
+final Value<int> id;
+final Value<String> worldId;
+final Value<int> levelNumber;
+final Value<String> hintsJson;
+final Value<String> wallsJson;
+final Value<String> solutionJson;
+final Value<DateTime> createdAt;
+const GlobalLevelsCompanion({this.id = const Value.absent(),this.worldId = const Value.absent(),this.levelNumber = const Value.absent(),this.hintsJson = const Value.absent(),this.wallsJson = const Value.absent(),this.solutionJson = const Value.absent(),this.createdAt = const Value.absent(),});
+GlobalLevelsCompanion.insert({this.id = const Value.absent(),required String worldId,required int levelNumber,required String hintsJson,required String wallsJson,required String solutionJson,this.createdAt = const Value.absent(),}): worldId = Value(worldId), levelNumber = Value(levelNumber), hintsJson = Value(hintsJson), wallsJson = Value(wallsJson), solutionJson = Value(solutionJson);
+static Insertable<GlobalLevel> custom({Expression<int>? id, 
+Expression<String>? worldId, 
+Expression<int>? levelNumber, 
+Expression<String>? hintsJson, 
+Expression<String>? wallsJson, 
+Expression<String>? solutionJson, 
+Expression<DateTime>? createdAt, 
+}) {
+return RawValuesInsertable({if (id != null)'id': id,if (worldId != null)'world_id': worldId,if (levelNumber != null)'level_number': levelNumber,if (hintsJson != null)'hints_json': hintsJson,if (wallsJson != null)'walls_json': wallsJson,if (solutionJson != null)'solution_json': solutionJson,if (createdAt != null)'created_at': createdAt,});
+}GlobalLevelsCompanion copyWith({Value<int>? id, Value<String>? worldId, Value<int>? levelNumber, Value<String>? hintsJson, Value<String>? wallsJson, Value<String>? solutionJson, Value<DateTime>? createdAt}) {
+return GlobalLevelsCompanion(id: id ?? this.id,worldId: worldId ?? this.worldId,levelNumber: levelNumber ?? this.levelNumber,hintsJson: hintsJson ?? this.hintsJson,wallsJson: wallsJson ?? this.wallsJson,solutionJson: solutionJson ?? this.solutionJson,createdAt: createdAt ?? this.createdAt,);
+}
+@override
+Map<String, Expression> toColumns(bool nullToAbsent) {
+final map = <String, Expression> {};if (id.present) {
+map['id'] = Variable<int>(id.value);}
+if (worldId.present) {
+map['world_id'] = Variable<String>(worldId.value);}
+if (levelNumber.present) {
+map['level_number'] = Variable<int>(levelNumber.value);}
+if (hintsJson.present) {
+map['hints_json'] = Variable<String>(hintsJson.value);}
+if (wallsJson.present) {
+map['walls_json'] = Variable<String>(wallsJson.value);}
+if (solutionJson.present) {
+map['solution_json'] = Variable<String>(solutionJson.value);}
+if (createdAt.present) {
+map['created_at'] = Variable<DateTime>(createdAt.value);}
+return map; 
+}
+@override
+String toString() {return (StringBuffer('GlobalLevelsCompanion(')..write('id: $id, ')..write('worldId: $worldId, ')..write('levelNumber: $levelNumber, ')..write('hintsJson: $hintsJson, ')..write('wallsJson: $wallsJson, ')..write('solutionJson: $solutionJson, ')..write('createdAt: $createdAt')..write(')')).toString();}
+}
 abstract class _$AppDatabase extends GeneratedDatabase{
 _$AppDatabase(QueryExecutor e): super(e);
 $AppDatabaseManager get managers => $AppDatabaseManager(this);
 late final $PlayersTable players = $PlayersTable(this);
 late final $ProgressionsTable progressions = $ProgressionsTable(this);
+late final $LevelCompletionsTable levelCompletions = $LevelCompletionsTable(this);
+late final $GlobalLevelsTable globalLevels = $GlobalLevelsTable(this);
 @override
 Iterable<TableInfo<Table, Object?>> get allTables => allSchemaEntities.whereType<TableInfo<Table, Object?>>();
 @override
-List<DatabaseSchemaEntity> get allSchemaEntities => [players, progressions];
+List<DatabaseSchemaEntity> get allSchemaEntities => [players, progressions, levelCompletions, globalLevels];
 }
-typedef $$PlayersTableCreateCompanionBuilder = PlayersCompanion Function({Value<int> id,Value<String?> supabaseId,required String username,Value<String?> avatarUrl,Value<int> totalGamesPlayed,Value<int> highscore,Value<DateTime?> updatedAt,});
-typedef $$PlayersTableUpdateCompanionBuilder = PlayersCompanion Function({Value<int> id,Value<String?> supabaseId,Value<String> username,Value<String?> avatarUrl,Value<int> totalGamesPlayed,Value<int> highscore,Value<DateTime?> updatedAt,});
+typedef $$PlayersTableCreateCompanionBuilder = PlayersCompanion Function({Value<int> id,Value<String?> supabaseId,required String username,Value<String?> avatarUrl,Value<int> totalGamesPlayed,Value<int> highscore,Value<int> lives,Value<int> hints,Value<DateTime?> lastLifeLostAt,Value<DateTime?> updatedAt,});
+typedef $$PlayersTableUpdateCompanionBuilder = PlayersCompanion Function({Value<int> id,Value<String?> supabaseId,Value<String> username,Value<String?> avatarUrl,Value<int> totalGamesPlayed,Value<int> highscore,Value<int> lives,Value<int> hints,Value<DateTime?> lastLifeLostAt,Value<DateTime?> updatedAt,});
 class $$PlayersTableFilterComposer extends Composer<
         _$AppDatabase,
         $PlayersTable> {
@@ -300,6 +621,21 @@ ColumnFilters<int> get totalGamesPlayed => $composableBuilder(
       
 ColumnFilters<int> get highscore => $composableBuilder(
       column: $table.highscore,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<int> get lives => $composableBuilder(
+      column: $table.lives,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<int> get hints => $composableBuilder(
+      column: $table.hints,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<DateTime> get lastLifeLostAt => $composableBuilder(
+      column: $table.lastLifeLostAt,
       builder: (column) => 
       ColumnFilters(column));
       
@@ -349,6 +685,21 @@ ColumnOrderings<int> get highscore => $composableBuilder(
       builder: (column) => 
       ColumnOrderings(column));
       
+ColumnOrderings<int> get lives => $composableBuilder(
+      column: $table.lives,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<int> get hints => $composableBuilder(
+      column: $table.hints,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<DateTime> get lastLifeLostAt => $composableBuilder(
+      column: $table.lastLifeLostAt,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
 ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
       column: $table.updatedAt,
       builder: (column) => 
@@ -389,6 +740,18 @@ GeneratedColumn<int> get highscore => $composableBuilder(
       column: $table.highscore,
       builder: (column) => column);
       
+GeneratedColumn<int> get lives => $composableBuilder(
+      column: $table.lives,
+      builder: (column) => column);
+      
+GeneratedColumn<int> get hints => $composableBuilder(
+      column: $table.hints,
+      builder: (column) => column);
+      
+GeneratedColumn<DateTime> get lastLifeLostAt => $composableBuilder(
+      column: $table.lastLifeLostAt,
+      builder: (column) => column);
+      
 GeneratedColumn<DateTime> get updatedAt => $composableBuilder(
       column: $table.updatedAt,
       builder: (column) => column);
@@ -413,8 +776,8 @@ GeneratedColumn<DateTime> get updatedAt => $composableBuilder(
         createFilteringComposer: () => $$PlayersTableFilterComposer($db: db,$table:table),
         createOrderingComposer: () => $$PlayersTableOrderingComposer($db: db,$table:table),
         createComputedFieldComposer: () => $$PlayersTableAnnotationComposer($db: db,$table:table),
-        updateCompanionCallback: ({Value<int> id = const Value.absent(),Value<String?> supabaseId = const Value.absent(),Value<String> username = const Value.absent(),Value<String?> avatarUrl = const Value.absent(),Value<int> totalGamesPlayed = const Value.absent(),Value<int> highscore = const Value.absent(),Value<DateTime?> updatedAt = const Value.absent(),})=> PlayersCompanion(id: id,supabaseId: supabaseId,username: username,avatarUrl: avatarUrl,totalGamesPlayed: totalGamesPlayed,highscore: highscore,updatedAt: updatedAt,),
-        createCompanionCallback: ({Value<int> id = const Value.absent(),Value<String?> supabaseId = const Value.absent(),required String username,Value<String?> avatarUrl = const Value.absent(),Value<int> totalGamesPlayed = const Value.absent(),Value<int> highscore = const Value.absent(),Value<DateTime?> updatedAt = const Value.absent(),})=> PlayersCompanion.insert(id: id,supabaseId: supabaseId,username: username,avatarUrl: avatarUrl,totalGamesPlayed: totalGamesPlayed,highscore: highscore,updatedAt: updatedAt,),
+        updateCompanionCallback: ({Value<int> id = const Value.absent(),Value<String?> supabaseId = const Value.absent(),Value<String> username = const Value.absent(),Value<String?> avatarUrl = const Value.absent(),Value<int> totalGamesPlayed = const Value.absent(),Value<int> highscore = const Value.absent(),Value<int> lives = const Value.absent(),Value<int> hints = const Value.absent(),Value<DateTime?> lastLifeLostAt = const Value.absent(),Value<DateTime?> updatedAt = const Value.absent(),})=> PlayersCompanion(id: id,supabaseId: supabaseId,username: username,avatarUrl: avatarUrl,totalGamesPlayed: totalGamesPlayed,highscore: highscore,lives: lives,hints: hints,lastLifeLostAt: lastLifeLostAt,updatedAt: updatedAt,),
+        createCompanionCallback: ({Value<int> id = const Value.absent(),Value<String?> supabaseId = const Value.absent(),required String username,Value<String?> avatarUrl = const Value.absent(),Value<int> totalGamesPlayed = const Value.absent(),Value<int> highscore = const Value.absent(),Value<int> lives = const Value.absent(),Value<int> hints = const Value.absent(),Value<DateTime?> lastLifeLostAt = const Value.absent(),Value<DateTime?> updatedAt = const Value.absent(),})=> PlayersCompanion.insert(id: id,supabaseId: supabaseId,username: username,avatarUrl: avatarUrl,totalGamesPlayed: totalGamesPlayed,highscore: highscore,lives: lives,hints: hints,lastLifeLostAt: lastLifeLostAt,updatedAt: updatedAt,),
         withReferenceMapper: (p0) => p0
               .map(
                   (e) =>
@@ -581,9 +944,345 @@ GeneratedColumn<DateTime> get updatedAt => $composableBuilder(
     (Progression,BaseReferences<_$AppDatabase,$ProgressionsTable,Progression>),
     Progression,
     PrefetchHooks Function()
+    >;typedef $$LevelCompletionsTableCreateCompanionBuilder = LevelCompletionsCompanion Function({Value<int> id,required String playerSupabaseId,required String worldId,required int levelNumber,required int completionTimeSeconds,Value<DateTime> completedAt,});
+typedef $$LevelCompletionsTableUpdateCompanionBuilder = LevelCompletionsCompanion Function({Value<int> id,Value<String> playerSupabaseId,Value<String> worldId,Value<int> levelNumber,Value<int> completionTimeSeconds,Value<DateTime> completedAt,});
+class $$LevelCompletionsTableFilterComposer extends Composer<
+        _$AppDatabase,
+        $LevelCompletionsTable> {
+        $$LevelCompletionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+          ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<String> get playerSupabaseId => $composableBuilder(
+      column: $table.playerSupabaseId,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<String> get worldId => $composableBuilder(
+      column: $table.worldId,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<int> get levelNumber => $composableBuilder(
+      column: $table.levelNumber,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<int> get completionTimeSeconds => $composableBuilder(
+      column: $table.completionTimeSeconds,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<DateTime> get completedAt => $composableBuilder(
+      column: $table.completedAt,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+        }
+      class $$LevelCompletionsTableOrderingComposer extends Composer<
+        _$AppDatabase,
+        $LevelCompletionsTable> {
+        $$LevelCompletionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+          ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<String> get playerSupabaseId => $composableBuilder(
+      column: $table.playerSupabaseId,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<String> get worldId => $composableBuilder(
+      column: $table.worldId,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<int> get levelNumber => $composableBuilder(
+      column: $table.levelNumber,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<int> get completionTimeSeconds => $composableBuilder(
+      column: $table.completionTimeSeconds,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+      column: $table.completedAt,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+        }
+      class $$LevelCompletionsTableAnnotationComposer extends Composer<
+        _$AppDatabase,
+        $LevelCompletionsTable> {
+        $$LevelCompletionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+          GeneratedColumn<int> get id => $composableBuilder(
+      column: $table.id,
+      builder: (column) => column);
+      
+GeneratedColumn<String> get playerSupabaseId => $composableBuilder(
+      column: $table.playerSupabaseId,
+      builder: (column) => column);
+      
+GeneratedColumn<String> get worldId => $composableBuilder(
+      column: $table.worldId,
+      builder: (column) => column);
+      
+GeneratedColumn<int> get levelNumber => $composableBuilder(
+      column: $table.levelNumber,
+      builder: (column) => column);
+      
+GeneratedColumn<int> get completionTimeSeconds => $composableBuilder(
+      column: $table.completionTimeSeconds,
+      builder: (column) => column);
+      
+GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+      column: $table.completedAt,
+      builder: (column) => column);
+      
+        }
+      class $$LevelCompletionsTableTableManager extends RootTableManager    <_$AppDatabase,
+    $LevelCompletionsTable,
+    LevelCompletion,
+    $$LevelCompletionsTableFilterComposer,
+    $$LevelCompletionsTableOrderingComposer,
+    $$LevelCompletionsTableAnnotationComposer,
+    $$LevelCompletionsTableCreateCompanionBuilder,
+    $$LevelCompletionsTableUpdateCompanionBuilder,
+    (LevelCompletion,BaseReferences<_$AppDatabase,$LevelCompletionsTable,LevelCompletion>),
+    LevelCompletion,
+    PrefetchHooks Function()
+    > {
+    $$LevelCompletionsTableTableManager(_$AppDatabase db, $LevelCompletionsTable table) : super(
+      TableManagerState(
+        db: db,
+        table: table,
+        createFilteringComposer: () => $$LevelCompletionsTableFilterComposer($db: db,$table:table),
+        createOrderingComposer: () => $$LevelCompletionsTableOrderingComposer($db: db,$table:table),
+        createComputedFieldComposer: () => $$LevelCompletionsTableAnnotationComposer($db: db,$table:table),
+        updateCompanionCallback: ({Value<int> id = const Value.absent(),Value<String> playerSupabaseId = const Value.absent(),Value<String> worldId = const Value.absent(),Value<int> levelNumber = const Value.absent(),Value<int> completionTimeSeconds = const Value.absent(),Value<DateTime> completedAt = const Value.absent(),})=> LevelCompletionsCompanion(id: id,playerSupabaseId: playerSupabaseId,worldId: worldId,levelNumber: levelNumber,completionTimeSeconds: completionTimeSeconds,completedAt: completedAt,),
+        createCompanionCallback: ({Value<int> id = const Value.absent(),required String playerSupabaseId,required String worldId,required int levelNumber,required int completionTimeSeconds,Value<DateTime> completedAt = const Value.absent(),})=> LevelCompletionsCompanion.insert(id: id,playerSupabaseId: playerSupabaseId,worldId: worldId,levelNumber: levelNumber,completionTimeSeconds: completionTimeSeconds,completedAt: completedAt,),
+        withReferenceMapper: (p0) => p0
+              .map(
+                  (e) =>
+                     (e.readTable(table), BaseReferences(db, table, e))
+                  )
+              .toList(),
+        prefetchHooksCallback: null,
+        ));
+        }
+    typedef $$LevelCompletionsTableProcessedTableManager = ProcessedTableManager    <_$AppDatabase,
+    $LevelCompletionsTable,
+    LevelCompletion,
+    $$LevelCompletionsTableFilterComposer,
+    $$LevelCompletionsTableOrderingComposer,
+    $$LevelCompletionsTableAnnotationComposer,
+    $$LevelCompletionsTableCreateCompanionBuilder,
+    $$LevelCompletionsTableUpdateCompanionBuilder,
+    (LevelCompletion,BaseReferences<_$AppDatabase,$LevelCompletionsTable,LevelCompletion>),
+    LevelCompletion,
+    PrefetchHooks Function()
+    >;typedef $$GlobalLevelsTableCreateCompanionBuilder = GlobalLevelsCompanion Function({Value<int> id,required String worldId,required int levelNumber,required String hintsJson,required String wallsJson,required String solutionJson,Value<DateTime> createdAt,});
+typedef $$GlobalLevelsTableUpdateCompanionBuilder = GlobalLevelsCompanion Function({Value<int> id,Value<String> worldId,Value<int> levelNumber,Value<String> hintsJson,Value<String> wallsJson,Value<String> solutionJson,Value<DateTime> createdAt,});
+class $$GlobalLevelsTableFilterComposer extends Composer<
+        _$AppDatabase,
+        $GlobalLevelsTable> {
+        $$GlobalLevelsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+          ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<String> get worldId => $composableBuilder(
+      column: $table.worldId,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<int> get levelNumber => $composableBuilder(
+      column: $table.levelNumber,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<String> get hintsJson => $composableBuilder(
+      column: $table.hintsJson,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<String> get wallsJson => $composableBuilder(
+      column: $table.wallsJson,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<String> get solutionJson => $composableBuilder(
+      column: $table.solutionJson,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+        }
+      class $$GlobalLevelsTableOrderingComposer extends Composer<
+        _$AppDatabase,
+        $GlobalLevelsTable> {
+        $$GlobalLevelsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+          ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<String> get worldId => $composableBuilder(
+      column: $table.worldId,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<int> get levelNumber => $composableBuilder(
+      column: $table.levelNumber,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<String> get hintsJson => $composableBuilder(
+      column: $table.hintsJson,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<String> get wallsJson => $composableBuilder(
+      column: $table.wallsJson,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<String> get solutionJson => $composableBuilder(
+      column: $table.solutionJson,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+        }
+      class $$GlobalLevelsTableAnnotationComposer extends Composer<
+        _$AppDatabase,
+        $GlobalLevelsTable> {
+        $$GlobalLevelsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+          GeneratedColumn<int> get id => $composableBuilder(
+      column: $table.id,
+      builder: (column) => column);
+      
+GeneratedColumn<String> get worldId => $composableBuilder(
+      column: $table.worldId,
+      builder: (column) => column);
+      
+GeneratedColumn<int> get levelNumber => $composableBuilder(
+      column: $table.levelNumber,
+      builder: (column) => column);
+      
+GeneratedColumn<String> get hintsJson => $composableBuilder(
+      column: $table.hintsJson,
+      builder: (column) => column);
+      
+GeneratedColumn<String> get wallsJson => $composableBuilder(
+      column: $table.wallsJson,
+      builder: (column) => column);
+      
+GeneratedColumn<String> get solutionJson => $composableBuilder(
+      column: $table.solutionJson,
+      builder: (column) => column);
+      
+GeneratedColumn<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt,
+      builder: (column) => column);
+      
+        }
+      class $$GlobalLevelsTableTableManager extends RootTableManager    <_$AppDatabase,
+    $GlobalLevelsTable,
+    GlobalLevel,
+    $$GlobalLevelsTableFilterComposer,
+    $$GlobalLevelsTableOrderingComposer,
+    $$GlobalLevelsTableAnnotationComposer,
+    $$GlobalLevelsTableCreateCompanionBuilder,
+    $$GlobalLevelsTableUpdateCompanionBuilder,
+    (GlobalLevel,BaseReferences<_$AppDatabase,$GlobalLevelsTable,GlobalLevel>),
+    GlobalLevel,
+    PrefetchHooks Function()
+    > {
+    $$GlobalLevelsTableTableManager(_$AppDatabase db, $GlobalLevelsTable table) : super(
+      TableManagerState(
+        db: db,
+        table: table,
+        createFilteringComposer: () => $$GlobalLevelsTableFilterComposer($db: db,$table:table),
+        createOrderingComposer: () => $$GlobalLevelsTableOrderingComposer($db: db,$table:table),
+        createComputedFieldComposer: () => $$GlobalLevelsTableAnnotationComposer($db: db,$table:table),
+        updateCompanionCallback: ({Value<int> id = const Value.absent(),Value<String> worldId = const Value.absent(),Value<int> levelNumber = const Value.absent(),Value<String> hintsJson = const Value.absent(),Value<String> wallsJson = const Value.absent(),Value<String> solutionJson = const Value.absent(),Value<DateTime> createdAt = const Value.absent(),})=> GlobalLevelsCompanion(id: id,worldId: worldId,levelNumber: levelNumber,hintsJson: hintsJson,wallsJson: wallsJson,solutionJson: solutionJson,createdAt: createdAt,),
+        createCompanionCallback: ({Value<int> id = const Value.absent(),required String worldId,required int levelNumber,required String hintsJson,required String wallsJson,required String solutionJson,Value<DateTime> createdAt = const Value.absent(),})=> GlobalLevelsCompanion.insert(id: id,worldId: worldId,levelNumber: levelNumber,hintsJson: hintsJson,wallsJson: wallsJson,solutionJson: solutionJson,createdAt: createdAt,),
+        withReferenceMapper: (p0) => p0
+              .map(
+                  (e) =>
+                     (e.readTable(table), BaseReferences(db, table, e))
+                  )
+              .toList(),
+        prefetchHooksCallback: null,
+        ));
+        }
+    typedef $$GlobalLevelsTableProcessedTableManager = ProcessedTableManager    <_$AppDatabase,
+    $GlobalLevelsTable,
+    GlobalLevel,
+    $$GlobalLevelsTableFilterComposer,
+    $$GlobalLevelsTableOrderingComposer,
+    $$GlobalLevelsTableAnnotationComposer,
+    $$GlobalLevelsTableCreateCompanionBuilder,
+    $$GlobalLevelsTableUpdateCompanionBuilder,
+    (GlobalLevel,BaseReferences<_$AppDatabase,$GlobalLevelsTable,GlobalLevel>),
+    GlobalLevel,
+    PrefetchHooks Function()
     >;class $AppDatabaseManager {
 final _$AppDatabase _db;
 $AppDatabaseManager(this._db);
 $$PlayersTableTableManager get players => $$PlayersTableTableManager(_db, _db.players);
 $$ProgressionsTableTableManager get progressions => $$ProgressionsTableTableManager(_db, _db.progressions);
+$$LevelCompletionsTableTableManager get levelCompletions => $$LevelCompletionsTableTableManager(_db, _db.levelCompletions);
+$$GlobalLevelsTableTableManager get globalLevels => $$GlobalLevelsTableTableManager(_db, _db.globalLevels);
 }

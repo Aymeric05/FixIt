@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/core/repositories/profile_repository.dart';
-import 'profile_event.dart';
-import 'profile_state.dart';
+import 'package:fixit/features/profile/presentation/bloc/profile_event.dart';
+import 'package:fixit/features/profile/presentation/bloc/profile_state.dart';
 
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   final _profileRepository = ProfileRepository();

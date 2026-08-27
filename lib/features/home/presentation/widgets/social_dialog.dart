@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
-import 'candy_dialog.dart';
+import 'package:fixit/features/home/presentation/widgets/candy_dialog.dart';
 
 class SocialDialog extends StatefulWidget {
   const SocialDialog({super.key});

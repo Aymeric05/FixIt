@@ -1,22 +1,36 @@
-# Implementation Plan: Social Tab UI Refinement
+# Implementation Plan: Full Reset for Testing
 
-Refine the "Social" tab to clearly display the player's username with an explicit edit button, improving visibility and usability of the identity management feature.
+Provide a way to completely reset the game state (local and remote) to test the "New Player" experience.
+
+## User Review Required
+
+> [!WARNING]
+> **Action sur Supabase (Remote Reset)** : Pour effacer toutes les données globales et repartir de zéro côté serveur, exécute ce script dans ton **SQL Editor** :
+> ```sql
+> TRUNCATE TABLE public.level_completions CASCADE;
+> TRUNCATE TABLE public.progression CASCADE;
+> TRUNCATE TABLE public.profiles CASCADE;
+> -- Note: global_levels peut être gardé si tu veux garder les labyrinthes générés,
+> -- sinon ajoute: TRUNCATE TABLE public.global_levels CASCADE;
+> ```
 
 ## Proposed Changes
 
-### UI & Interaction
+### 1. Hard Reset Logic
+#### [MODIFY] [database_service.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/core/services/database_service.dart)
+- Add a `hardReset()` method that:
+    1. Deletes all rows from all Drift tables (`Players`, `Progressions`, `LevelCompletions`).
+    2. Logs out the user from Supabase.
+    3. Clears local preferences (if any).
 
-#### [MODIFY] [social_dialog.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/features/home/presentation/widgets/social_dialog.dart)
-- Introduce a `bool _isEditing` state variable.
-- Wrap the username section in a `BlocBuilder<AuthBloc, AuthState>` to ensure it stays in sync with the global profile.
-- **Display Mode**: Show the username as a bold `Text` widget with a small "pencil" `IconButton` next to it.
-- **Edit Mode**: Switch to the `TextField` for input, with "confirm" (check) and "cancel" (close) icons.
-- Maintain the current "FIND FRIENDS" section at the bottom as requested.
+### 2. UI Entry Point
+#### [MODIFY] [settings_dialog.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/features/home/presentation/widgets/settings_dialog.dart)
+- Add a "DEBUG: RESET ALL DATA" button at the bottom of the settings.
+- This button will call `DatabaseService().hardReset()` and then restart the app or redirect to the initialization flow.
 
 ## Verification Plan
 
 ### Manual Verification
-- Open the **Social** tab. Verify that you see your `Guest#XXXX` name as static text.
-- Click the edit button. Verify that it switches to an input field.
-- Confirm a change and verify that it updates correctly in the UI.
-- Cancel a change and verify that the original name is restored.
+1. **Local Reset**: Click the reset button. Verify the app restarts and you are assigned a new "Guest#XXXX" ID.
+2. **Progression Reset**: Verify the main button returns to "PLAY LEVEL 1".
+3. **Database Check**: After resetting both Supabase and the App, verify that performing actions creates fresh, clean records.

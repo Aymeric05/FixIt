@@ -8,5 +8,6 @@ abstract class AuthEvent extends Equatable {
 }
 
 class AuthCheckRequested extends AuthEvent {}
+class RefreshProfileRequested extends AuthEvent {}
 class AuthSignInAnonymous extends AuthEvent {}
 class AuthSignOutRequested extends AuthEvent {}

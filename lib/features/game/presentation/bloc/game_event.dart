@@ -11,11 +11,12 @@ abstract class GameEvent extends Equatable {
 class StartGame extends GameEvent {
   final int level;
   final GameDifficulty difficulty;
+  final String playerId;
 
-  const StartGame({required this.level, required this.difficulty});
+  const StartGame({required this.level, required this.difficulty, required this.playerId});
 
   @override
-  List<Object> get props => [level, difficulty];
+  List<Object> get props => [level, difficulty, playerId];
 }
 
 class SelectCell extends GameEvent {

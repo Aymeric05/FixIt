@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/core/repositories/profile_repository.dart';
-import 'auth_event.dart';
-import 'auth_state.dart';
+import 'package:fixit/features/auth/presentation/bloc/auth_event.dart';
+import 'package:fixit/features/auth/presentation/bloc/auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final _supabase = DatabaseService().supabase;
@@ -45,6 +45,29 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthUnauthenticated());
       // Re-sign in anonymously after sign out to keep a session
       add(AuthSignInAnonymous());
+    });
+
+    on<RefreshProfileRequested>((event, emit) async {
+      final user = _supabase.auth.currentUser;
+      if (user != null) {
+        try {
+          // Force a fresh fetch from Supabase to ensure consistency
+          final response = await _supabase
+              .from('profiles')
+              .select()
+              .eq('id', user.id)
+              .maybeSingle();
+
+          if (response != null) {
+            // Update local Drift too
+            await _profileRepository.updateUsername(user.id, response['username']);
+            final profile = await _profileRepository.getOrCreateProfile(user.id);
+            emit(AuthAuthenticated(user, profile));
+          }
+        } catch (e) {
+          print('Error refreshing profile: $e');
+        }
+      }
     });
   }
 }

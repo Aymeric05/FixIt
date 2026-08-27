@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/widgets/candy_button.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:fixit/core/widgets/candy_button.dart';
+import 'package:fixit/core/theme/app_colors.dart';
 
 /// Dialogue "Carte du Monde" : le parchemin est divisé en une grille
 /// 3x3 (9 cases). Chaque case est soit un monde (recouvert de nuages

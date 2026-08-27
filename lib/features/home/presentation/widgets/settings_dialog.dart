@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../bloc/home_bloc.dart';
-import 'candy_dialog.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
+import 'package:fixit/features/home/presentation/widgets/candy_dialog.dart';
+import 'package:fixit/core/theme/app_colors.dart';
 
 class SettingsDialog extends StatelessWidget {
   const SettingsDialog({super.key});
@@ -29,6 +29,38 @@ class SettingsDialog extends StatelessWidget {
                 label: 'Sound Effects',
                 value: state.isSoundEnabled,
                 onToggle: () => context.read<HomeBloc>().add(ToggleSound()),
+              ),
+              const SizedBox(height: 30),
+              // Debug Reset Button
+              TextButton(
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('HARD RESET'),
+                      content: const Text('This will delete all local progress and logout. Are you sure?'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL')),
+                        TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('YES, RESET')),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    await DatabaseService().hardReset();
+                    // Restart app or simply pop and show a snackbar?
+                    // Best is to pop and tell user to restart
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Data cleared. Please RESTART the app.')),
+                      );
+                    }
+                  }
+                },
+                child: const Text(
+                  'DEBUG: RESET ALL DATA',
+                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),

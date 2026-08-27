@@ -7,7 +7,12 @@ abstract class HomeEvent extends Equatable {
   List<Object> get props => [];
 }
 
-class LoadHomeData extends HomeEvent {}
+class LoadHomeData extends HomeEvent {
+  final String? playerId;
+  const LoadHomeData({this.playerId});
+  @override
+  List<Object> get props => [playerId ?? ''];
+}
 
 class ToggleMusic extends HomeEvent {}
 
@@ -28,7 +33,12 @@ class BuyNoAds extends HomeEvent {}
 
 class TickLifeRecharge extends HomeEvent {}
 
-class CompleteLevel extends HomeEvent {}
+class CompleteLevel extends HomeEvent {
+  final String? playerId;
+  const CompleteLevel({this.playerId});
+  @override
+  List<Object> get props => [playerId ?? ''];
+}
 
 class ChangeWorld extends HomeEvent {
   final int worldIndex;

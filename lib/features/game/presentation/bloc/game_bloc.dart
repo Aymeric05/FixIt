@@ -1,13 +1,18 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
-import 'game_event.dart';
-import 'game_state.dart';
+import 'package:fixit/core/repositories/progression_repository.dart';
+import 'package:fixit/core/models/grid_offset.dart';
+import 'package:fixit/core/utils/level_generator.dart';
+import 'package:fixit/features/game/presentation/bloc/game_event.dart';
+import 'package:fixit/features/game/presentation/bloc/game_state.dart';
 
 class GameBloc extends Bloc<GameEvent, GameState> {
   Timer? _timer;
+  final _progressionRepo = ProgressionRepository();
 
   GameBloc() : super(const GameState()) {
     on<StartGame>(_onStartGame);
@@ -15,103 +20,145 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<TimerTick>(_onTimerTick);
   }
 
-  void _onStartGame(StartGame event, Emitter<GameState> emit) {
+  Future<void> _onStartGame(StartGame event, Emitter<GameState> emit) async {
     _timer?.cancel();
 
-    int seconds = 300;
+    int initialSeconds = 300;
     int hintsCount = 12;
     if (event.difficulty == GameDifficulty.medium) {
-      seconds = 240;
+      initialSeconds = 240;
       hintsCount = 8;
     } else if (event.difficulty == GameDifficulty.hard) {
-      seconds = 180;
+      initialSeconds = 180;
       hintsCount = 7;
     }
 
-    final result = _generatePuzzle(hintsCount);
+    emit(state.copyWith(
+      status: GameStatus.initial,
+      remainingSeconds: initialSeconds,
+      initialSeconds: initialSeconds,
+      levelNumber: event.level,
+      hints: [],
+    ));
+
+    if (event.level == 1 && event.playerId.isNotEmpty) {
+      unawaited(_progressionRepo.grantLevel1Reward(event.playerId).catchError((e) => print('Reward error: $e')));
+    }
+
+    final worldId = 'world_1';
+    List<List<int?>> hints;
+    List<GridOffset> solution;
+    Set<String> walls;
+    Map<GridOffset, int> hintSteps = {};
+
+    try {
+      final globalLevel = await _progressionRepo.getGlobalLevel(worldId, event.level)
+          .timeout(const Duration(seconds: 3));
+      
+      if (globalLevel != null) {
+        hints = (jsonDecode(globalLevel.hintsJson) as List)
+            .map((row) => (row as List).map((e) => e as int?).toList())
+            .toList();
+        walls = (jsonDecode(globalLevel.wallsJson) as List).cast<String>().toSet();
+        solution = (jsonDecode(globalLevel.solutionJson) as List)
+            .map((e) => GridOffset(e['r'], e['c']))
+            .toList();
+        
+        for (int r = 0; r < 6; r++) {
+          for (int c = 0; c < 6; c++) {
+            if (hints[r][c] != null) {
+              final pos = GridOffset(r, c);
+              hintSteps[pos] = solution.indexOf(pos);
+            }
+          }
+        }
+      } else {
+        throw Exception('Not found');
+      }
+    } catch (e) {
+      final result = LevelGenerator.generate(hintsCount);
+      hints = result.hints;
+      solution = result.solution;
+      walls = result.walls;
+      hintSteps = result.hintSteps;
+
+      unawaited(_progressionRepo.saveGlobalLevel(
+        worldId: worldId,
+        levelNumber: event.level,
+        hints: hints,
+        walls: walls,
+        solution: solution,
+      ).catchError((err) => print('Background save failed: $err')));
+    }
 
     final colors = [
-      Colors.orange,
-      Colors.pink,
-      Colors.purple,
-      Colors.blue,
-      Colors.green,
-      Colors.red,
-      Colors.teal,
-      Colors.indigo,
+      Colors.orange, Colors.pink, Colors.purple, Colors.blue,
+      Colors.green, Colors.red, Colors.teal, Colors.indigo,
     ];
     final randomColor = colors[Random().nextInt(colors.length)];
 
     emit(state.copyWith(
-      hints: result.hints,
-      solutionPath: result.solution,
-      hintSteps: result.hintSteps,
-      walls: result.walls,
-      remainingSeconds: seconds,
-      initialSeconds: seconds,
+      hints: hints,
+      solutionPath: solution,
+      hintSteps: hintSteps,
+      walls: walls,
+      remainingSeconds: initialSeconds,
       status: GameStatus.playing,
       currentPath: [],
       pathColor: randomColor,
       isAngry: false,
     ));
 
-    _startTimer(seconds);
+    _startTimer(initialSeconds);
+    unawaited(_progressionRepo.ensureNextLevelsExist(worldId, event.level));
   }
 
-  ({List<List<int?>> hints, List<GridOffset> solution, Map<GridOffset, int> hintSteps, Set<String> walls}) 
-  _generatePuzzle(int hintsCount) {
-    final List<GridOffset>? solution = _generateHamiltonianPath();
-    final finalSolution = solution ?? _generateSnakePath();
-
-    final hints = List.generate(6, (_) => List<int?>.generate(6, (_) => null));
-    final Map<GridOffset, int> hintSteps = {};
-    
-    final random = Random();
-    final Set<int> indices = {0, 35}; 
-    
-    while (indices.length < hintsCount) {
-      indices.add(random.nextInt(36));
+  Future<void> _onSelectCell(SelectCell event, Emitter<GameState> emit) async {
+    if (state.status != GameStatus.playing) return;
+    final tapped = GridOffset(event.row, event.col);
+    final currentPath = List<GridOffset>.from(state.currentPath);
+    if (currentPath.isNotEmpty && currentPath.last == tapped) return;
+    if (currentPath.isEmpty) {
+      if (state.hints[event.row][event.col] == 1) emit(state.copyWith(currentPath: [tapped]));
+      return;
     }
-
-    final sortedIndices = indices.toList()..sort();
-    for (int i = 0; i < sortedIndices.length; i++) {
-      final stepIndex = sortedIndices[i];
-      final pos = finalSolution[stepIndex];
-      hints[pos.row][pos.col] = i + 1;
-      hintSteps[pos] = stepIndex;
+    final existingIndex = currentPath.indexOf(tapped);
+    if (existingIndex != -1) {
+      final newPath = currentPath.sublist(0, existingIndex + 1);
+      emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
+      return;
     }
+    final last = currentPath.last;
+    final isAdjacent = (last.row - event.row).abs() + (last.col - event.col).abs() == 1;
+    if (isAdjacent) {
+      if (state.walls.contains(_getWallKey(last, tapped))) return;
+      final newPath = [...currentPath, tapped];
+      
+      if (newPath.length == 36) {
+        if (_validatePath(newPath)) {
+          _timer?.cancel();
+          
+          // Emit intermediate state so UI knows it's won
+          emit(state.copyWith(currentPath: newPath, isAngry: false));
 
-    // Generate walls
-    final Set<String> walls = {};
-    for (int r = 0; r < 6; r++) {
-      for (int c = 0; c < 6; c++) {
-        final current = GridOffset(r, c);
-        final neighbors = [
-          GridOffset(r + 1, c),
-          GridOffset(r, c + 1),
-        ];
-
-        for (var neighbor in neighbors) {
-          if (neighbor.row < 6 && neighbor.col < 6) {
-            // Check if they are NOT consecutive in the solution path
-            if (!_areConsecutive(current, neighbor, finalSolution)) {
-              // Randomly place a wall with some probability to guide the user
-              if (random.nextDouble() < 0.2) { 
-                walls.add(_getWallKey(current, neighbor));
-              }
-            }
+          // Fetch Real Stats before final emission
+          try {
+            final stats = await _progressionRepo.getLevelStatistics('world_1', state.levelNumber);
+            emit(state.copyWith(
+              status: GameStatus.won,
+              averageTimeSeconds: stats.averageSeconds,
+              bestTimeSeconds: stats.bestSeconds,
+            ));
+          } catch (e) {
+            print('Error fetching stats on win: $e');
+            emit(state.copyWith(status: GameStatus.won));
           }
+          return;
         }
       }
+      
+      emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
     }
-
-    return (hints: hints, solution: finalSolution, hintSteps: hintSteps, walls: walls);
-  }
-
-  bool _areConsecutive(GridOffset a, GridOffset b, List<GridOffset> path) {
-    final idxA = path.indexOf(a);
-    final idxB = path.indexOf(b);
-    return (idxA - idxB).abs() == 1;
   }
 
   String _getWallKey(GridOffset a, GridOffset b) {
@@ -119,115 +166,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     return '${list[0]}-${list[1]}';
   }
 
-  List<GridOffset> _generateSnakePath() {
-    final List<GridOffset> path = [];
-    for (int r = 0; r < 6; r++) {
-      if (r % 2 == 0) {
-        for (int c = 0; c < 6; c++) path.add(GridOffset(r, c));
-      } else {
-        for (int c = 5; c >= 0; c--) path.add(GridOffset(r, c));
-      }
-    }
-    return path;
-  }
-
-  List<GridOffset>? _generateHamiltonianPath() {
-    final random = Random();
-    final startRow = random.nextInt(6);
-    final startCol = random.nextInt(6);
-    final path = [GridOffset(startRow, startCol)];
-    final visited = List.generate(6, (_) => List<bool>.generate(6, (_) => false));
-    visited[startRow][startCol] = true;
-
-    if (_solvePath(path, visited, random)) {
-      return path;
-    }
-    return null;
-  }
-
-  bool _solvePath(List<GridOffset> path, List<List<bool>> visited, Random random) {
-    if (path.length == 36) return true;
-
-    final last = path.last;
-    final neighbors = [
-      GridOffset(last.row + 1, last.col),
-      GridOffset(last.row - 1, last.col),
-      GridOffset(last.row, last.col + 1),
-      GridOffset(last.row, last.col - 1),
-    ];
-    neighbors.shuffle(random);
-
-    for (var neighbor in neighbors) {
-      if (neighbor.row >= 0 && neighbor.row < 6 && 
-          neighbor.col >= 0 && neighbor.col < 6 && 
-          !visited[neighbor.row][neighbor.col]) {
-        
-        visited[neighbor.row][neighbor.col] = true;
-        path.add(neighbor);
-        
-        if (_solvePath(path, visited, random)) return true;
-        
-        path.removeLast();
-        visited[neighbor.row][neighbor.col] = false;
-      }
-    }
-    return false;
-  }
-
-  void _onSelectCell(SelectCell event, Emitter<GameState> emit) {
-    if (state.status != GameStatus.playing) return;
-
-    final tapped = GridOffset(event.row, event.col);
-    final currentPath = List<GridOffset>.from(state.currentPath);
-
-    if (currentPath.isNotEmpty && currentPath.last == tapped) return;
-
-    if (currentPath.isEmpty) {
-      if (state.hints[event.row][event.col] == 1) {
-        emit(state.copyWith(currentPath: [tapped]));
-      }
-      return;
-    }
-
-    final existingIndex = currentPath.indexOf(tapped);
-    if (existingIndex != -1) {
-      final newPath = currentPath.sublist(0, existingIndex + 1);
-      emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
-      return;
-    }
-
-    final last = currentPath.last;
-    final isAdjacent = (last.row - event.row).abs() + (last.col - event.col).abs() == 1;
-
-    if (isAdjacent) {
-      // Check for walls
-      if (state.walls.contains(_getWallKey(last, tapped))) {
-        return;
-      }
-
-      final newPath = [...currentPath, tapped];
-      emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
-
-      if (newPath.length == 36) {
-        if (_validatePath(newPath)) {
-          emit(state.copyWith(status: GameStatus.won, isAngry: false));
-          _timer?.cancel();
-        }
-      }
-    }
-  }
-
   bool _checkIfAngry(List<GridOffset> path) {
     int maxHintSeen = 0;
     int hintsCounted = 0;
-    
     for (var pos in path) {
       final val = state.hints[pos.row][pos.col];
       if (val != null) {
         hintsCounted++;
         if (val > maxHintSeen) maxHintSeen = val;
-        
-        // If we seen hint 3 but we only have 1 hint total in path, we skipped one.
         if (maxHintSeen > hintsCounted) return true;
       }
     }
@@ -235,31 +181,22 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   }
 
   bool _validatePath(List<GridOffset> path) {
-    // Collect all hints and their user-provided indices
     final List<({int value, int index})> hintOrder = [];
-    
     for (int r = 0; r < 6; r++) {
       for (int c = 0; c < 6; c++) {
         final hintValue = state.hints[r][c];
         if (hintValue != null) {
           final pos = GridOffset(r, c);
           final userIndex = path.indexOf(pos);
-          if (userIndex == -1) return false; // Should not happen if path.length == 36
+          if (userIndex == -1) return false;
           hintOrder.add((value: hintValue, index: userIndex));
         }
       }
     }
-
-    // Sort by hint value (1, 2, 3...)
     hintOrder.sort((a, b) => a.value.compareTo(b.value));
-
-    // Ensure indices are strictly increasing
     for (int i = 0; i < hintOrder.length - 1; i++) {
-      if (hintOrder[i].index > hintOrder[i+1].index) {
-        return false;
-      }
+      if (hintOrder[i].index > hintOrder[i+1].index) return false;
     }
-
     return true;
   }
 

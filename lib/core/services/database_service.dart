@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../database/app_database.dart';
+import 'package:fixit/core/database/app_database.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -19,5 +19,15 @@ class DatabaseService {
 
     // 2. Initialize Drift
     db = AppDatabase();
+  }
+
+  Future<void> hardReset() async {
+    // 1. Clear local Drift tables
+    await db.customStatement('DELETE FROM level_completions');
+    await db.customStatement('DELETE FROM progressions');
+    await db.customStatement('DELETE FROM players');
+    
+    // 2. Sign out from Supabase (this will trigger a new anonymous session on next restart)
+    await supabase.auth.signOut();
   }
 }

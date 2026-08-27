@@ -7,10 +7,13 @@ import 'package:fixit/features/game/presentation/bloc/game_state.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'package:fixit/features/lives/presentation/bloc/lives_bloc.dart';
 import 'package:fixit/features/lives/presentation/bloc/lives_event.dart';
+import 'package:fixit/core/models/grid_offset.dart';
+import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:fixit/features/auth/presentation/bloc/auth_state.dart';
+import 'package:fixit/features/auth/presentation/bloc/auth_event.dart';
+import 'package:fixit/core/repositories/progression_repository.dart';
 import 'package:fixit/features/home/presentation/widgets/candy_dialog.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
-import 'package:fixit/core/theme/app_colors.dart';
-
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:confetti/confetti.dart';
 import 'package:fixit/core/widgets/tutorial_dialog.dart';
@@ -33,7 +36,6 @@ class _GamePageState extends State<GamePage> {
     super.initState();
     _confettiController = ConfettiController(duration: const Duration(seconds: 3));
     
-    // Show tutorial if it's the first time
     WidgetsBinding.instance.addPostFrameCallback((_) {
       TutorialDialog.showIfFirstTime(
         context,
@@ -52,18 +54,45 @@ class _GamePageState extends State<GamePage> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = context.read<AuthBloc>().state;
+    final playerId = authState is AuthAuthenticated ? authState.user.id : '';
+
     return BlocProvider(
-      create: (context) => GameBloc()..add(StartGame(level: widget.level, difficulty: widget.difficulty)),
+      create: (context) => GameBloc()..add(StartGame(
+        level: widget.level,
+        difficulty: widget.difficulty,
+        playerId: playerId,
+      )),
       child: Scaffold(
         body: BlocListener<GameBloc, GameState>(
           listenWhen: (previous, current) => previous.status != current.status,
-          listener: (context, state) {
+          listener: (context, state) async {
             if (state.status == GameStatus.lost) {
               context.read<LivesBloc>().add(DecrementLife());
               _showGameOverDialog(context);
             } else if (state.status == GameStatus.won) {
+              final authState = context.read<AuthBloc>().state;
+              String? currentUserId;
+              
+              if (authState is AuthAuthenticated) {
+                currentUserId = authState.user.id;
+                final repo = ProgressionRepository();
+                try {
+                  // Await the save to DB before showing dialog
+                  await repo.markLevelAsCompleted(
+                    playerSupabaseId: currentUserId,
+                    worldId: 'world_1',
+                    levelNumber: widget.level,
+                    timeSeconds: state.initialSeconds - state.remainingSeconds,
+                  );
+                } catch (e) {
+                  print('Error saving completion: $e');
+                }
+              }
+              
+              if (!mounted) return;
               _confettiController.play();
-              _showWinDialog(context, state);
+              _showWinDialog(context, state, currentUserId);
             }
           },
           child: Stack(
@@ -92,7 +121,6 @@ class _GamePageState extends State<GamePage> {
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
-              // Help Button (Lightbulb)
               Positioned(
                 top: 20,
                 right: 20,
@@ -130,7 +158,6 @@ class _GamePageState extends State<GamePage> {
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
           child: Column(
             children: [
-              // 3D Style Title (exactly like WORLD MAP)
               Stack(
                 alignment: Alignment.center,
                 children: [
@@ -213,7 +240,6 @@ class _GamePageState extends State<GamePage> {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              // The frame image - enlarged to touch screen edges
               Positioned.fill(
                 child: Transform.scale(
                   scale: 1.08,
@@ -223,7 +249,6 @@ class _GamePageState extends State<GamePage> {
                   ),
                 ),
               ),
-              // The Grid itself - slightly inset so it doesn't overlap the lianes
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: LayoutBuilder(
@@ -345,7 +370,7 @@ class _GamePageState extends State<GamePage> {
 
   void _showGameOverDialog(BuildContext context) {
     Future.delayed(Duration.zero, () {
-      if (!context.mounted) return;
+      if (!mounted) return;
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -386,21 +411,23 @@ class _GamePageState extends State<GamePage> {
     });
   }
 
-  void _showWinDialog(BuildContext context, GameState state) {
+  void _showWinDialog(BuildContext context, GameState state, String? playerId) {
     final timeTaken = state.initialSeconds - state.remainingSeconds;
     final timeStr = "${(timeTaken / 60).floor()}:${(timeTaken % 60).toString().padLeft(2, '0')}";
     
-    // Mock statistics data
-    const averageTimeSeconds = 65; 
-    const averageTimeStr = "1:05";
-    const bestTimeSeconds = 42; 
-    const bestTimeStr = "0:42";
+    final String averageTimeStr = state.averageTimeSeconds > 0 
+      ? "${(state.averageTimeSeconds / 60).floor()}:${(state.averageTimeSeconds % 60).toString().padLeft(2, '0')}"
+      : "--:--";
+      
+    final String bestTimeStr = (state.bestTimeSeconds > 0 && state.bestTimeSeconds < 999999)
+      ? "${(state.bestTimeSeconds / 60).floor()}:${(state.bestTimeSeconds % 60).toString().padLeft(2, '0')}"
+      : "--:--";
     
-    final isNewRecord = timeTaken < bestTimeSeconds;
-    final isFasterThanAverage = timeTaken < averageTimeSeconds;
+    final isNewRecord = (state.bestTimeSeconds == 0 || state.bestTimeSeconds >= 999999) || (timeTaken <= state.bestTimeSeconds);
+    final isFasterThanAverage = (state.averageTimeSeconds > 0) && (timeTaken < state.averageTimeSeconds);
 
     Future.delayed(Duration.zero, () {
-      if (!context.mounted) return;
+      if (!mounted) return;
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -410,13 +437,12 @@ class _GamePageState extends State<GamePage> {
             CandyDialog(
               title: 'VICTORY!',
               onClose: () {
-                context.read<HomeBloc>().add(CompleteLevel());
+                context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
                 Navigator.pop(dialogContext);
                 Navigator.pop(context);
               },
               content: Column(
                 children: [
-                  // Replacing the star with stats
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -438,15 +464,15 @@ class _GamePageState extends State<GamePage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("Average Time:", style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text(averageTimeStr, style: const TextStyle(fontWeight: FontWeight.w900)),
+                            const Text("Average Time:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            Text(averageTimeStr, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
                           ],
                         ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("Best Time:", style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text(bestTimeStr, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.blue)),
+                            const Text("Best Time:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            Text(bestTimeStr, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.blue, fontSize: 14)),
                           ],
                         ),
                         const SizedBox(height: 10),
@@ -461,9 +487,9 @@ class _GamePageState extends State<GamePage> {
                             "You are faster than average!",
                             style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.candyGreenDark),
                           )
-                        else
+                        else if (state.averageTimeSeconds > 0)
                           Text(
-                            "Average is ${timeTaken - averageTimeSeconds}s faster than you",
+                            "Average is ${timeTaken - state.averageTimeSeconds}s faster than you",
                             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.redAccent),
                           ),
                       ],
@@ -489,7 +515,7 @@ class _GamePageState extends State<GamePage> {
                         color: AppColors.candyPink,
                         darkColor: AppColors.candyPinkDark,
                         onPressed: () {
-                          context.read<HomeBloc>().add(CompleteLevel());
+                          context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
                           Navigator.pop(dialogContext);
                           Navigator.pop(context);
                         },
@@ -503,10 +529,11 @@ class _GamePageState extends State<GamePage> {
                         height: 60,
                         color: AppColors.candyGreen,
                         darkColor: AppColors.candyGreenDark,
-                        onPressed: () {
-                          context.read<HomeBloc>().add(CompleteLevel());
+                        onPressed: () async {
+                          // Await completion before navigation
+                          context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
+                          
                           Navigator.pop(dialogContext);
-                          // We push a new game page for the next level
                           final nextLevel = widget.level + 1;
                           Navigator.pushReplacement(
                             context,
@@ -528,27 +555,25 @@ class _GamePageState extends State<GamePage> {
                 ],
               ),
             ),
-            // Main Firework Burst (Center)
             IgnorePointer(
               child: ConfettiWidget(
                 confettiController: _confettiController,
                 blastDirectionality: BlastDirectionality.explosive,
                 shouldLoop: false,
-                createParticlePath: drawFireworkSparkle, // Sparkle shape
+                createParticlePath: drawFireworkSparkle, 
                 colors: const [
                   Colors.yellow,
                   Colors.white,
                   Colors.amber,
                   Colors.orangeAccent,
                 ],
-                numberOfParticles: 8, // Very few particles
+                numberOfParticles: 8,
                 gravity: 0.1,
-                minBlastForce: 15, // High spread
+                minBlastForce: 15,
                 maxBlastForce: 30,
                 blastDirection: 3.14 * 1.5,
               ),
             ),
-            // Spread-out burst Left
             Positioned(
               left: 30,
               top: 150,
@@ -566,7 +591,6 @@ class _GamePageState extends State<GamePage> {
                 ),
               ),
             ),
-            // Spread-out burst Right
             Positioned(
               right: 30,
               top: 150,
@@ -645,7 +669,7 @@ class PathLinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (path.isEmpty) return;
-    final paint = Paint()..color = color.withOpacity(1.0)..strokeWidth = cellSize * 0.7..strokeCap = StrokeCap.round..strokeJoin = StrokeJoin.round..style = PaintingStyle.stroke;
+    final paint = Paint()..color = color.withValues(alpha: 1.0)..strokeWidth = cellSize * 0.7..strokeCap = StrokeCap.round..strokeJoin = StrokeJoin.round..style = PaintingStyle.stroke;
     final shadowPaint = Paint()..color = Colors.black26..strokeWidth = cellSize * 0.75..strokeCap = StrokeCap.round..style = PaintingStyle.stroke..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
     final uiPath = Path();
     final startOffset = Offset((path[0].col * cellSize) + (cellSize / 2), (path[0].row * cellSize) + (cellSize / 2));
@@ -686,7 +710,6 @@ class _WallPainter extends CustomPainter {
       final c2 = int.parse(b[1]);
 
       if (r1 == r2) {
-        // Vertical wall between columns
         final x = max(c1, c2) * cellSize;
         canvas.drawLine(
           Offset(x, r1 * cellSize),
@@ -694,7 +717,6 @@ class _WallPainter extends CustomPainter {
           paint,
         );
       } else {
-        // Horizontal wall between rows
         final y = max(r1, r2) * cellSize;
         canvas.drawLine(
           Offset(c1 * cellSize, y),
@@ -709,22 +731,18 @@ class _WallPainter extends CustomPainter {
   bool shouldRepaint(covariant _WallPainter oldDelegate) => oldDelegate.walls != walls;
 }
 
-/// A thin sparkle path for firework sparks
 Path drawFireworkSparkle(Size size) {
   final path = Path();
   final double halfWidth = size.width / 2;
   final double halfHeight = size.height / 2;
-  
-  // A very thin 4-pointed sparkle
-  path.moveTo(halfWidth, 0); // Top
+  path.moveTo(halfWidth, 0); 
   path.lineTo(halfWidth + size.width * 0.05, halfHeight - size.height * 0.05);
-  path.lineTo(size.width, halfHeight); // Right
+  path.lineTo(size.width, halfHeight); 
   path.lineTo(halfWidth + size.width * 0.05, halfHeight + size.height * 0.05);
-  path.lineTo(halfWidth, size.height); // Bottom
+  path.lineTo(halfWidth, size.height); 
   path.lineTo(halfWidth - size.width * 0.05, halfHeight + size.height * 0.05);
-  path.lineTo(0, halfHeight); // Left
+  path.lineTo(0, halfHeight); 
   path.lineTo(halfWidth - size.width * 0.05, halfHeight - size.height * 0.05);
   path.close();
   return path;
 }
-
