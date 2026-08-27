@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:fixit/core/database/app_database.dart';
 import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/core/models/grid_offset.dart';

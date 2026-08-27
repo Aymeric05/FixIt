@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fixit/features/lives/presentation/bloc/lives_bloc.dart';
-import 'package:fixit/features/lives/presentation/bloc/lives_state.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_state.dart';
 import 'package:fixit/features/profile/presentation/widgets/profile_modal.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
+import 'package:fixit/features/friends/presentation/bloc/friends_bloc.dart';
+import 'package:fixit/features/friends/presentation/bloc/friends_state.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:fixit/core/widgets/candy_icons.dart';
@@ -37,13 +37,18 @@ class TopNavBar extends StatelessWidget {
                 children: [
                   _buildProfileSection(context),
                   const SizedBox(height: 12),
-                  _buildNavButton(
-                    context,
-                    icon: Icons.people,
-                    label: 'Social',
-                    color: AppColors.candyPink,
-                    darkColor: AppColors.candyPinkDark,
-                    onPressed: () => _showCandyDialog(context, const SocialDialog()),
+                  BlocBuilder<FriendsBloc, FriendsState>(
+                    builder: (context, state) {
+                      return _buildNavButton(
+                        context,
+                        icon: Icons.people,
+                        label: 'Social',
+                        color: AppColors.candyPink,
+                        darkColor: AppColors.candyPinkDark,
+                        badgeCount: state.incomingRequests.length,
+                        onPressed: () => _showCandyDialog(context, const SocialDialog()),
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
                   _buildNavButton(
@@ -109,20 +114,27 @@ class TopNavBar extends StatelessWidget {
   Widget _buildProfileSection(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
-        if (state is AuthAuthenticated) {
-          return _buildNavButton(
-            context,
-            icon: Icons.person,
-            label: 'Profile',
-            color: AppColors.candyBlue,
-            darkColor: AppColors.candyBlueDark,
-            onPressed: () => showDialog(
-              context: context,
-              builder: (dialogContext) => ProfileModal(player: state.profile),
-            ),
-          );
-        }
-        return const SizedBox.shrink();
+        final bool isAuthenticated = state is AuthAuthenticated;
+        return _buildNavButton(
+          context,
+          icon: Icons.person,
+          label: 'Profile',
+          color: AppColors.candyBlue,
+          darkColor: AppColors.candyBlueDark,
+          onPressed: isAuthenticated
+              ? () => showDialog(
+                    context: context,
+                    builder: (dialogContext) => ProfileModal(player: state.profile),
+                  )
+              : () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Connecting to server...'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+        );
       },
     );
   }
@@ -272,19 +284,44 @@ class TopNavBar extends StatelessWidget {
     required Color color,
     required Color darkColor,
     required VoidCallback onPressed,
+    int badgeCount = 0,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        CandyButton(
-          width: 75,
-          height: 75,
-          borderRadius: 20,
-          depth: 6,
-          color: color,
-          darkColor: darkColor,
-          onPressed: onPressed,
-          child: customIcon ?? Icon(icon, color: Colors.white, size: 40),
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            CandyButton(
+              width: 75,
+              height: 75,
+              borderRadius: 20,
+              depth: 6,
+              color: color,
+              darkColor: darkColor,
+              onPressed: onPressed,
+              child: customIcon ?? Icon(icon, color: Colors.white, size: 40),
+            ),
+            if (badgeCount > 0)
+              Positioned(
+                right: -5,
+                top: -5,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(2, 2))],
+                  ),
+                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  child: Text(
+                    '$badgeCount',
+                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 4),
         Text(

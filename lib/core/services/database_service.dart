@@ -22,12 +22,28 @@ class DatabaseService {
   }
 
   Future<void> hardReset() async {
-    // 1. Clear local Drift tables
+    final user = supabase.auth.currentUser;
+    
+    // 1. Wipe remote data if user exists
+    if (user != null) {
+      try {
+        print('Wiping remote data for user: ${user.id}');
+        // Order matters if there are FKs (though CASCADE helps)
+        await supabase.from('level_completions').delete().eq('player_id', user.id);
+        await supabase.from('progression').delete().eq('player_id', user.id);
+        await supabase.from('profiles').delete().eq('id', user.id);
+        print('Remote data wiped successfully.');
+      } catch (e) {
+        print('Error wiping remote data: $e');
+      }
+    }
+
+    // 2. Clear local Drift tables
     await db.customStatement('DELETE FROM level_completions');
     await db.customStatement('DELETE FROM progressions');
     await db.customStatement('DELETE FROM players');
     
-    // 2. Sign out from Supabase (this will trigger a new anonymous session on next restart)
+    // 3. Sign out from Supabase
     await supabase.auth.signOut();
   }
 }
