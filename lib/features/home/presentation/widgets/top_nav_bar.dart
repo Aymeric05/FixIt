@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../lives/presentation/bloc/lives_bloc.dart';
-import '../../../lives/presentation/bloc/lives_state.dart';
-import '../bloc/home_bloc.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/candy_button.dart';
-import '../../../../core/widgets/candy_icons.dart';
-import 'settings_dialog.dart';
-import 'social_dialog.dart';
-import 'no_ads_dialog.dart';
-import 'lives_store_dialog.dart';
-import 'leaderboard_dialog.dart';
-import 'map_dialog.dart';
+import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:fixit/features/auth/presentation/bloc/auth_state.dart';
+import 'package:fixit/features/profile/presentation/widgets/profile_modal.dart';
+import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
+import 'package:fixit/features/friends/presentation/bloc/friends_bloc.dart';
+import 'package:fixit/features/friends/presentation/bloc/friends_state.dart';
+import 'package:fixit/core/theme/app_colors.dart';
+import 'package:fixit/core/widgets/candy_button.dart';
+import 'package:fixit/core/widgets/candy_icons.dart';
+import 'package:fixit/features/home/presentation/widgets/settings_dialog.dart';
+import 'package:fixit/features/home/presentation/widgets/social_dialog.dart';
+import 'package:fixit/features/home/presentation/widgets/no_ads_dialog.dart';
+import 'package:fixit/features/home/presentation/widgets/lives_store_dialog.dart';
+import 'package:fixit/features/home/presentation/widgets/leaderboard_dialog.dart';
+import 'package:fixit/features/home/presentation/widgets/map_dialog.dart';
 
 class TopNavBar extends StatelessWidget {
   const TopNavBar({super.key});
@@ -27,17 +30,25 @@ class TopNavBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Left side: Leaderboard, Map, Social
+              // Left side: Profile, Social, Map, Rank
               Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildNavButton(
-                    context,
-                    icon: Icons.people,
-                    label: 'Social',
-                    color: AppColors.candyPink,
-                    darkColor: AppColors.candyPinkDark,
-                    onPressed: () => _showCandyDialog(context, const SocialDialog()),
+                  _buildProfileSection(context),
+                  const SizedBox(height: 12),
+                  BlocBuilder<FriendsBloc, FriendsState>(
+                    builder: (context, state) {
+                      return _buildNavButton(
+                        context,
+                        icon: Icons.people,
+                        label: 'Social',
+                        color: AppColors.candyPink,
+                        darkColor: AppColors.candyPinkDark,
+                        badgeCount: state.incomingRequests.length,
+                        onPressed: () => _showCandyDialog(context, const SocialDialog()),
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
                   _buildNavButton(
@@ -60,8 +71,15 @@ class TopNavBar extends StatelessWidget {
                 ],
               ),
 
-              // Center: Juicy Heart
-              _buildJuicyHeart(context, state),
+              // Center: Juicy Heart & Hints
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildJuicyHeart(context, state),
+                  const SizedBox(width: 15),
+                  _buildHintIndicator(context, state),
+                ],
+              ),
 
               // Right side: No Ads & Settings
               Column(
@@ -90,6 +108,71 @@ class TopNavBar extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildProfileSection(BuildContext context) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        final bool isAuthenticated = state is AuthAuthenticated;
+        return _buildNavButton(
+          context,
+          icon: Icons.person,
+          label: 'Profile',
+          color: AppColors.candyBlue,
+          darkColor: AppColors.candyBlueDark,
+          onPressed: isAuthenticated
+              ? () => showDialog(
+                    context: context,
+                    builder: (dialogContext) => ProfileModal(player: state.profile),
+                  )
+              : () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Connecting to server...'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+        );
+      },
+    );
+  }
+
+  Widget _buildHintIndicator(BuildContext context, HomeState state) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            const Icon(Icons.lightbulb, color: Colors.black26, size: 74),
+            ShaderMask(
+              shaderCallback: (bounds) => const RadialGradient(
+                center: Alignment(-0.3, -0.3),
+                colors: [Colors.white, Colors.amber, Color(0xFFB8860B)],
+                radius: 0.8,
+              ).createShader(bounds),
+              child: const Icon(Icons.lightbulb, color: Colors.white, size: 70),
+            ),
+            Text(
+              '${state.hints}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 24,
+                shadows: [Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(2, 2))],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        const Text(
+          'HINTS',
+          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900),
+        ),
+      ],
     );
   }
 
@@ -201,19 +284,44 @@ class TopNavBar extends StatelessWidget {
     required Color color,
     required Color darkColor,
     required VoidCallback onPressed,
+    int badgeCount = 0,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        CandyButton(
-          width: 75,
-          height: 75,
-          borderRadius: 20,
-          depth: 6,
-          color: color,
-          darkColor: darkColor,
-          onPressed: onPressed,
-          child: customIcon ?? Icon(icon, color: Colors.white, size: 40),
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            CandyButton(
+              width: 75,
+              height: 75,
+              borderRadius: 20,
+              depth: 6,
+              color: color,
+              darkColor: darkColor,
+              onPressed: onPressed,
+              child: customIcon ?? Icon(icon, color: Colors.white, size: 40),
+            ),
+            if (badgeCount > 0)
+              Positioned(
+                right: -5,
+                top: -5,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(2, 2))],
+                  ),
+                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  child: Text(
+                    '$badgeCount',
+                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 4),
         Text(
@@ -228,14 +336,4 @@ class TopNavBar extends StatelessWidget {
       ],
     );
   }
-}
-
-class _StripedPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    // No longer used, but kept to avoid compilation errors if referenced
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

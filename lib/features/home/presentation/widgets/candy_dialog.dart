@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/widgets/candy_button.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:fixit/core/widgets/candy_button.dart';
+import 'package:fixit/core/theme/app_colors.dart';
 
 class CandyDialog extends StatelessWidget {
   final String title;

@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'candy_button.dart';
-import '../theme/app_colors.dart';
-import '../../features/game/presentation/pages/game_page.dart';
-import '../../features/game/presentation/bloc/game_state.dart';
+import 'package:fixit/core/widgets/candy_button.dart';
+import 'package:fixit/core/theme/app_colors.dart';
+import 'package:fixit/core/models/grid_offset.dart';
+import 'package:fixit/features/game/presentation/pages/game_page.dart';
 
 class TutorialDialog extends StatefulWidget {
   final String title;
@@ -52,10 +52,10 @@ class _TutorialDialogState extends State<TutorialDialog> {
 
   // A simple 4x4 snake path for demonstration
   final List<GridOffset> _demoPath = [
-    const GridOffset(0, 0), const GridOffset(0, 1), const GridOffset(0, 2), const GridOffset(0, 3),
-    const GridOffset(1, 3), const GridOffset(1, 2), const GridOffset(1, 1), const GridOffset(1, 0),
-    const GridOffset(2, 0), const GridOffset(2, 1), const GridOffset(2, 2), const GridOffset(2, 3),
-    const GridOffset(3, 3), const GridOffset(3, 2), const GridOffset(3, 1), const GridOffset(3, 0),
+    GridOffset(0, 0), GridOffset(0, 1), GridOffset(0, 2), GridOffset(0, 3),
+    GridOffset(1, 3), GridOffset(1, 2), GridOffset(1, 1), GridOffset(1, 0),
+    GridOffset(2, 0), GridOffset(2, 1), GridOffset(2, 2), GridOffset(2, 3),
+    GridOffset(3, 3), GridOffset(3, 2), GridOffset(3, 1), GridOffset(3, 0),
   ];
 
   final List<List<int?>> _demoHints = [

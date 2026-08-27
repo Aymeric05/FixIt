@@ -1,28 +1,40 @@
-# Walkthrough: Flexible Validation & Wall Obstacles
+# Walkthrough: Comprehensive Friend System
 
-I have improved the "Zip" game mechanics by making the validation more intelligent and adding "walls" to the levels to guide the player and increase the puzzle quality.
+I have implemented a full-featured social system that allows players to find friends, manage requests, and maintain their friend list with real-time updates.
 
-## Key Enhancements
+## Key Features
 
-### ✅ Flexible Path Validation
-- **Accept Any Valid Path**: The game no longer requires you to follow the *exact* path imagined by the generator.
-- **Requirement**: As long as you fill all 36 cells and visit the hints in the correct order (1, then 2, then 3, etc.), your solution will be accepted. This fixes the issue where valid solutions were sometimes rejected.
+### 👥 Friend Management
+- **Friend List**: The **Social** dialog now displays your current friends with their pseudos and a quick "X" button to remove them.
+- **Search & Add**: A new **Add Friend** interface allows you to search for any player by their pseudo and send them a request instantly.
+- **Prevention**: The system prevents duplicate friend requests if one is already pending.
+- **Self-Add Protection**: Double security layer prevents adding yourself as a friend (filtered from search results + explicit check in the repository).
 
-### 🧱 Wall Obstacles
-- **Guided Puzzles**: Thick black lines now appear between certain cells. These are "walls" that you cannot cross.
-- **Improved Design**: Walls are strategically placed during generation to block "short cuts" and ensure that the puzzle has a more intentional flow, similar to the reference image you provided.
-- **Enforcement**: The drag-to-fill interaction now respects these boundaries, preventing the path from jumping through a wall.
+### 📩 Friend Requests & Notifications
+- **Request Center**: A dedicated view lists all your incoming friend requests.
+- **Accept/Reject**: Simple Green (Accept) and Red (Reject) buttons to manage your social circle.
+- **Real-Time Badge**: Added a **dynamic red bubble** on the Social button in the main menu that shows the number of pending requests. It disappears automatically when all requests are handled.
 
-## Technical Details
+### ☁️ Cloud & Local Synchronization
+- **Hybrid Storage**: Friends and requests are synced between **Supabase** (for global consistency) and **Drift** (for instant offline access).
+- **Auto-Refresh**: The friend list and badges update automatically when you log in or complete an action.
 
-- **`GameState`**: Now tracks a `Set<String>` of wall keys (e.g., "0,0-0,1") representing undirected edges that are blocked.
-- **`GameBloc`**:
-    - **Wall Generator**: Randomly places walls between adjacent cells that are not neighbors in the generated solution.
-    - **Validator**: Sorts hints by value and checks their indices in the user's path to ensure a strictly increasing sequence.
-- **`GamePage`**: Uses the `Border` property of each grid cell to dynamically render `wallSide` (thick black) or `defaultSide` (thin grey) based on the state.
+## Changes Made
+
+### Database & Logic
+- **`AppDatabase`**: Upgraded to Version 3 with new `Friends` and `FriendRequests` tables.
+- **`FriendsRepository`**: Handles all Supabase joins and Drift caching logic.
+- **`FriendsBloc`**: Manages the complex state of search results, incoming requests, and the friend list.
+
+### UI Components
+- **`SocialDialog`**: Redesigned to act as the main social hub.
+- **`AddFriendDialog`**: New searchable interface for player discovery.
+- **`FriendRequestsDialog`**: New interface for handling incoming invitations.
+- **`TopNavBar`**: Updated the Social button with a notification badge.
 
 ## Verification
 
-1. **Start a Game**: Notice the thick black borders between some cells.
-2. **Test Walls**: Try dragging through a wall. The path should stop or ignore that movement.
-3. **Alternative Solutions**: If you find a path that fills the grid and hits hints in order but is different from the "obvious" path, verify that it still triggers a win.
+1. **Badge Test**: Send a friend request from another account. Verify the red bubble appears on the main screen.
+2. **Search Test**: Open **Social** > **Add**, type a known pseudo. Verify the player appears and you can click **ADD**.
+3. **Acceptance Test**: Open **Social** > **Requests**, click the **Green Check**. Verify the player now appears in your **MY FRIENDS** list.
+4. **Removal Test**: Click the **X** on a friend. Verify they are removed from both your list and your friend's list.

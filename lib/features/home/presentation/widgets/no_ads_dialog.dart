@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../bloc/home_bloc.dart';
-import 'candy_dialog.dart';
-import '../../../../core/widgets/candy_button.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
+import 'package:fixit/features/home/presentation/widgets/candy_dialog.dart';
+import 'package:fixit/core/widgets/candy_button.dart';
+import 'package:fixit/core/theme/app_colors.dart';
 
 class NoAdsDialog extends StatelessWidget {
   const NoAdsDialog({super.key});

@@ -11,7 +11,7 @@ The application integrates level progression mechanics, a time-limited life syst
 *   **Frontend:** Flutter / Dart
 *   **State Management:** BLoC (Business Logic Component). Used to strictly separate UI from business logic, functioning similarly to an MVVM pattern.
 *   **Backend & Database:** Supabase (PostgreSQL, Auth, Edge Functions).
-*   **Local Storage:** Isar Database (high performance for caching progression, lives, and offline settings).
+*   **Local Storage:** Drift (SQLite) - high performance for caching progression, lives, and offline settings, fully compatible with Android SDK 34+.
 *   **Monetization (Ads):** Google Mobile Ads (AdMob) integrated standalone.
 *   **Monetization (IAP):** RevenueCat for secure in-app purchases.
 

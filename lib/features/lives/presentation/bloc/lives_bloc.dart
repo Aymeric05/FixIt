@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'lives_event.dart';
-import 'lives_state.dart';
+import 'package:fixit/features/lives/presentation/bloc/lives_event.dart';
+import 'package:fixit/features/lives/presentation/bloc/lives_state.dart';
 
 class LivesBloc extends Bloc<LivesEvent, LivesState> {
   LivesBloc() : super(const LivesState()) {

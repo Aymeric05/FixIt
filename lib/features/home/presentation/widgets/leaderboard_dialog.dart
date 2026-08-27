@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'candy_dialog.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:fixit/features/home/presentation/widgets/candy_dialog.dart';
+import 'package:fixit/core/theme/app_colors.dart';
 
 class LeaderboardDialog extends StatefulWidget {
   const LeaderboardDialog({super.key});
