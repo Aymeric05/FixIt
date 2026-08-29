@@ -23,6 +23,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<BuyNoAds>(_onBuyNoAds);
     on<TickLifeRecharge>(_onTickLifeRecharge);
     on<CompleteLevel>(_onCompleteLevel);
+    on<LoseLife>(_onLoseLife);
     on<ChangeWorld>(_onChangeWorld);
   }
 
@@ -98,7 +99,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     if (state.lives < state.maxLives) {
       final now = DateTime.now();
       if (state.nextLifeTime == null) {
-        emit(state.copyWith(nextLifeTime: now.add(const Duration(minutes: 60))));
+        emit(state.copyWith(
+          nextLifeTime: now.add(const Duration(minutes: 60)),
+          timerTick: state.timerTick + 1,
+        ));
       } else if (now.isAfter(state.nextLifeTime!)) {
         final newLives = state.lives + 1;
         final nextTime = newLives < state.maxLives 
@@ -107,16 +111,51 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         
         await _db.update(_db.players).write(PlayersCompanion(lives: Value(newLives)));
         
-        emit(state.copyWith(lives: newLives, nextLifeTime: nextTime));
+        emit(state.copyWith(
+          lives: newLives, 
+          nextLifeTime: nextTime,
+          lastAction: HomeLastAction.lifeRegained,
+          timerTick: state.timerTick + 1,
+        ));
+      } else {
+        // Just increment tick to force UI refresh
+        emit(state.copyWith(timerTick: state.timerTick + 1));
       }
     } else {
-      emit(state.copyWith(nextLifeTime: null));
+      if (state.nextLifeTime != null) {
+        emit(state.copyWith(nextLifeTime: null, timerTick: state.timerTick + 1));
+      }
     }
   }
 
   Future<void> _onCompleteLevel(CompleteLevel event, Emitter<HomeState> emit) async {
+    emit(state.copyWith(lastAction: HomeLastAction.win));
     // Hard refresh from DB for the specific player
     await _refreshProgression(emit, event.playerId);
+  }
+
+  Future<void> _onLoseLife(LoseLife event, Emitter<HomeState> emit) async {
+    if (state.lives > 0) {
+      final newLives = state.lives - 1;
+      
+      final query = _db.update(_db.players);
+      if (event.playerId != null) {
+        query.where((t) => t.supabaseId.equals(event.playerId!));
+      } else {
+        query.where((t) => t.id.isNotNull());
+      }
+      await query.write(PlayersCompanion(lives: Value(newLives)));
+      
+      emit(state.copyWith(
+        lives: newLives,
+        lastAction: HomeLastAction.loss,
+      ));
+      
+      // If we were at max, start the timer
+      if (state.lives == state.maxLives) {
+        emit(state.copyWith(nextLifeTime: DateTime.now().add(const Duration(minutes: 60))));
+      }
+    }
   }
 
   void _onChangeWorld(ChangeWorld event, Emitter<HomeState> emit) {

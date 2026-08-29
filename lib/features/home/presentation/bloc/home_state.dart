@@ -1,6 +1,7 @@
 part of 'home_bloc.dart';
 
 enum GameDifficulty { easy, medium, hard }
+enum HomeLastAction { none, win, loss, lifeRegained }
 
 class HomeState extends Equatable {
   final int currentLevel;
@@ -21,6 +22,9 @@ class HomeState extends Equatable {
   final int levelsCompletedInWorld;
   final int maxLevelsInWorld;
   final int currentWorldIndex;
+  
+  final HomeLastAction lastAction;
+  final int timerTick; // New field to force UI refresh every second
 
   const HomeState({
     this.currentLevel = 1,
@@ -37,6 +41,8 @@ class HomeState extends Equatable {
     this.levelsCompletedInWorld = 0,
     this.maxLevelsInWorld = 10,
     this.currentWorldIndex = 1,
+    this.lastAction = HomeLastAction.none,
+    this.timerTick = 0,
   });
 
   HomeState copyWith({
@@ -54,6 +60,8 @@ class HomeState extends Equatable {
     int? levelsCompletedInWorld,
     int? maxLevelsInWorld,
     int? currentWorldIndex,
+    HomeLastAction? lastAction,
+    int? timerTick,
   }) {
     return HomeState(
       currentLevel: currentLevel ?? this.currentLevel,
@@ -70,6 +78,8 @@ class HomeState extends Equatable {
       levelsCompletedInWorld: levelsCompletedInWorld ?? this.levelsCompletedInWorld,
       maxLevelsInWorld: maxLevelsInWorld ?? this.maxLevelsInWorld,
       currentWorldIndex: currentWorldIndex ?? this.currentWorldIndex,
+      lastAction: lastAction ?? this.lastAction,
+      timerTick: timerTick ?? this.timerTick,
     );
   }
 
@@ -89,5 +99,7 @@ class HomeState extends Equatable {
         levelsCompletedInWorld,
         maxLevelsInWorld,
         currentWorldIndex,
+        lastAction,
+        timerTick,
       ];
 }

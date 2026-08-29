@@ -40,6 +40,13 @@ class CompleteLevel extends HomeEvent {
   List<Object> get props => [playerId ?? ''];
 }
 
+class LoseLife extends HomeEvent {
+  final String? playerId;
+  const LoseLife({this.playerId});
+  @override
+  List<Object> get props => [playerId ?? ''];
+}
+
 class ChangeWorld extends HomeEvent {
   final int worldIndex;
   const ChangeWorld(this.worldIndex);

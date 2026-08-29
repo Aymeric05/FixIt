@@ -58,7 +58,7 @@ class _HomePageState extends State<HomePage> {
         ),
         BlocListener<HomeBloc, HomeState>(
           listenWhen: (previous, current) =>
-              previous.levelsCompletedInWorld != current.levelsCompletedInWorld,
+              previous.levelsCompletedInWorld != current.levelsCompletedInWorld && current.lastAction == HomeLastAction.win,
           listener: (context, state) {
             _confettiController.play();
           },
@@ -117,6 +117,10 @@ class _HomePageState extends State<HomePage> {
                                         child: Stack(
                                           alignment: Alignment.center,
                                           children: [
+                                            Positioned(
+                                              left: 20,
+                                              child: _buildHintIndicator(context, state),
+                                            ),
                                             MainPlayButton(
                                               level: state.currentLevel,
                                               onTap: () {
@@ -131,7 +135,7 @@ class _HomePageState extends State<HomePage> {
                                               },
                                             ),
                                             Positioned(
-                                              right: 20,
+                                              right: 25,
                                               child: _FloatingBuyButton(),
                                             ),
                                           ],
@@ -195,6 +199,43 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildHintIndicator(BuildContext context, HomeState state) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            const Icon(Icons.lightbulb, color: Colors.black26, size: 54),
+            ShaderMask(
+              shaderCallback: (bounds) => const RadialGradient(
+                center: Alignment(-0.3, -0.3),
+                colors: [Colors.white, Colors.amber, Color(0xFFB8860B)],
+                radius: 0.8,
+              ).createShader(bounds),
+              child: const Icon(Icons.lightbulb, color: Colors.white, size: 50),
+            ),
+            Text(
+              '${state.hints}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 18,
+                shadows: [Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(2, 2))],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        const Text(
+          'HINTS',
+          style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w900),
+        ),
+      ],
     );
   }
 
@@ -282,8 +323,8 @@ class _FloatingBuyButtonState extends State<_FloatingBuyButton>
         );
       },
       child: CandyButton(
-        width: 80,
-        height: 80,
+        width: 60,
+        height: 60,
         color: AppColors.candyPink,
         darkColor: AppColors.candyPinkDark,
         onPressed: () {
@@ -298,14 +339,14 @@ class _FloatingBuyButtonState extends State<_FloatingBuyButton>
         child: const Stack(
           alignment: Alignment.center,
           children: [
-            Icon(Icons.favorite, color: Colors.white, size: 40),
+            Icon(Icons.favorite, color: Colors.white, size: 30),
             Positioned(
               right: 0,
               bottom: 0,
               child: CircleAvatar(
-                radius: 12,
+                radius: 10,
                 backgroundColor: AppColors.candyGreen,
-                child: Icon(Icons.add, color: Colors.white, size: 18),
+                child: Icon(Icons.add, color: Colors.white, size: 14),
               ),
             ),
           ],

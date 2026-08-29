@@ -37,3 +37,5 @@ class TimerTick extends GameEvent {
   @override
   List<Object> get props => [remainingSeconds];
 }
+
+class ContinueGameWithVideo extends GameEvent {}

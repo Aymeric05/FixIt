@@ -17,6 +17,7 @@ import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:confetti/confetti.dart';
 import 'package:fixit/core/widgets/tutorial_dialog.dart';
+import 'package:fixit/core/widgets/breaking_heart_animation.dart';
 
 class GamePage extends StatefulWidget {
   final int level;
@@ -68,8 +69,11 @@ class _GamePageState extends State<GamePage> {
           listenWhen: (previous, current) => previous.status != current.status,
           listener: (context, state) async {
             if (state.status == GameStatus.lost) {
-              context.read<LivesBloc>().add(DecrementLife());
-              _showGameOverDialog(context);
+              final authState = context.read<AuthBloc>().state;
+              final playerId = authState is AuthAuthenticated ? authState.user.id : null;
+              final currentLives = context.read<HomeBloc>().state.lives;
+              
+              _showGameOverDialog(context, currentLives, playerId);
             } else if (state.status == GameStatus.won) {
               final authState = context.read<AuthBloc>().state;
               String? currentUserId;
@@ -418,7 +422,7 @@ class _GamePageState extends State<GamePage> {
     );
   }
 
-  void _showGameOverDialog(BuildContext context) {
+  void _showGameOverDialog(BuildContext context, int currentLives, String? playerId) {
     Future.delayed(Duration.zero, () {
       if (!mounted) return;
       showDialog(
@@ -428,7 +432,12 @@ class _GamePageState extends State<GamePage> {
           title: 'GAME OVER',
           content: Column(
             children: [
-              const Icon(Icons.heart_broken, color: Colors.red, size: 80),
+              BreakingHeartAnimation(
+                initialLives: currentLives,
+                onAnimationComplete: () {
+                  // Optional: sound or additional effect
+                },
+              ),
               const SizedBox(height: 20),
               const Text(
                 "IT'S SO SAD... YOU DIDN'T SUCCEED!",
@@ -441,11 +450,34 @@ class _GamePageState extends State<GamePage> {
               ),
               const SizedBox(height: 30),
               CandyButton(
-                width: 200,
+                width: 240,
+                height: 60,
+                color: AppColors.candyBlue,
+                darkColor: AppColors.candyBlueDark,
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  context.read<GameBloc>().add(ContinueGameWithVideo());
+                },
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.videocam, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text(
+                      'CONTINUE (+3 MIN)',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              CandyButton(
+                width: 240,
                 height: 60,
                 color: AppColors.candyPink,
                 darkColor: AppColors.candyPinkDark,
                 onPressed: () {
+                  context.read<HomeBloc>().add(LoseLife(playerId: playerId));
                   Navigator.pop(dialogContext);
                   Navigator.pop(context);
                 },

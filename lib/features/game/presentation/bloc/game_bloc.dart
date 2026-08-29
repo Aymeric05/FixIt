@@ -18,6 +18,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<StartGame>(_onStartGame);
     on<SelectCell>(_onSelectCell);
     on<TimerTick>(_onTimerTick);
+    on<ContinueGameWithVideo>(_onContinueGameWithVideo);
   }
 
   Future<void> _onStartGame(StartGame event, Emitter<GameState> emit) async {
@@ -218,6 +219,16 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     } else {
       emit(state.copyWith(remainingSeconds: event.remainingSeconds));
     }
+  }
+
+  void _onContinueGameWithVideo(ContinueGameWithVideo event, Emitter<GameState> emit) {
+    _timer?.cancel();
+    final newTime = state.remainingSeconds + 180;
+    emit(state.copyWith(
+      remainingSeconds: newTime,
+      status: GameStatus.playing,
+    ));
+    _startTimer(newTime);
   }
 
   @override

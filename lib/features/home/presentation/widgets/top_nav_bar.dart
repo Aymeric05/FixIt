@@ -30,79 +30,77 @@ class TopNavBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Left side: Profile, Social, Map, Rank
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildProfileSection(context),
-                  const SizedBox(height: 12),
-                  BlocBuilder<FriendsBloc, FriendsState>(
-                    builder: (context, state) {
-                      return _buildNavButton(
-                        context,
-                        icon: Icons.people,
-                        label: 'Social',
-                        color: AppColors.candyPink,
-                        darkColor: AppColors.candyPinkDark,
-                        badgeCount: state.incomingRequests.length,
-                        onPressed: () => _showCandyDialog(context, const SocialDialog()),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _buildNavButton(
-                    context,
-                    icon: Icons.airplanemode_active,
-                    label: 'Map',
-                    color: AppColors.candyGreen,
-                    darkColor: AppColors.candyGreenDark,
-                    onPressed: () => _showCandyDialog(context, const MapDialog()),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildNavButton(
-                    context,
-                    icon: Icons.calendar_today,
-                    label: 'Rank',
-                    color: AppColors.candyBlue,
-                    darkColor: AppColors.candyBlueDark,
-                    onPressed: () => _showCandyDialog(context, const LeaderboardDialog()),
-                  ),
-                ],
+              // Left side: Profile, Social, Map
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildProfileSection(context),
+                    const SizedBox(height: 12),
+                    BlocBuilder<FriendsBloc, FriendsState>(
+                      builder: (context, state) {
+                        return _buildNavButton(
+                          context,
+                          icon: Icons.people,
+                          label: 'Social',
+                          color: AppColors.candyPink,
+                          darkColor: AppColors.candyPinkDark,
+                          badgeCount: state.incomingRequests.length,
+                          onPressed: () => _showCandyDialog(context, const SocialDialog()),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _buildNavButton(
+                      context,
+                      icon: Icons.airplanemode_active,
+                      label: 'Map',
+                      color: AppColors.candyGreen,
+                      darkColor: AppColors.candyGreenDark,
+                      onPressed: () => _showCandyDialog(context, const MapDialog()),
+                    ),
+                  ],
+                ),
               ),
 
-              // Center: Juicy Heart & Hints
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildJuicyHeart(context, state),
-                  const SizedBox(width: 15),
-                  _buildHintIndicator(context, state),
-                ],
-              ),
+              // Center: Juicy Heart (Centered)
+              JuicyHeartIndicator(state: state),
 
-              // Right side: No Ads & Settings
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildNavButton(
-                    context,
-                    customIcon: const NoAdsIcon(size: 40),
-                    label: 'No Ads',
-                    color: AppColors.candyOrange,
-                    darkColor: AppColors.candyOrangeDark,
-                    onPressed: () => _showCandyDialog(context, const NoAdsDialog()),
-                  ),
-                  const SizedBox(height: 15),
-                  _buildNavButton(
-                    context,
-                    icon: Icons.settings,
-                    label: 'Settings',
-                    color: AppColors.candyBlue,
-                    darkColor: AppColors.candyBlueDark,
-                    onPressed: () => _showCandyDialog(context, const SettingsDialog()),
-                  ),
-                ],
+              // Right side: No Ads, Settings, Rank
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    _buildNavButton(
+                      context,
+                      icon: Icons.settings,
+                      label: 'Settings',
+                      color: Colors.grey,
+                      darkColor: Colors.grey.shade700,
+                      onPressed: () => _showCandyDialog(context, const SettingsDialog()),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildNavButton(
+                      context,
+                      customIcon: const NoAdsIcon(size: 40),
+                      label: 'No Ads',
+                      color: AppColors.candyOrange,
+                      darkColor: AppColors.candyOrangeDark,
+                      onPressed: () => _showCandyDialog(context, const NoAdsDialog()),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildNavButton(
+                      context,
+                      icon: Icons.calendar_today,
+                      label: 'Rank',
+                      color: AppColors.candyYellow,
+                      darkColor: AppColors.candyYellowDark,
+                      onPressed: () => _showCandyDialog(context, const LeaderboardDialog()),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -139,43 +137,6 @@ class TopNavBar extends StatelessWidget {
     );
   }
 
-  Widget _buildHintIndicator(BuildContext context, HomeState state) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          clipBehavior: Clip.none,
-          children: [
-            const Icon(Icons.lightbulb, color: Colors.black26, size: 74),
-            ShaderMask(
-              shaderCallback: (bounds) => const RadialGradient(
-                center: Alignment(-0.3, -0.3),
-                colors: [Colors.white, Colors.amber, Color(0xFFB8860B)],
-                radius: 0.8,
-              ).createShader(bounds),
-              child: const Icon(Icons.lightbulb, color: Colors.white, size: 70),
-            ),
-            Text(
-              '${state.hints}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 24,
-                shadows: [Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(2, 2))],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 5),
-        const Text(
-          'HINTS',
-          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900),
-        ),
-      ],
-    );
-  }
-
   void _showCandyDialog(BuildContext context, Widget dialog) {
     showDialog(
       context: context,
@@ -183,96 +144,6 @@ class TopNavBar extends StatelessWidget {
         value: BlocProvider.of<HomeBloc>(context),
         child: dialog,
       ),
-    );
-  }
-
-  Widget _buildJuicyHeart(BuildContext context, HomeState state) {
-    String timeText = '';
-    if (state.lives < state.maxLives && state.nextLifeTime != null) {
-      final diff = state.nextLifeTime!.difference(DateTime.now());
-      if (diff.isNegative) {
-        timeText = '00:00';
-      } else {
-        timeText = '${diff.inMinutes.toString().padLeft(2, '0')}:${(diff.inSeconds % 60).toString().padLeft(2, '0')}';
-      }
-    }
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          onTap: () => _showCandyDialog(context, const LivesStoreDialog()),
-          child: Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              // Shadow for heart
-              const Icon(Icons.favorite, color: Colors.black26, size: 94),
-              // Main Heart
-              ShaderMask(
-                shaderCallback: (bounds) => const RadialGradient(
-                  center: Alignment(-0.3, -0.3),
-                  colors: [Colors.white, Colors.red, Color(0xFF8B0000)],
-                  radius: 0.8,
-                ).createShader(bounds),
-                child: const Icon(Icons.favorite, color: Colors.white, size: 90),
-              ),
-              // Glossy highlight
-              Positioned(
-                top: 20,
-                left: 20,
-                child: Container(
-                  width: 30,
-                  height: 15,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-              // Lives Count
-              Text(
-                '${state.lives}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 32,
-                  shadows: [Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(2, 2))],
-                ),
-              ),
-              // Plus Button
-              Positioned(
-                right: 5,
-                bottom: 0,
-                child: CandyButton(
-                  width: 30,
-                  height: 30,
-                  borderRadius: 15,
-                  depth: 3,
-                  color: AppColors.candyGreen,
-                  darkColor: AppColors.candyGreenDark,
-                  onPressed: () => _showCandyDialog(context, const LivesStoreDialog()),
-                  child: const Icon(Icons.add, color: Colors.white, size: 18),
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (timeText.isNotEmpty) ...[
-          const SizedBox(height: 5),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-            decoration: BoxDecoration(
-              color: Colors.black45,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              timeText,
-              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ],
     );
   }
 
@@ -333,6 +204,164 @@ class TopNavBar extends StatelessWidget {
             shadows: [Shadow(color: Colors.black54, blurRadius: 4, offset: Offset(1, 1))],
           ),
         ),
+      ],
+    );
+  }
+}
+
+class JuicyHeartIndicator extends StatefulWidget {
+  final HomeState state;
+  const JuicyHeartIndicator({super.key, required this.state});
+
+  @override
+  State<JuicyHeartIndicator> createState() => _JuicyHeartIndicatorState();
+}
+
+class _JuicyHeartIndicatorState extends State<JuicyHeartIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _glowAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _glowAnimation = Tween<double>(begin: 1.0, end: 1.5).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void didUpdateWidget(JuicyHeartIndicator oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.state.lastAction == HomeLastAction.lifeRegained &&
+        oldWidget.state.lastAction != HomeLastAction.lifeRegained) {
+      _controller.forward().then((_) => _controller.reverse());
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _showCandyDialog(BuildContext context, Widget dialog) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => BlocProvider.value(
+        value: BlocProvider.of<HomeBloc>(context),
+        child: dialog,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = widget.state;
+    String timeText = '';
+    if (state.lives < state.maxLives && state.nextLifeTime != null) {
+      final diff = state.nextLifeTime!.difference(DateTime.now());
+      if (diff.isNegative) {
+        timeText = '00:00';
+      } else {
+        timeText = '${diff.inMinutes.toString().padLeft(2, '0')}:${(diff.inSeconds % 60).toString().padLeft(2, '0')}';
+      }
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: () => _showCandyDialog(context, const LivesStoreDialog()),
+          child: AnimatedBuilder(
+            animation: _glowAnimation,
+            builder: (context, child) {
+              return Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  // Glow effect
+                  if (_controller.isAnimating)
+                    Transform.scale(
+                      scale: _glowAnimation.value,
+                      child: Icon(
+                        Icons.favorite,
+                        color: Colors.yellow.withValues(alpha: 0.5),
+                        size: 100,
+                      ),
+                    ),
+                  // Shadow for heart
+                  const Icon(Icons.favorite, color: Colors.black26, size: 94),
+                  // Main Heart
+                  ShaderMask(
+                    shaderCallback: (bounds) => const RadialGradient(
+                      center: Alignment(-0.3, -0.3),
+                      colors: [Colors.white, Colors.red, Color(0xFF8B0000)],
+                      radius: 0.8,
+                    ).createShader(bounds),
+                    child: const Icon(Icons.favorite, color: Colors.white, size: 90),
+                  ),
+                  // Glossy highlight
+                  Positioned(
+                    top: 20,
+                    left: 20,
+                    child: Container(
+                      width: 30,
+                      height: 15,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  // Lives Count
+                  Text(
+                    '${state.lives}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 32,
+                      shadows: [Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(2, 2))],
+                    ),
+                  ),
+                  // Plus Button
+                  Positioned(
+                    right: 5,
+                    bottom: 0,
+                    child: CandyButton(
+                      width: 30,
+                      height: 30,
+                      borderRadius: 15,
+                      depth: 3,
+                      color: AppColors.candyGreen,
+                      darkColor: AppColors.candyGreenDark,
+                      onPressed: () => _showCandyDialog(context, const LivesStoreDialog()),
+                      child: const Icon(Icons.add, color: Colors.white, size: 18),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        if (timeText.isNotEmpty) ...[
+          const SizedBox(height: 5),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.black45,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              timeText,
+              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
       ],
     );
   }
