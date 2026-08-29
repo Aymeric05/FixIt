@@ -7,18 +7,18 @@ class LevelGenerator {
     List<GridOffset> solution,
     Map<GridOffset, int> hintSteps,
     Set<String> walls
-  }) generate(int hintsCount) {
-    final List<GridOffset>? solution = _generateHamiltonianPath();
+  }) generate(int hintsCount, {Random? random}) {
+    final rnd = random ?? Random();
+    final List<GridOffset>? solution = _generateHamiltonianPath(rnd);
     final finalSolution = solution ?? _generateSnakePath();
 
     final hints = List.generate(6, (_) => List<int?>.generate(6, (_) => null));
     final Map<GridOffset, int> hintSteps = {};
     
-    final random = Random();
     final Set<int> indices = {0, 35}; 
     
     while (indices.length < hintsCount) {
-      indices.add(random.nextInt(36));
+      indices.add(rnd.nextInt(36));
     }
 
     final sortedIndices = indices.toList()..sort();
@@ -37,7 +37,7 @@ class LevelGenerator {
         for (var neighbor in neighbors) {
           if (neighbor.row < 6 && neighbor.col < 6) {
             if (!_areConsecutive(current, neighbor, finalSolution)) {
-              if (random.nextDouble() < 0.2) {
+              if (rnd.nextDouble() < 0.2) {
                 final list = [current.toString(), neighbor.toString()]..sort();
                 walls.add('${list[0]}-${list[1]}');
               }
@@ -68,8 +68,7 @@ class LevelGenerator {
     return path;
   }
 
-  static List<GridOffset>? _generateHamiltonianPath() {
-    final random = Random();
+  static List<GridOffset>? _generateHamiltonianPath(Random random) {
     final startRow = random.nextInt(6);
     final startCol = random.nextInt(6);
     final path = [GridOffset(startRow, startCol)];

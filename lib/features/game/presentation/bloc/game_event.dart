@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
+import 'package:fixit/core/models/daily_mode.dart';
 
 abstract class GameEvent extends Equatable {
   const GameEvent();
@@ -12,11 +13,17 @@ class StartGame extends GameEvent {
   final int level;
   final GameDifficulty difficulty;
   final String playerId;
+  final GameMode mode;
 
-  const StartGame({required this.level, required this.difficulty, required this.playerId});
+  const StartGame({
+    required this.level,
+    required this.difficulty,
+    required this.playerId,
+    this.mode = GameMode.story,
+  });
 
   @override
-  List<Object> get props => [level, difficulty, playerId];
+  List<Object> get props => [level, difficulty, playerId, mode];
 }
 
 class SelectCell extends GameEvent {

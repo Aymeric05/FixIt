@@ -41,38 +41,43 @@ class CandyDialog extends StatelessWidget {
               children: [
                 // 3D Style Title (like a button but not clickable)
                 Stack(
+                  alignment: Alignment.center,
                   children: [
                     Container(
-                      height: 55,
-                      width: 220,
+                      height: 60,
+                      width: 320,
                       decoration: BoxDecoration(
                         color: AppColors.candyBlueDark,
-                        borderRadius: BorderRadius.circular(25),
+                        borderRadius: BorderRadius.circular(30),
                       ),
                     ),
                     Transform.translate(
                       offset: const Offset(0, -5),
                       child: Container(
-                        height: 50,
-                        width: 220,
+                        height: 55,
+                        width: 320,
                         decoration: BoxDecoration(
                           gradient: const RadialGradient(
                             colors: [AppColors.candyBlue, AppColors.candyBlueDark],
                             center: Alignment(-0.3, -0.3),
                             radius: 0.8,
                           ),
-                          borderRadius: BorderRadius.circular(25),
+                          borderRadius: BorderRadius.circular(30),
                           border: Border.all(color: Colors.white, width: 3),
                         ),
                         alignment: Alignment.center,
-                        child: Text(
-                          title,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: 2,
-                            shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Text(
+                            title,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 1.5,
+                              shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
+                            ),
                           ),
                         ),
                       ),

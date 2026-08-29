@@ -5,14 +5,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'package:fixit/core/repositories/progression_repository.dart';
+import 'package:fixit/core/repositories/daily_repository.dart';
 import 'package:fixit/core/models/grid_offset.dart';
 import 'package:fixit/core/utils/level_generator.dart';
 import 'package:fixit/features/game/presentation/bloc/game_event.dart';
 import 'package:fixit/features/game/presentation/bloc/game_state.dart';
+import 'package:fixit/core/models/daily_mode.dart';
+import 'package:fixit/core/models/level_win_summary.dart';
 
 class GameBloc extends Bloc<GameEvent, GameState> {
   Timer? _timer;
   final _progressionRepo = ProgressionRepository();
+  final _dailyRepo = DailyRepository();
   String? _playerId;
 
   GameBloc() : super(const GameState()) {
@@ -28,70 +32,97 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
     int initialSeconds = 300;
     int hintsCount = 12;
-    if (event.difficulty == GameDifficulty.medium) {
-      initialSeconds = 240;
-      hintsCount = 8;
-    } else if (event.difficulty == GameDifficulty.hard) {
-      initialSeconds = 180;
-      hintsCount = 7;
+
+    if (event.mode == GameMode.dailySingle) {
+      initialSeconds = 3600; // 1 hour (effectively no limit)
+      hintsCount = 12;
+    } else if (event.mode == GameMode.dailySeries) {
+      initialSeconds = 3600; 
+      hintsCount = 10 + event.level; // Slightly harder per level in series
+    } else {
+      if (event.difficulty == GameDifficulty.medium) {
+        initialSeconds = 240;
+        hintsCount = 8;
+      } else if (event.difficulty == GameDifficulty.hard) {
+        initialSeconds = 180;
+        hintsCount = 7;
+      }
     }
 
+    // Initial state setup
     emit(state.copyWith(
       status: GameStatus.initial,
       remainingSeconds: initialSeconds,
       initialSeconds: initialSeconds,
       levelNumber: event.level,
       hints: [],
+      mode: event.mode,
+      seriesAccumulatedTime: 0, // Default, will be updated below
     ));
 
-    if (event.level == 1 && event.playerId.isNotEmpty) {
-      unawaited(_progressionRepo.grantLevel1Reward(event.playerId).catchError((e) => print('Reward error: $e')));
-    }
-
-    final worldId = 'world_1';
     List<List<int?>> hints;
     List<GridOffset> solution;
     Set<String> walls;
     Map<GridOffset, int> hintSteps = {};
 
-    try {
-      final globalLevel = await _progressionRepo.getGlobalLevel(worldId, event.level)
-          .timeout(const Duration(seconds: 3));
-      
-      if (globalLevel != null) {
-        hints = (jsonDecode(globalLevel.hintsJson) as List)
-            .map((row) => (row as List).map((e) => e as int?).toList())
-            .toList();
-        walls = (jsonDecode(globalLevel.wallsJson) as List).cast<String>().toSet();
-        solution = (jsonDecode(globalLevel.solutionJson) as List)
-            .map((e) => GridOffset(e['r'], e['c']))
-            .toList();
-        
-        for (int r = 0; r < 6; r++) {
-          for (int c = 0; c < 6; c++) {
-            if (hints[r][c] != null) {
-              final pos = GridOffset(r, c);
-              hintSteps[pos] = solution.indexOf(pos);
-            }
+    if (event.mode != GameMode.story) {
+      final daily = _dailyRepo.generateDailyLevel(
+        worldLevel: event.level,
+        isSeries: event.mode == GameMode.dailySeries,
+      );
+      hints = daily.hints;
+      solution = daily.solution;
+      walls = daily.walls;
+
+      for (int r = 0; r < 6; r++) {
+        for (int c = 0; c < 6; c++) {
+          if (hints[r][c] != null) {
+            final pos = GridOffset(r, c);
+            hintSteps[pos] = solution.indexOf(pos);
           }
         }
-      } else {
-        throw Exception('Not found');
       }
-    } catch (e) {
-      final result = LevelGenerator.generate(hintsCount);
-      hints = result.hints;
-      solution = result.solution;
-      walls = result.walls;
-      hintSteps = result.hintSteps;
+    } else {
+      final worldId = 'world_1';
+      try {
+        final globalLevel = await _progressionRepo.getGlobalLevel(worldId, event.level)
+            .timeout(const Duration(seconds: 3));
+        
+        if (globalLevel != null) {
+          hints = (jsonDecode(globalLevel.hintsJson) as List)
+              .map((row) => (row as List).map((e) => e as int?).toList())
+              .toList();
+          walls = (jsonDecode(globalLevel.wallsJson) as List).cast<String>().toSet();
+          solution = (jsonDecode(globalLevel.solutionJson) as List)
+              .map((e) => GridOffset(e['r'], e['c']))
+              .toList();
+          
+          for (int r = 0; r < 6; r++) {
+            for (int c = 0; c < 6; c++) {
+              if (hints[r][c] != null) {
+                final pos = GridOffset(r, c);
+                hintSteps[pos] = solution.indexOf(pos);
+              }
+            }
+          }
+        } else {
+          throw Exception('Not found');
+        }
+      } catch (e) {
+        final result = LevelGenerator.generate(hintsCount);
+        hints = result.hints;
+        solution = result.solution;
+        walls = result.walls;
+        hintSteps = result.hintSteps;
 
-      unawaited(_progressionRepo.saveGlobalLevel(
-        worldId: worldId,
-        levelNumber: event.level,
-        hints: hints,
-        walls: walls,
-        solution: solution,
-      ).catchError((err) => print('Background save failed: $err')));
+        unawaited(_progressionRepo.saveGlobalLevel(
+          worldId: worldId,
+          levelNumber: event.level,
+          hints: hints,
+          walls: walls,
+          solution: solution,
+        ).catchError((err) => print('Background save failed: $err')));
+      }
     }
 
     final colors = [
@@ -100,20 +131,81 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     ];
     final randomColor = colors[Random().nextInt(colors.length)];
 
+    // Final level data and playing state
     emit(state.copyWith(
       hints: hints,
       solutionPath: solution,
       hintSteps: hintSteps,
       walls: walls,
-      remainingSeconds: initialSeconds,
       status: GameStatus.playing,
       currentPath: [],
       pathColor: randomColor,
       isAngry: false,
     ));
 
+    // Check completion and handle resumption
+    if (event.playerId.isNotEmpty) {
+      final status = await _dailyRepo.getDailyStatus(event.playerId);
+      if (status != null) {
+        if (event.mode == GameMode.dailySingle && status.isDailyLevelCompleted) {
+          final summary = await _progressionRepo.getLevelWinSummary(
+            worldId: _dailyRepo.getTodayWorldId(),
+            levelNumber: event.level,
+            playerId: event.playerId,
+            playerTime: status.dailyLevelTime,
+          );
+          
+          await Future.delayed(Duration.zero);
+          if (!isClosed) {
+            emit(state.copyWith(
+              status: GameStatus.won,
+              winSummary: summary,
+              remainingSeconds: initialSeconds - status.dailyLevelTime,
+              currentPath: solution,
+            ));
+          }
+          return;
+        } else if (event.mode == GameMode.dailySeries) {
+          // Update series accumulated time (time from levels BEFORE this one)
+          // We need to calculate it properly. seriesAccumulatedTime in DB is the TOTAL so far.
+          // For resumption, if we are at level N, and it's already finished, we show the recap.
+          
+          if (event.level <= status.seriesCurrentLevel) {
+            final summary = await _progressionRepo.getLevelWinSummary(
+              worldId: _dailyRepo.getTodaySeriesWorldId(),
+              levelNumber: event.level,
+              playerId: event.playerId,
+              playerTime: status.seriesAccumulatedTime,
+            );
+            
+            await Future.delayed(Duration.zero);
+            if (!isClosed) {
+              emit(state.copyWith(
+                status: GameStatus.won,
+                winSummary: summary,
+                // Trick to make GamePage display the total time correctly
+                seriesAccumulatedTime: status.seriesAccumulatedTime,
+                remainingSeconds: initialSeconds, 
+                currentPath: solution,
+              ));
+            }
+            return;
+          } else {
+            // Normal play for Level N, accumulated time is the total from Level N-1
+            emit(state.copyWith(seriesAccumulatedTime: status.seriesAccumulatedTime));
+          }
+        }
+      }
+    }
+
+    if (event.mode == GameMode.story && event.level == 1 && event.playerId.isNotEmpty) {
+      unawaited(_progressionRepo.grantLevel1Reward(event.playerId).catchError((e) => print('Reward error: $e')));
+    }
+
     _startTimer(initialSeconds);
-    unawaited(_progressionRepo.ensureNextLevelsExist(worldId, event.level));
+    if (event.mode == GameMode.story) {
+      unawaited(_progressionRepo.ensureNextLevelsExist('world_1', event.level));
+    }
   }
 
   Future<void> _onSelectCell(SelectCell event, Emitter<GameState> emit) async {
@@ -144,14 +236,68 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           // Emit intermediate state so UI knows it's won
           emit(state.copyWith(currentPath: newPath, isAngry: false));
 
-          // Fetch Rich Win Summary
           final timeTaken = state.initialSeconds - state.remainingSeconds;
-          final summary = await _progressionRepo.getLevelWinSummary(
-            worldId: 'world_1',
-            levelNumber: state.levelNumber,
-            playerId: _playerId ?? '',
-            playerTime: timeTaken,
-          );
+          final worldId = state.mode == GameMode.story ? 'world_1' : _dailyRepo.getTodayWorldId();
+
+          if (state.mode == GameMode.dailySingle && _playerId != null) {
+            await _dailyRepo.updateDailyStatus(
+              playerId: _playerId!, 
+              isDailyLevelCompleted: true,
+              dailyLevelTime: timeTaken,
+            );
+            // Also record in global completions
+            await _progressionRepo.markLevelAsCompleted(
+              playerSupabaseId: _playerId!,
+              worldId: worldId,
+              levelNumber: state.levelNumber,
+              timeSeconds: timeTaken,
+              updateProgression: false,
+            );
+          } else if (state.mode == GameMode.dailySeries && _playerId != null) {
+            final newAccumulated = state.seriesAccumulatedTime + timeTaken;
+            final isFinished = state.levelNumber >= 3;
+            
+            await _dailyRepo.updateDailyStatus(
+              playerId: _playerId!,
+              seriesCurrentLevel: state.levelNumber,
+              seriesAccumulatedTime: newAccumulated,
+              isSeriesCompleted: isFinished,
+            );
+
+            // Record in global completions for the series stage
+            await _progressionRepo.markLevelAsCompleted(
+              playerSupabaseId: _playerId!,
+              worldId: _dailyRepo.getTodaySeriesWorldId(),
+              levelNumber: state.levelNumber,
+              timeSeconds: newAccumulated,
+              updateProgression: false,
+            );
+          }
+
+          // Fetch Rich Win Summary
+          LevelWinSummary? summary;
+          if (state.mode == GameMode.story) {
+             summary = await _progressionRepo.getLevelWinSummary(
+              worldId: 'world_1',
+              levelNumber: state.levelNumber,
+              playerId: _playerId ?? '',
+              playerTime: timeTaken,
+            );
+          } else if (state.mode == GameMode.dailySingle) {
+             summary = await _progressionRepo.getLevelWinSummary(
+              worldId: _dailyRepo.getTodayWorldId(),
+              levelNumber: state.levelNumber,
+              playerId: _playerId ?? '',
+              playerTime: timeTaken,
+            );
+          } else if (state.mode == GameMode.dailySeries) {
+             summary = await _progressionRepo.getLevelWinSummary(
+              worldId: _dailyRepo.getTodaySeriesWorldId(),
+              levelNumber: state.levelNumber,
+              playerId: _playerId ?? '',
+              playerTime: state.seriesAccumulatedTime + timeTaken,
+            );
+          }
 
           emit(state.copyWith(
             status: GameStatus.won,
@@ -166,8 +312,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   }
 
   Future<void> _onLoadFriendsLeaderboard(LoadFriendsLeaderboard event, Emitter<GameState> emit) async {
+    final worldId = state.mode == GameMode.story ? 'world_1' : _dailyRepo.getTodayWorldId();
     final list = await _progressionRepo.getFriendsLeaderboard(
-      worldId: 'world_1',
+      worldId: worldId,
       levelNumber: state.levelNumber,
       playerId: event.playerId,
     );

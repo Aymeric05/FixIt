@@ -14,6 +14,12 @@ import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:confetti/confetti.dart';
 
+import 'package:fixit/features/home/presentation/widgets/daily_popup.dart';
+import 'package:fixit/features/home/presentation/widgets/daily_challenge_button.dart';
+import 'package:fixit/core/models/daily_mode.dart';
+import 'package:fixit/core/repositories/daily_repository.dart';
+import 'package:fixit/core/database/app_database.dart';
+
 import 'package:fixit/core/utils/app_notifications.dart';
 
 class HomePage extends StatefulWidget {
@@ -30,6 +36,70 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _confettiController = ConfettiController(duration: const Duration(milliseconds: 800));
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkDailyChallenge();
+    });
+  }
+
+  Future<void> _checkDailyChallenge() async {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      final repo = DailyRepository();
+      final status = await repo.getDailyStatus(authState.user.id);
+      
+      bool alreadyCompleted = status != null && status.isDailyLevelCompleted && status.isSeriesCompleted;
+      
+      if (!alreadyCompleted && mounted) {
+        _showDailyPopup(status);
+      }
+    }
+  }
+
+  void _showDailyPopup(DailyChallenge? status) {
+    showDialog(
+      context: context,
+      builder: (context) => DailyPopup(
+        isDailyCompleted: status?.isDailyLevelCompleted ?? false,
+        isSeriesCompleted: status?.isSeriesCompleted ?? false,
+        onPlayDaily: () {
+          Navigator.pop(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const GamePage(
+                level: 1,
+                difficulty: GameDifficulty.easy,
+                mode: GameMode.dailySingle,
+              ),
+            ),
+          );
+        },
+        onPlaySeries: () {
+          Navigator.pop(context);
+          
+          int startLevel = 1;
+          if (status != null) {
+            if (status.isSeriesCompleted) {
+              startLevel = 3; // Show recap of last level
+            } else if (status.seriesCurrentLevel > 0) {
+              startLevel = status.seriesCurrentLevel; // Show recap of last finished level
+            }
+          }
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => GamePage(
+                level: startLevel,
+                difficulty: GameDifficulty.easy,
+                mode: GameMode.dailySeries,
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -51,6 +121,7 @@ class _HomePageState extends State<HomePage> {
               context.read<HomeBloc>().add(LoadHomeData(playerId: state.user.id));
               context.read<FriendsBloc>().add(LoadFriends(state.user.id));
               context.read<FriendsBloc>().add(StartSocialSubscription(state.user.id));
+              _checkDailyChallenge();
             }
           },
         ),
@@ -127,6 +198,19 @@ class _HomePageState extends State<HomePage> {
                                                   ),
                                                 );
                                               },
+                                            ),
+                                            Positioned(
+                                              left: 20,
+                                              child: DailyChallengeButton(
+                                                onTap: () async {
+                                                  final authState = context.read<AuthBloc>().state;
+                                                  if (authState is AuthAuthenticated) {
+                                                    final repo = DailyRepository();
+                                                    final status = await repo.getDailyStatus(authState.user.id);
+                                                    if (mounted) _showDailyPopup(status);
+                                                  }
+                                                },
+                                              ),
                                             ),
                                             Positioned(
                                               right: 20,

@@ -282,14 +282,19 @@ class ProgressionRepository {
     required String worldId,
     required int levelNumber,
     required int timeSeconds,
+    bool updateProgression = true,
   }) async {
     // 1. Fetch current progress to avoid downgrades
-    final currentProg = await (_db.select(_db.progressions)
-          ..where((t) => t.playerSupabaseId.equals(playerSupabaseId)))
-        .getSingleOrNull();
+    int? currentLevel;
+    if (updateProgression) {
+      final currentProg = await (_db.select(_db.progressions)
+            ..where((t) => t.playerSupabaseId.equals(playerSupabaseId)))
+          .getSingleOrNull();
+      currentLevel = currentProg?.currentLevel;
+    }
     
     final int nextLevelToSave = levelNumber + 1;
-    final bool shouldUpdateProgression = currentProg == null || nextLevelToSave > currentProg.currentLevel;
+    final bool shouldUpdateProgression = updateProgression && (currentLevel == null || nextLevelToSave > currentLevel);
 
     try {
       // 2. Save completion record to Supabase

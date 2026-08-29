@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:fixit/core/models/grid_offset.dart';
+import 'package:fixit/core/models/daily_mode.dart';
 
 import 'package:fixit/core/models/level_win_summary.dart';
 
@@ -22,6 +23,8 @@ class GameState extends Equatable {
   final int levelNumber;
   final LevelWinSummary? winSummary;
   final List<FriendRankEntry> friendsLeaderboard;
+  final GameMode mode;
+  final int seriesAccumulatedTime;
 
   const GameState({
     this.hints = const [],
@@ -39,6 +42,8 @@ class GameState extends Equatable {
     this.levelNumber = 1,
     this.winSummary,
     this.friendsLeaderboard = const [],
+    this.mode = GameMode.story,
+    this.seriesAccumulatedTime = 0,
   });
 
   GameState copyWith({
@@ -57,6 +62,8 @@ class GameState extends Equatable {
     int? levelNumber,
     LevelWinSummary? winSummary,
     List<FriendRankEntry>? friendsLeaderboard,
+    GameMode? mode,
+    int? seriesAccumulatedTime,
   }) {
     return GameState(
       hints: hints ?? this.hints,
@@ -74,6 +81,8 @@ class GameState extends Equatable {
       levelNumber: levelNumber ?? this.levelNumber,
       winSummary: winSummary ?? this.winSummary,
       friendsLeaderboard: friendsLeaderboard ?? this.friendsLeaderboard,
+      mode: mode ?? this.mode,
+      seriesAccumulatedTime: seriesAccumulatedTime ?? this.seriesAccumulatedTime,
     );
   }
 
@@ -82,6 +91,6 @@ class GameState extends Equatable {
     hints, currentPath, remainingSeconds, initialSeconds, 
     status, solutionPath, hintSteps, walls, pathColor, isAngry,
     averageTimeSeconds, bestTimeSeconds, levelNumber, winSummary,
-    friendsLeaderboard,
+    friendsLeaderboard, mode, seriesAccumulatedTime,
   ];
 }

@@ -27,15 +27,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthSignInAnonymous>((event, emit) async {
       emit(AuthLoading());
       try {
-        final authResponse = await _supabase.auth.signInAnonymously();
+        print('Signing in anonymously...');
+        final authResponse = await _supabase.auth.signInAnonymously().timeout(const Duration(seconds: 15));
         final user = authResponse.user;
         if (user != null) {
+          print('Anonymous sign in successful: ${user.id}');
           final profile = await _profileRepository.getOrCreateProfile(user.id);
           emit(AuthAuthenticated(user, profile));
         } else {
           emit(const AuthFailure('Failed to sign in.'));
         }
       } catch (e) {
+        print('Error during anonymous sign in: $e');
         emit(AuthFailure(e.toString()));
       }
     });

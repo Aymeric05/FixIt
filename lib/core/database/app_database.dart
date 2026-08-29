@@ -87,6 +87,22 @@ class FriendRequests extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+class DailyChallenges extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get playerSupabaseId => text()();
+  TextColumn get date => text()(); // YYYY-MM-DD
+  BoolColumn get isDailyLevelCompleted => boolean().withDefault(const Constant(false))();
+  IntColumn get dailyLevelTime => integer().withDefault(const Constant(0))(); // Time for single daily level
+  IntColumn get seriesCurrentLevel => integer().withDefault(const Constant(0))(); // 0 to 3
+  IntColumn get seriesAccumulatedTime => integer().withDefault(const Constant(0))();
+  BoolColumn get isSeriesCompleted => boolean().withDefault(const Constant(false))();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {playerSupabaseId, date}
+  ];
+}
+
 class WorldListConverter extends TypeConverter<List<String>, String> {
   const WorldListConverter();
   @override
@@ -101,12 +117,12 @@ class WorldListConverter extends TypeConverter<List<String>, String> {
   }
 }
 
-@DriftDatabase(tables: [Players, Progressions, LevelCompletions, GlobalLevels, Friends, FriendRequests])
+@DriftDatabase(tables: [Players, Progressions, LevelCompletions, GlobalLevels, Friends, FriendRequests, DailyChallenges])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3; // Increment version
+  int get schemaVersion => 5; // Increment version
 
   @override
   MigrationStrategy get migration {
@@ -123,6 +139,16 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(friends);
           await m.createTable(friendRequests);
         }
+        if (from < 4) {
+          await m.createTable(dailyChallenges);
+        }
+        if (from < 5) {
+          try {
+            await m.addColumn(dailyChallenges, dailyChallenges.dailyLevelTime);
+          } catch (e) {
+            print('Migration: Column dailyLevelTime might already exist, skipping: $e');
+          }
+        }
       },
     );
   }
@@ -130,8 +156,15 @@ class AppDatabase extends _$AppDatabase {
 
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'db.sqlite'));
-    return NativeDatabase.createInBackground(file);
+    print('Opening Drift database connection...');
+    try {
+      final dbFolder = await getApplicationDocumentsDirectory();
+      final file = File(p.join(dbFolder.path, 'db.sqlite'));
+      print('Database file path: ${file.path}');
+      return NativeDatabase.createInBackground(file);
+    } catch (e) {
+      print('Error opening Drift database: $e');
+      rethrow;
+    }
   });
 }
