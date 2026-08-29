@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
@@ -30,7 +31,7 @@ class TopNavBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Left side: Profile, Social, Map
+              // Left side: Profil, Social, Map
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -58,7 +59,20 @@ class TopNavBar extends StatelessWidget {
                       label: 'Map',
                       color: AppColors.candyGreen,
                       darkColor: AppColors.candyGreenDark,
-                      onPressed: () => _showCandyDialog(context, const MapDialog()),
+                      onPressed: () => _showCandyDialog(
+                        context,
+                        MapDialog(
+                          onWorldSelected: (worldId) {
+                            int index = 0;
+                            if (worldId == 'meadow') index = 1;
+                            else if (worldId == 'desert') index = 2;
+                            else if (worldId == 'ice') index = 3;
+                            else if (worldId == 'volcano') index = 4;
+                            else if (worldId == 'city') index = 5;
+                            context.read<HomeBloc>().add(ChangeWorld(index, worldId));
+                          },
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -113,10 +127,23 @@ class TopNavBar extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         final bool isAuthenticated = state is AuthAuthenticated;
+        final avatarUrl = isAuthenticated ? state.profile.avatarUrl : null;
+
         return _buildNavButton(
           context,
-          icon: Icons.person,
-          label: 'Profile',
+          icon: avatarUrl == null || !File(avatarUrl).existsSync() ? Icons.person : null,
+          customIcon: avatarUrl != null && File(avatarUrl).existsSync()
+              ? ClipOval(
+                  child: Image.file(
+                    File(avatarUrl),
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    key: ValueKey(avatarUrl + DateTime.now().millisecondsSinceEpoch.toString()),
+                  ),
+                )
+              : null,
+          label: 'Profil',
           color: AppColors.candyBlue,
           darkColor: AppColors.candyBlueDark,
           onPressed: isAuthenticated

@@ -14,3 +14,11 @@ class UpdateNicknameRequested extends ProfileEvent {
   @override
   List<Object> get props => [newNickname];
 }
+
+class UpdateAvatarRequested extends ProfileEvent {
+  final String imagePath;
+  const UpdateAvatarRequested(this.imagePath);
+
+  @override
+  List<Object> get props => [imagePath];
+}

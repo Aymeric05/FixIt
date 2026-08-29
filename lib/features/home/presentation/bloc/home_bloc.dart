@@ -25,25 +25,35 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<CompleteLevel>(_onCompleteLevel);
     on<LoseLife>(_onLoseLife);
     on<ChangeWorld>(_onChangeWorld);
+    on<FinishWorldLoading>(_onFinishWorldLoading);
   }
 
   Future<void> _onLoadHomeData(LoadHomeData event, Emitter<HomeState> emit) async {
-    // Force a data refresh for the specific player
-    await _refreshProgression(emit, event.playerId);
-    _startRechargeTimer();
+    print('HomeBloc: Loading data for player: ${event.playerId}');
+    emit(state.copyWith(isLoading: true));
+    try {
+      await _refreshProgression(emit, event.playerId);
+      _startRechargeTimer();
+      print('HomeBloc: Data loaded successfully');
+    } catch (e) {
+      print('HomeBloc: Error loading data: $e');
+      emit(state.copyWith(isLoading: false));
+    }
   }
 
   Future<void> _refreshProgression(Emitter<HomeState> emit, String? playerId) async {
+    print('HomeBloc: Refreshing progression...');
     // 1. Fetch player data
     final players = await (_db.select(_db.players)
           ..where((t) => playerId != null 
-              ? t.supabaseId.equals(playerId) 
+              ? t.supabaseId.equals(playerId!) 
               : t.id.isNotNull())
           ..limit(1))
         .get();
     
     if (players.isNotEmpty) {
       final player = players.first;
+      print('HomeBloc: Found local player: ${player.username}');
       
       // 2. Fetch progression for THIS specific player
       final progs = await (_db.select(_db.progressions)
@@ -52,6 +62,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           .get();
       
       final progression = progs.isNotEmpty ? progs.first : null;
+      print('HomeBloc: Progression level: ${progression?.currentLevel ?? 1}');
 
       emit(state.copyWith(
         lives: player.lives,
@@ -62,6 +73,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       ));
 
       unawaited(_progressionRepo.ensureNextLevelsExist('world_1', progression?.currentLevel ?? 1));
+    } else {
+      print('HomeBloc: No local player found yet');
+      emit(state.copyWith(isLoading: false));
     }
   }
 
@@ -159,7 +173,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   void _onChangeWorld(ChangeWorld event, Emitter<HomeState> emit) {
-    emit(state.copyWith(currentWorldIndex: event.worldIndex));
+    emit(state.copyWith(
+      currentWorldIndex: event.worldIndex,
+      isWorldLoading: true,
+    ));
+  }
+
+  void _onFinishWorldLoading(FinishWorldLoading event, Emitter<HomeState> emit) {
+    emit(state.copyWith(isWorldLoading: false));
   }
 
   void _startRechargeTimer() {

@@ -88,4 +88,16 @@ class ProfileRepository {
     await (_db.update(_db.players)..where((t) => t.supabaseId.equals(supabaseId)))
         .write(PlayersCompanion(username: Value(newUsername), updatedAt: Value(DateTime.now())));
   }
+
+  Future<void> updateAvatar(String supabaseId, String imagePath) async {
+    // 1. Update Supabase
+    await _supabase
+        .from('profiles')
+        .update({'avatar_url': imagePath})
+        .eq('id', supabaseId);
+
+    // 2. Update Drift
+    await (_db.update(_db.players)..where((t) => t.supabaseId.equals(supabaseId)))
+        .write(PlayersCompanion(avatarUrl: Value(imagePath), updatedAt: Value(DateTime.now())));
+  }
 }

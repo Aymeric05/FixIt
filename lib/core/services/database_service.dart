@@ -20,6 +20,7 @@ class DatabaseService {
 
     // 2. Initialize Drift
     db = AppDatabase();
+    print('DatabaseService: Initialization complete');
   }
 
   Future<void> hardReset() async {

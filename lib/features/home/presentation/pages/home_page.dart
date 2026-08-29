@@ -5,6 +5,7 @@ import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'package:fixit/features/home/presentation/widgets/top_nav_bar.dart';
 import 'package:fixit/features/home/presentation/widgets/main_play_button.dart';
 import 'package:fixit/features/home/presentation/widgets/lives_store_dialog.dart';
+import 'package:fixit/features/home/presentation/pages/loading_screen.dart';
 import 'package:fixit/features/game/presentation/pages/game_page.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_state.dart';
@@ -68,18 +69,25 @@ class _HomePageState extends State<HomePage> {
         body: Stack(
           children: [
             Positioned.fill(
-              child: Image.asset(
-                'monde1_background.png',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.lightBlue, Colors.green],
-                      ),
-                    ),
+              child: BlocBuilder<HomeBloc, HomeState>(
+                buildWhen: (prev, curr) => prev.currentWorldIndex != curr.currentWorldIndex,
+                builder: (context, state) {
+                  String bg = 'monde1_background.png';
+                  // Add logic for other worlds if assets exist
+                  return Image.asset(
+                    bg,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Colors.lightBlue, Colors.green],
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -92,9 +100,8 @@ class _HomePageState extends State<HomePage> {
             ),
             BlocBuilder<HomeBloc, HomeState>(
               builder: (context, state) {
-                if (state.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+                // Initial data loading is now handled in main.dart wrapper
+                // to avoid background flicker.
                 return Stack(
                   children: [
                     Column(
@@ -153,6 +160,15 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ],
                     ),
+                    if (state.isWorldLoading)
+                      Positioned.fill(
+                        child: LoadingScreen(
+                          isDataLoading: false, // We just want the 2s animation here
+                          onComplete: () {
+                            context.read<HomeBloc>().add(FinishWorldLoading());
+                          },
+                        ),
+                      ),
                   ],
                 );
               },

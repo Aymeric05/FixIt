@@ -22,9 +22,9 @@ class HomeState extends Equatable {
   final int levelsCompletedInWorld;
   final int maxLevelsInWorld;
   final int currentWorldIndex;
-  
   final HomeLastAction lastAction;
-  final int timerTick; // New field to force UI refresh every second
+  final int timerTick; 
+  final bool isWorldLoading;
 
   const HomeState({
     this.currentLevel = 1,
@@ -43,6 +43,7 @@ class HomeState extends Equatable {
     this.currentWorldIndex = 1,
     this.lastAction = HomeLastAction.none,
     this.timerTick = 0,
+    this.isWorldLoading = false,
   });
 
   HomeState copyWith({
@@ -62,6 +63,7 @@ class HomeState extends Equatable {
     int? currentWorldIndex,
     HomeLastAction? lastAction,
     int? timerTick,
+    bool? isWorldLoading,
   }) {
     return HomeState(
       currentLevel: currentLevel ?? this.currentLevel,
@@ -80,6 +82,7 @@ class HomeState extends Equatable {
       currentWorldIndex: currentWorldIndex ?? this.currentWorldIndex,
       lastAction: lastAction ?? this.lastAction,
       timerTick: timerTick ?? this.timerTick,
+      isWorldLoading: isWorldLoading ?? this.isWorldLoading,
     );
   }
 
@@ -101,5 +104,6 @@ class HomeState extends Equatable {
         currentWorldIndex,
         lastAction,
         timerTick,
+        isWorldLoading,
       ];
 }

@@ -49,7 +49,10 @@ class LoseLife extends HomeEvent {
 
 class ChangeWorld extends HomeEvent {
   final int worldIndex;
-  const ChangeWorld(this.worldIndex);
+  final String worldId;
+  const ChangeWorld(this.worldIndex, this.worldId);
   @override
-  List<Object> get props => [worldIndex];
+  List<Object> get props => [worldIndex, worldId];
 }
+
+class FinishWorldLoading extends HomeEvent {}
