@@ -24,15 +24,17 @@ class FriendsState extends Equatable {
     List<Map<String, dynamic>>? searchResults,
     bool? isLoading,
     String? error,
+    bool clearError = false,
     String? successMessage,
+    bool clearSuccess = false,
   }) {
     return FriendsState(
       friends: friends ?? this.friends,
       incomingRequests: incomingRequests ?? this.incomingRequests,
       searchResults: searchResults ?? this.searchResults,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
-      successMessage: successMessage,
+      error: clearError ? null : (error ?? this.error),
+      successMessage: clearSuccess ? null : (successMessage ?? this.successMessage),
     );
   }
 

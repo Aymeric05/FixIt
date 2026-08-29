@@ -37,3 +37,11 @@ class TimerTick extends GameEvent {
   @override
   List<Object> get props => [remainingSeconds];
 }
+
+class LoadFriendsLeaderboard extends GameEvent {
+  final String playerId;
+  const LoadFriendsLeaderboard({required this.playerId});
+
+  @override
+  List<Object> get props => [playerId];
+}

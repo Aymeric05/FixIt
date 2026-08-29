@@ -14,6 +14,8 @@ import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:confetti/confetti.dart';
 
+import 'package:fixit/core/utils/app_notifications.dart';
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -43,16 +45,12 @@ class _HomePageState extends State<HomePage> {
         BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
             if (state is AuthFailure) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Auth Error: ${state.message}'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              AppNotifications.show(context, 'Auth Error: ${state.message}', isError: true);
             } else if (state is AuthAuthenticated) {
               // Reload home data and friends when authenticated
               context.read<HomeBloc>().add(LoadHomeData(playerId: state.user.id));
               context.read<FriendsBloc>().add(LoadFriends(state.user.id));
+              context.read<FriendsBloc>().add(StartSocialSubscription(state.user.id));
             }
           },
         ),

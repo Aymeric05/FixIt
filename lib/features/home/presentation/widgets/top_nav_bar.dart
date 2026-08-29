@@ -16,6 +16,8 @@ import 'package:fixit/features/home/presentation/widgets/lives_store_dialog.dart
 import 'package:fixit/features/home/presentation/widgets/leaderboard_dialog.dart';
 import 'package:fixit/features/home/presentation/widgets/map_dialog.dart';
 
+import 'package:fixit/core/utils/app_notifications.dart';
+
 class TopNavBar extends StatelessWidget {
   const TopNavBar({super.key});
 
@@ -127,12 +129,7 @@ class TopNavBar extends StatelessWidget {
                     builder: (dialogContext) => ProfileModal(player: state.profile),
                   )
               : () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Connecting to server...'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
+                  AppNotifications.show(context, 'Connecting to server...');
                 },
         );
       },

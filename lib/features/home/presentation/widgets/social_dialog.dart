@@ -26,6 +26,9 @@ class SocialDialog extends StatelessWidget {
       );
     }
 
+    // Refresh friends list when opening the dialog
+    context.read<FriendsBloc>().add(LoadFriends(playerId));
+
     return BlocBuilder<FriendsBloc, FriendsState>(
       builder: (context, state) {
         return CandyDialog(
@@ -175,6 +178,7 @@ class SocialDialog extends StatelessWidget {
   void _openAddFriend(BuildContext context, String playerId) {
     showDialog(
       context: context,
+      useRootNavigator: true,
       builder: (ctx) => BlocProvider.value(
         value: context.read<FriendsBloc>(),
         child: AddFriendDialog(currentUserId: playerId),
@@ -185,6 +189,7 @@ class SocialDialog extends StatelessWidget {
   void _openRequests(BuildContext context, String playerId) {
     showDialog(
       context: context,
+      useRootNavigator: true,
       builder: (ctx) => BlocProvider.value(
         value: context.read<FriendsBloc>(),
         child: FriendRequestsDialog(playerId: playerId),
@@ -192,21 +197,40 @@ class SocialDialog extends StatelessWidget {
     );
   }
 
-  void _confirmRemove(BuildContext context, dynamic friend, String playerId) async {
-    final confirm = await showDialog<bool>(
+  void _confirmRemove(BuildContext context, dynamic friend, String playerId) {
+    showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Remove Friend?'),
-        content: Text('Are you sure you want to remove ${friend.friendUsername}?'),
+      useRootNavigator: true,
+      builder: (ctx) => CandyDialog(
+        title: 'REMOVE?',
+        content: Text(
+          'Remove ${friend.friendUsername}?',
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Remove', style: TextStyle(color: Colors.red))),
+          CandyButton(
+            width: 100,
+            height: 45,
+            color: Colors.grey,
+            darkColor: Colors.grey.shade700,
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('CANCEL', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 15),
+          CandyButton(
+            width: 100,
+            height: 45,
+            color: Colors.redAccent,
+            darkColor: Colors.red.shade900,
+            onPressed: () {
+              context.read<FriendsBloc>().add(RemoveFriend(playerId: playerId, friendId: friend.friendId));
+              Navigator.pop(ctx);
+            },
+            child: const Text('REMOVE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );
-
-    if (confirm == true && context.mounted) {
-      context.read<FriendsBloc>().add(RemoveFriend(playerId: playerId, friendId: friend.friendId));
-    }
   }
 }

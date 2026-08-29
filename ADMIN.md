@@ -57,6 +57,28 @@ FOR UPDATE USING (
 
 - **Entry Point**: Create `lib/main_admin.dart` to separate the Admin logic from the mobile game logic.
 - **Run Command**: `flutter run -t lib/main_admin.dart -d chrome`
+- **Build Command**: `flutter build web -t lib/main_admin.dart --release`
+
+## 5. Hosting (Chosen Provider: Vercel)
+
+Vercel is chosen for its superior CDN performance and ease of deployment for Flutter Web.
+
+### Deployment Steps
+1.  **Repository**: Connect your GitHub repository to Vercel.
+2.  **Build Settings**:
+    - **Build Command**: `flutter build web -t lib/main_admin.dart --release`
+    - **Output Directory**: `build/web`
+3.  **Environment Variables**: Add your Supabase URL and Anon Key if they are managed via environment variables.
+
+### Configuration (`vercel.json`)
+Add this file at the root to handle Flutter's internal routing correctly:
+```json
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
+```
 
 ---
 

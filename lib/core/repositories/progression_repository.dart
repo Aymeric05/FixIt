@@ -4,10 +4,184 @@ import 'package:fixit/core/database/app_database.dart';
 import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/core/models/grid_offset.dart';
 import 'package:fixit/core/utils/level_generator.dart';
+import 'package:fixit/core/models/level_win_summary.dart';
 
 class ProgressionRepository {
   final _supabase = DatabaseService().supabase;
   final _db = DatabaseService().db;
+
+  Future<LevelWinSummary> getLevelWinSummary({
+    required String worldId,
+    required int levelNumber,
+    required String playerId,
+    required int playerTime,
+  }) async {
+    try {
+      // 1. Global Completion Count (before recording this one)
+      final globalResponse = await _supabase
+          .from('level_completions')
+          .select('completion_time_seconds, profiles!player_id(username)')
+          .eq('world_id', worldId)
+          .eq('level_number', levelNumber)
+          .order('completion_time_seconds', ascending: true);
+      
+      final List<dynamic> allRecords = globalResponse as List<dynamic>;
+      final int globalCount = allRecords.length;
+
+      // 2. World Record + Holder (current record before saving new one)
+      int wrSeconds = 0;
+      String wrHolder = '--';
+      if (allRecords.isNotEmpty) {
+        wrSeconds = allRecords[0]['completion_time_seconds'];
+        wrHolder = allRecords[0]['profiles']['username'] ?? 'Unknown';
+      }
+
+      // 3. Global Average
+      int avgSeconds = 0;
+      if (allRecords.isNotEmpty) {
+        final total = allRecords.fold<int>(0, (sum, item) => sum + (item['completion_time_seconds'] as int));
+        avgSeconds = (total / allRecords.length).round();
+      }
+
+      // 4. Global Percentile (if we added this attempt)
+      double? percentile;
+      if (globalCount >= 1) {
+        int rank = 1;
+        for (var record in allRecords) {
+          if ((record['completion_time_seconds'] as int) < playerTime) {
+            rank++;
+          }
+        }
+        percentile = rank / (globalCount + 1);
+      }
+
+      // 5. Friends Data
+      final friendIdsResponse = await _supabase
+          .from('friends')
+          .select('friend_id')
+          .eq('player_id', playerId);
+      final List<String> friendIds = (friendIdsResponse as List).map((e) => e['friend_id'] as String).toList();
+      final List<String> relevantIds = [playerId, ...friendIds];
+
+      // Note: This includes older records of the same player if they exist, 
+      // but level_completions has a unique constraint on (player_id, world_id, level_number) 
+      // due to our upsert logic, so it's safe.
+      final socialRankingsResponse = await _supabase
+          .from('level_completions')
+          .select('player_id, completion_time_seconds, profiles!player_id(username)')
+          .eq('world_id', worldId)
+          .eq('level_number', levelNumber)
+          .inFilter('player_id', relevantIds)
+          .order('completion_time_seconds', ascending: true);
+      
+      final List<dynamic> socialData = socialRankingsResponse as List<dynamic>;
+      final List<FriendRankEntry> socialRankings = [];
+      
+      // Update social data with current performance if it's better or if it doesn't exist yet
+      bool userIncluded = false;
+      for (var entry in socialData) {
+        String entryId = entry['player_id'];
+        int time = entry['completion_time_seconds'];
+        if (entryId == playerId) {
+          userIncluded = true;
+          if (playerTime < time) time = playerTime; // Use better time for ranking display
+        }
+        socialRankings.add(FriendRankEntry(
+          playerId: entryId,
+          username: entry['profiles']['username'] ?? 'Unknown',
+          timeSeconds: time,
+          rank: 0, // Will calculate below
+        ));
+      }
+      
+      if (!userIncluded) {
+        final myProfile = await _supabase.from('profiles').select('username').eq('id', playerId).single();
+        socialRankings.add(FriendRankEntry(
+          playerId: playerId,
+          username: myProfile['username'] ?? 'Me',
+          timeSeconds: playerTime,
+          rank: 0,
+        ));
+      }
+
+      socialRankings.sort((a, b) => a.timeSeconds.compareTo(b.timeSeconds));
+      for (int i = 0; i < socialRankings.length; i++) {
+        socialRankings[i] = FriendRankEntry(
+          playerId: socialRankings[i].playerId,
+          username: socialRankings[i].username,
+          timeSeconds: socialRankings[i].timeSeconds,
+          rank: i + 1,
+        );
+      }
+
+      // Mini-leaderboard: Above, User, Below
+      final userRankIdx = socialRankings.indexWhere((e) => e.playerId == playerId);
+      final List<FriendRankEntry> miniLeaderboard = [];
+      if (userRankIdx != -1) {
+        if (userRankIdx > 0) miniLeaderboard.add(socialRankings[userRankIdx - 1]);
+        miniLeaderboard.add(socialRankings[userRankIdx]);
+        if (userRankIdx < socialRankings.length - 1) miniLeaderboard.add(socialRankings[userRankIdx + 1]);
+      }
+
+      return LevelWinSummary(
+        globalCompletionCount: globalCount,
+        friendCompletionCount: socialRankings.length - 1,
+        globalAverageSeconds: avgSeconds,
+        worldRecordSeconds: wrSeconds,
+        worldRecordHolder: wrHolder,
+        globalPercentile: percentile,
+        friendsMiniLeaderboard: miniLeaderboard,
+      );
+    } catch (e) {
+      print('Error generating LevelWinSummary: $e');
+      return LevelWinSummary(
+        globalCompletionCount: 0,
+        friendCompletionCount: 0,
+        globalAverageSeconds: 0,
+        worldRecordSeconds: 0,
+        worldRecordHolder: '--',
+        friendsMiniLeaderboard: [],
+      );
+    }
+  }
+
+  Future<List<FriendRankEntry>> getFriendsLeaderboard({
+    required String worldId,
+    required int levelNumber,
+    required String playerId,
+  }) async {
+    try {
+      final friendIdsResponse = await _supabase
+          .from('friends')
+          .select('friend_id')
+          .eq('player_id', playerId);
+      final List<String> friendIds = (friendIdsResponse as List).map((e) => e['friend_id'] as String).toList();
+      final List<String> relevantIds = [playerId, ...friendIds];
+
+      final response = await _supabase
+          .from('level_completions')
+          .select('player_id, completion_time_seconds, profiles!player_id(username)')
+          .eq('world_id', worldId)
+          .eq('level_number', levelNumber)
+          .inFilter('player_id', relevantIds)
+          .order('completion_time_seconds', ascending: true);
+      
+      final List<dynamic> data = response as List<dynamic>;
+      final List<FriendRankEntry> rankings = [];
+      for (int i = 0; i < data.length; i++) {
+        rankings.add(FriendRankEntry(
+          playerId: data[i]['player_id'],
+          username: data[i]['profiles']['username'] ?? 'Unknown',
+          timeSeconds: data[i]['completion_time_seconds'],
+          rank: i + 1,
+        ));
+      }
+      return rankings;
+    } catch (e) {
+      print('Error fetching friends leaderboard: $e');
+      return [];
+    }
+  }
 
   Future<GlobalLevel?> getGlobalLevel(String worldId, int levelNumber) async {
     final local = await (_db.select(_db.globalLevels)

@@ -10,6 +10,8 @@ import 'package:fixit/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:fixit/features/profile/presentation/bloc/profile_event.dart';
 import 'package:fixit/features/profile/presentation/bloc/profile_state.dart';
 
+import 'package:fixit/core/utils/app_notifications.dart';
+
 class ProfileModal extends StatefulWidget {
   final Player player;
 
@@ -47,13 +49,9 @@ class _ProfileModalState extends State<ProfileModal> {
               setState(() => _isEditing = false);
               // Refresh Auth state to update the header
               context.read<AuthBloc>().add(RefreshProfileRequested());
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Nickname updated!')),
-              );
+              AppNotifications.show(context, 'Nickname updated!');
             } else if (state is ProfileError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message)),
-              );
+              AppNotifications.show(context, state.message, isError: true);
             }
           },
           child: Stack(

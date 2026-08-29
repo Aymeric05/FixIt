@@ -1,17 +1,32 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:fixit/core/repositories/friends_repository.dart';
 import 'package:fixit/features/friends/presentation/bloc/friends_event.dart';
 import 'package:fixit/features/friends/presentation/bloc/friends_state.dart';
 
 class FriendsBloc extends Bloc<FriendsEvent, FriendsState> {
   final FriendsRepository _repository = FriendsRepository();
+  RealtimeChannel? _socialChannel;
 
   FriendsBloc() : super(const FriendsState()) {
     on<LoadFriends>(_onLoadFriends);
+    on<StartSocialSubscription>(_onStartSocialSubscription);
     on<SearchPlayers>(_onSearchPlayers);
     on<SendRequest>(_onSendRequest);
     on<HandleRequest>(_onHandleRequest);
     on<RemoveFriend>(_onRemoveFriend);
+    on<ClearSocialMessages>(_onClearMessages);
+  }
+
+  void _onClearMessages(ClearSocialMessages event, Emitter<FriendsState> emit) {
+    emit(state.copyWith(clearError: true, clearSuccess: true));
+  }
+
+  void _onStartSocialSubscription(StartSocialSubscription event, Emitter<FriendsState> emit) {
+    _socialChannel?.unsubscribe();
+    _socialChannel = _repository.subscribeToSocialChanges(event.playerId, () {
+      add(LoadFriends(event.playerId));
+    });
   }
 
   Future<void> _onLoadFriends(LoadFriends event, Emitter<FriendsState> emit) async {
@@ -40,16 +55,16 @@ class FriendsBloc extends Bloc<FriendsEvent, FriendsState> {
   }
 
   Future<void> _onSendRequest(SendRequest event, Emitter<FriendsState> emit) async {
-    emit(state.copyWith(isLoading: true));
+    emit(state.copyWith(isLoading: true, clearError: true));
     try {
       await _repository.sendFriendRequest(event.senderId, event.receiverId);
       emit(state.copyWith(
         isLoading: false, 
         successMessage: 'Request sent!',
-        // Clear search results or update button state?
       ));
     } catch (e) {
-      emit(state.copyWith(error: e.toString(), isLoading: false));
+      final msg = e.toString().replaceAll('Exception: ', '');
+      emit(state.copyWith(error: msg, isLoading: false));
     }
   }
 
@@ -80,5 +95,11 @@ class FriendsBloc extends Bloc<FriendsEvent, FriendsState> {
     } catch (e) {
       emit(state.copyWith(error: e.toString(), isLoading: false));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _socialChannel?.unsubscribe();
+    return super.close();
   }
 }

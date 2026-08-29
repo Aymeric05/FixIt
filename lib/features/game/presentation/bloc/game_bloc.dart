@@ -13,15 +13,18 @@ import 'package:fixit/features/game/presentation/bloc/game_state.dart';
 class GameBloc extends Bloc<GameEvent, GameState> {
   Timer? _timer;
   final _progressionRepo = ProgressionRepository();
+  String? _playerId;
 
   GameBloc() : super(const GameState()) {
     on<StartGame>(_onStartGame);
     on<SelectCell>(_onSelectCell);
     on<TimerTick>(_onTimerTick);
+    on<LoadFriendsLeaderboard>(_onLoadFriendsLeaderboard);
   }
 
   Future<void> _onStartGame(StartGame event, Emitter<GameState> emit) async {
     _timer?.cancel();
+    _playerId = event.playerId;
 
     int initialSeconds = 300;
     int hintsCount = 12;
@@ -141,24 +144,34 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           // Emit intermediate state so UI knows it's won
           emit(state.copyWith(currentPath: newPath, isAngry: false));
 
-          // Fetch Real Stats before final emission
-          try {
-            final stats = await _progressionRepo.getLevelStatistics('world_1', state.levelNumber);
-            emit(state.copyWith(
-              status: GameStatus.won,
-              averageTimeSeconds: stats.averageSeconds,
-              bestTimeSeconds: stats.bestSeconds,
-            ));
-          } catch (e) {
-            print('Error fetching stats on win: $e');
-            emit(state.copyWith(status: GameStatus.won));
-          }
+          // Fetch Rich Win Summary
+          final timeTaken = state.initialSeconds - state.remainingSeconds;
+          final summary = await _progressionRepo.getLevelWinSummary(
+            worldId: 'world_1',
+            levelNumber: state.levelNumber,
+            playerId: _playerId ?? '',
+            playerTime: timeTaken,
+          );
+
+          emit(state.copyWith(
+            status: GameStatus.won,
+            winSummary: summary,
+          ));
           return;
         }
       }
       
       emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
     }
+  }
+
+  Future<void> _onLoadFriendsLeaderboard(LoadFriendsLeaderboard event, Emitter<GameState> emit) async {
+    final list = await _progressionRepo.getFriendsLeaderboard(
+      worldId: 'world_1',
+      levelNumber: state.levelNumber,
+      playerId: event.playerId,
+    );
+    emit(state.copyWith(friendsLeaderboard: list));
   }
 
   String _getWallKey(GridOffset a, GridOffset b) {

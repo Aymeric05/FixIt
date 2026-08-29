@@ -2,6 +2,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:fixit/core/models/grid_offset.dart';
 
+import 'package:fixit/core/models/level_win_summary.dart';
+
 enum GameStatus { initial, playing, won, lost }
 
 class GameState extends Equatable {
@@ -18,6 +20,8 @@ class GameState extends Equatable {
   final int averageTimeSeconds;
   final int bestTimeSeconds;
   final int levelNumber;
+  final LevelWinSummary? winSummary;
+  final List<FriendRankEntry> friendsLeaderboard;
 
   const GameState({
     this.hints = const [],
@@ -33,6 +37,8 @@ class GameState extends Equatable {
     this.averageTimeSeconds = 0,
     this.bestTimeSeconds = 0,
     this.levelNumber = 1,
+    this.winSummary,
+    this.friendsLeaderboard = const [],
   });
 
   GameState copyWith({
@@ -49,6 +55,8 @@ class GameState extends Equatable {
     int? averageTimeSeconds,
     int? bestTimeSeconds,
     int? levelNumber,
+    LevelWinSummary? winSummary,
+    List<FriendRankEntry>? friendsLeaderboard,
   }) {
     return GameState(
       hints: hints ?? this.hints,
@@ -64,13 +72,16 @@ class GameState extends Equatable {
       averageTimeSeconds: averageTimeSeconds ?? this.averageTimeSeconds,
       bestTimeSeconds: bestTimeSeconds ?? this.bestTimeSeconds,
       levelNumber: levelNumber ?? this.levelNumber,
+      winSummary: winSummary ?? this.winSummary,
+      friendsLeaderboard: friendsLeaderboard ?? this.friendsLeaderboard,
     );
   }
 
   @override
-  List<Object> get props => [
+  List<Object?> get props => [
     hints, currentPath, remainingSeconds, initialSeconds, 
     status, solutionPath, hintSteps, walls, pathColor, isAngry,
-    averageTimeSeconds, bestTimeSeconds, levelNumber,
+    averageTimeSeconds, bestTimeSeconds, levelNumber, winSummary,
+    friendsLeaderboard,
   ];
 }

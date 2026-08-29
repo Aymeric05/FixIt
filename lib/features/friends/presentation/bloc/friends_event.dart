@@ -15,6 +15,14 @@ class LoadFriends extends FriendsEvent {
   List<Object?> get props => [playerId];
 }
 
+class StartSocialSubscription extends FriendsEvent {
+  final String playerId;
+  const StartSocialSubscription(this.playerId);
+
+  @override
+  List<Object?> get props => [playerId];
+}
+
 class SearchPlayers extends FriendsEvent {
   final String query;
   final String currentUserId;
@@ -51,3 +59,5 @@ class RemoveFriend extends FriendsEvent {
   @override
   List<Object?> get props => [playerId, friendId];
 }
+
+class ClearSocialMessages extends FriendsEvent {}

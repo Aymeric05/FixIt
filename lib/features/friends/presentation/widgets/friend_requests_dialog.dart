@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fixit/core/theme/app_colors.dart';
-import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:fixit/features/home/presentation/widgets/candy_dialog.dart';
 import 'package:fixit/features/friends/presentation/bloc/friends_bloc.dart';
 import 'package:fixit/features/friends/presentation/bloc/friends_event.dart';
 import 'package:fixit/features/friends/presentation/bloc/friends_state.dart';
+
+import 'package:fixit/core/utils/app_notifications.dart';
 
 class FriendRequestsDialog extends StatelessWidget {
   final String playerId;
@@ -14,11 +15,17 @@ class FriendRequestsDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocListener<FriendsBloc, FriendsState>(
-      listenWhen: (prev, curr) => prev.successMessage != curr.successMessage && curr.successMessage != null,
+      listenWhen: (prev, curr) => (prev.successMessage != curr.successMessage && curr.successMessage != null) ||
+                                (prev.error != curr.error && curr.error != null),
       listener: (context, state) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(state.successMessage!), backgroundColor: AppColors.candyGreen),
-        );
+        if (state.successMessage != null) {
+          AppNotifications.show(context, state.successMessage!);
+          context.read<FriendsBloc>().add(ClearSocialMessages());
+        }
+        if (state.error != null) {
+          AppNotifications.show(context, state.error!, isError: true);
+          context.read<FriendsBloc>().add(ClearSocialMessages());
+        }
       },
       child: CandyDialog(
         title: 'REQUESTS',

@@ -7,6 +7,8 @@ import 'package:fixit/core/theme/app_colors.dart';
 /// tant qu'il n'est pas débloqué), soit une case "mystère" (toujours
 /// recouverte, futur monde non développé). La case du monde 1
 /// (meadow, bas-gauche) n'est jamais recouverte.
+import 'package:fixit/core/utils/app_notifications.dart';
+
 class MapDialog extends StatelessWidget {
   final Set<String> unlockedWorldIds;
   final ValueChanged<String>? onWorldSelected;
@@ -160,15 +162,7 @@ class MapDialog extends StatelessWidget {
               Navigator.of(context).pop();
               onWorldSelected?.call(id);
             } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  duration: Duration(seconds: 1),
-                  behavior: SnackBarBehavior.floating,
-                  backgroundColor: Color(0xFF5C3A21),
-                  content: Text('🔒 Monde verrouillé',
-                      textAlign: TextAlign.center),
-                ),
-              );
+              AppNotifications.show(context, '🔒 World Locked', isError: true);
             }
           },
           child: Center(child: _worldLabel(cell.label!)),
