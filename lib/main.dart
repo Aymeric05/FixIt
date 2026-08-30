@@ -9,6 +9,7 @@ import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_event.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'package:fixit/features/friends/presentation/bloc/friends_bloc.dart';
+import 'package:fixit/core/repositories/daily_repository.dart';
 
 void main() async {
   try {
@@ -19,6 +20,10 @@ void main() async {
     // Initialize Databases
     final dbService = DatabaseService();
     await dbService.initialize();
+    
+    // Sync with server time to prevent cheating and handle midnight transitions
+    await DailyRepository().syncWithServerTime();
+    
     print('Databases initialized. Launching app...');
     
     runApp(const CandyPuzzleGame());

@@ -58,6 +58,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       hints: [],
       mode: event.mode,
       seriesAccumulatedTime: 0, // Default, will be updated below
+      wonTime: null,
     ));
 
     List<List<int?>> hints;
@@ -143,7 +144,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       isAngry: false,
     ));
 
-    // Check completion and handle resumption
     if (event.playerId.isNotEmpty) {
       final status = await _dailyRepo.getDailyStatus(event.playerId);
       if (status != null) {
@@ -160,16 +160,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
             emit(state.copyWith(
               status: GameStatus.won,
               winSummary: summary,
-              remainingSeconds: initialSeconds - status.dailyLevelTime,
+              wonTime: status.dailyLevelTime,
               currentPath: solution,
             ));
           }
           return;
         } else if (event.mode == GameMode.dailySeries) {
-          // Update series accumulated time (time from levels BEFORE this one)
-          // We need to calculate it properly. seriesAccumulatedTime in DB is the TOTAL so far.
-          // For resumption, if we are at level N, and it's already finished, we show the recap.
-          
           if (event.level <= status.seriesCurrentLevel) {
             final summary = await _progressionRepo.getLevelWinSummary(
               worldId: _dailyRepo.getTodaySeriesWorldId(),
@@ -183,9 +179,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
               emit(state.copyWith(
                 status: GameStatus.won,
                 winSummary: summary,
-                // Trick to make GamePage display the total time correctly
                 seriesAccumulatedTime: status.seriesAccumulatedTime,
-                remainingSeconds: initialSeconds, 
+                wonTime: status.seriesAccumulatedTime,
                 currentPath: solution,
               ));
             }
@@ -239,13 +234,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           final timeTaken = state.initialSeconds - state.remainingSeconds;
           final worldId = state.mode == GameMode.story ? 'world_1' : _dailyRepo.getTodayWorldId();
 
+          // Record and prepare summary
+          int displayTime = timeTaken;
           if (state.mode == GameMode.dailySingle && _playerId != null) {
             await _dailyRepo.updateDailyStatus(
               playerId: _playerId!, 
               isDailyLevelCompleted: true,
               dailyLevelTime: timeTaken,
             );
-            // Also record in global completions
             await _progressionRepo.markLevelAsCompleted(
               playerSupabaseId: _playerId!,
               worldId: worldId,
@@ -254,22 +250,21 @@ class GameBloc extends Bloc<GameEvent, GameState> {
               updateProgression: false,
             );
           } else if (state.mode == GameMode.dailySeries && _playerId != null) {
-            final newAccumulated = state.seriesAccumulatedTime + timeTaken;
+            displayTime = state.seriesAccumulatedTime + timeTaken;
             final isFinished = state.levelNumber >= 3;
             
             await _dailyRepo.updateDailyStatus(
               playerId: _playerId!,
               seriesCurrentLevel: state.levelNumber,
-              seriesAccumulatedTime: newAccumulated,
+              seriesAccumulatedTime: displayTime,
               isSeriesCompleted: isFinished,
             );
 
-            // Record in global completions for the series stage
             await _progressionRepo.markLevelAsCompleted(
               playerSupabaseId: _playerId!,
               worldId: _dailyRepo.getTodaySeriesWorldId(),
               levelNumber: state.levelNumber,
-              timeSeconds: newAccumulated,
+              timeSeconds: displayTime,
               updateProgression: false,
             );
           }
@@ -295,13 +290,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
               worldId: _dailyRepo.getTodaySeriesWorldId(),
               levelNumber: state.levelNumber,
               playerId: _playerId ?? '',
-              playerTime: state.seriesAccumulatedTime + timeTaken,
+              playerTime: displayTime,
             );
           }
 
           emit(state.copyWith(
             status: GameStatus.won,
             winSummary: summary,
+            wonTime: displayTime,
           ));
           return;
         }
@@ -312,7 +308,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   }
 
   Future<void> _onLoadFriendsLeaderboard(LoadFriendsLeaderboard event, Emitter<GameState> emit) async {
-    final worldId = state.mode == GameMode.story ? 'world_1' : _dailyRepo.getTodayWorldId();
+    final worldId = state.mode == GameMode.story 
+        ? 'world_1' 
+        : state.mode == GameMode.dailySeries 
+            ? _dailyRepo.getTodaySeriesWorldId() 
+            : _dailyRepo.getTodayWorldId();
+            
     final list = await _progressionRepo.getFriendsLeaderboard(
       worldId: worldId,
       levelNumber: state.levelNumber,

@@ -25,6 +25,7 @@ class GameState extends Equatable {
   final List<FriendRankEntry> friendsLeaderboard;
   final GameMode mode;
   final int seriesAccumulatedTime;
+  final int? wonTime; // Explicit time when won, to avoid recalculation bugs
 
   const GameState({
     this.hints = const [],
@@ -44,6 +45,7 @@ class GameState extends Equatable {
     this.friendsLeaderboard = const [],
     this.mode = GameMode.story,
     this.seriesAccumulatedTime = 0,
+    this.wonTime,
   });
 
   GameState copyWith({
@@ -64,6 +66,7 @@ class GameState extends Equatable {
     List<FriendRankEntry>? friendsLeaderboard,
     GameMode? mode,
     int? seriesAccumulatedTime,
+    int? wonTime,
   }) {
     return GameState(
       hints: hints ?? this.hints,
@@ -83,6 +86,7 @@ class GameState extends Equatable {
       friendsLeaderboard: friendsLeaderboard ?? this.friendsLeaderboard,
       mode: mode ?? this.mode,
       seriesAccumulatedTime: seriesAccumulatedTime ?? this.seriesAccumulatedTime,
+      wonTime: wonTime ?? this.wonTime,
     );
   }
 
@@ -91,6 +95,6 @@ class GameState extends Equatable {
     hints, currentPath, remainingSeconds, initialSeconds, 
     status, solutionPath, hintSteps, walls, pathColor, isAngry,
     averageTimeSeconds, bestTimeSeconds, levelNumber, winSummary,
-    friendsLeaderboard, mode, seriesAccumulatedTime,
+    friendsLeaderboard, mode, seriesAccumulatedTime, wonTime,
   ];
 }

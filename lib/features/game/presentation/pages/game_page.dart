@@ -433,12 +433,7 @@ class _GamePageState extends State<GamePage> {
     final summary = state.winSummary;
     if (summary == null) return;
 
-    final int currentTimeTaken = state.initialSeconds - state.remainingSeconds;
-    final int displayTime = state.mode == GameMode.dailySeries 
-        ? (state.status == GameStatus.won && state.currentPath.length == 36 && state.remainingSeconds == state.initialSeconds)
-            ? state.seriesAccumulatedTime // Resumption case: accumulated time is the total
-            : state.seriesAccumulatedTime + currentTimeTaken 
-        : currentTimeTaken;
+    final int displayTime = state.wonTime ?? (state.initialSeconds - state.remainingSeconds);
     final timeStr = "${(displayTime / 60).floor()}:${(displayTime % 60).toString().padLeft(2, '0')}";
     
     final avgSeconds = summary.globalAverageSeconds;
@@ -451,7 +446,7 @@ class _GamePageState extends State<GamePage> {
       ? "${(wrSeconds / 60).floor()}:${(wrSeconds % 60).toString().padLeft(2, '0')}" 
       : "--:--";
 
-    final bool isFirstGlobal = summary.globalCompletionCount <= 1; // It includes current player
+    final bool isFirstGlobal = summary.globalCompletionCount <= 1;
     final isNewRecord = wrSeconds == 0 || displayTime < wrSeconds || isFirstGlobal;
     
     final int fasterBy = avgSeconds - displayTime;

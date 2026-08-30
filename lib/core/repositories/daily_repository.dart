@@ -9,9 +9,40 @@ class DailyRepository {
   final _db = DatabaseService().db;
   final _supabase = DatabaseService().supabase;
 
+  // Static cache to store the offset between local device time and server time
+  static Duration _serverTimeOffset = Duration.zero;
+  static bool _isSynced = false;
+
+  /// Fetches the official server time from Supabase and calculates the offset.
+  Future<void> syncWithServerTime() async {
+    try {
+      final response = await _supabase.rpc('get_server_time');
+      if (response != null) {
+        final serverTime = DateTime.parse(response as String);
+        _serverTimeOffset = serverTime.difference(DateTime.now().toUtc());
+        _isSynced = true;
+        print('Server time synced. Offset: ${_serverTimeOffset.inSeconds}s');
+      }
+    } catch (e) {
+      print('Failed to sync server time: $e. Falling back to local time.');
+    }
+  }
+
+  /// Returns the current time aligned with the server.
+  DateTime _getServerAlignedTime() {
+    return DateTime.now().toUtc().add(_serverTimeOffset);
+  }
+
   String _getTodayDate() {
-    final now = DateTime.now();
+    final now = _getServerAlignedTime();
     return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+  }
+
+  /// Returns the number of seconds remaining until the next UTC midnight.
+  int getSecondsUntilMidnight() {
+    final now = _getServerAlignedTime();
+    final tomorrow = DateTime.utc(now.year, now.month, now.day + 1);
+    return tomorrow.difference(now).inSeconds;
   }
 
   String getTodayWorldId() {

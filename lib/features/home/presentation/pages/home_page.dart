@@ -127,9 +127,18 @@ class _HomePageState extends State<HomePage> {
         ),
         BlocListener<HomeBloc, HomeState>(
           listenWhen: (previous, current) =>
-              previous.levelsCompletedInWorld != current.levelsCompletedInWorld,
+              previous.levelsCompletedInWorld != current.levelsCompletedInWorld ||
+              previous.currentDate != current.currentDate,
           listener: (context, state) {
             _confettiController.play();
+          },
+        ),
+        BlocListener<HomeBloc, HomeState>(
+          listenWhen: (previous, current) => previous.currentDate != current.currentDate,
+          listener: (context, state) {
+            if (state.currentDate != null) {
+              _checkDailyChallenge();
+            }
           },
         ),
       ],

@@ -46,3 +46,5 @@ class ChangeWorld extends HomeEvent {
   @override
   List<Object> get props => [worldIndex];
 }
+
+class MidnightReached extends HomeEvent {}

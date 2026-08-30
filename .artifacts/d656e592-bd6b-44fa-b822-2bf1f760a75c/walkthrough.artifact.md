@@ -1,29 +1,30 @@
-# Walkthrough - Daily Level & Daily Series
+# Walkthrough - Server Time Sync & Dynamic New Day
 
-Implemented the Daily Challenge system, allowing players to compete on the same levels every day.
+Implemented a robust server-time synchronization and dynamic midnight transition system.
 
 ## Changes Made
 
-### Core & Infrastructure
-- **Database**: Added `DailyChallenges` table to track daily completion and series progression (1-3 levels).
-- **Models**: Created `GameMode` (Story, Daily Single, Daily Series) to differentiate game logic.
-- **Seeded Generation**: Refactored `LevelGenerator` to accept a `Random` instance, ensuring deterministic level generation based on the date.
+### Anti-Cheat & Accuracy
+- **Server Time Reference**: The app now fetches the official UTC timestamp from Supabase at startup.
+- **Offset Calculation**: Instead of relying on the phone's clock (which can be manipulated), the app calculates the difference (offset) between the device and the server. All game logic now uses this "Server-Aligned Time".
+- **Deterministic Seed**: The generation of daily levels is now based on this verified server date.
 
-### Logic (BLoC & Repositories)
-- **`DailyRepository`**: Handles date-based seeds and synchronizes daily progress between local SQLite (Drift) and Supabase.
-- **`GameBloc`**:
-    - Daily Level: Disabled the restrictive timer (set to 1 hour).
-    - Daily Series: Tracks cumulative time across 3 levels and allows resuming.
+### Dynamic Transition (Live Refresh)
+- **Midnight Monitor**: Added a background timer in `HomeBloc` that tracks the seconds remaining until UTC midnight.
+- **Auto-Refresh**: When midnight UTC is reached, the app automatically:
+    1.  Refreshes the player's home data.
+    2.  Updates the `currentDate` in the state.
+    3.  Triggers the `DailyPopup` to appear with the new day's levels, even if the player is currently in the menus.
 
-### UI / UX
-- **`DailyPopup`**: A new dialog shown on first launch of the day, offering both daily modes.
-- **`DailyChallengeButton`**: Added a calendar icon on the Home Screen for quick access.
-- **`GamePage` Updates**:
-    - Header now shows "DAILY LEVEL" or "SERIES X/3".
-    - Timer displays cumulative time for the series.
-    - Series progress is saved immediately upon level completion.
+### Technical Implementation
+- **DailyRepository**: Added `syncWithServerTime()` and `getSecondsUntilMidnight()`.
+- **HomeBloc**: Added `MidnightReached` event and a persistent timer.
+- **Supabase**: Requires the `get_server_time()` SQL function to be installed.
 
-### Debug & Resilience
-- **Hard Reset**: Updated to clear `daily_challenges` on both Supabase and Drift.
-- **Startup Protection**: Added a 10s timeout to Supabase initialization and a fatal error screen to prevent the "white screen of death" if something goes wrong.
-- **Improved Migrations**: Added try-catch blocks to database migrations to handle existing columns gracefully.
+## Verification Results
+
+### Anti-Cheat Test
+Verified that changing the phone's date manually does not affect the daily level as long as the app can verify the true time with Supabase.
+
+### Live Transition Test
+Simulated a midnight approach and verified that the UI refreshes and the new day's popup appears exactly at 00:00:00 UTC without app restart.

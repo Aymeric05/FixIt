@@ -21,6 +21,7 @@ class HomeState extends Equatable {
   final int levelsCompletedInWorld;
   final int maxLevelsInWorld;
   final int currentWorldIndex;
+  final String? currentDate; // YYYY-MM-DD to detect midnight transitions
 
   const HomeState({
     this.currentLevel = 1,
@@ -37,6 +38,7 @@ class HomeState extends Equatable {
     this.levelsCompletedInWorld = 0,
     this.maxLevelsInWorld = 10,
     this.currentWorldIndex = 1,
+    this.currentDate,
   });
 
   HomeState copyWith({
@@ -54,6 +56,7 @@ class HomeState extends Equatable {
     int? levelsCompletedInWorld,
     int? maxLevelsInWorld,
     int? currentWorldIndex,
+    String? currentDate,
   }) {
     return HomeState(
       currentLevel: currentLevel ?? this.currentLevel,
@@ -70,6 +73,7 @@ class HomeState extends Equatable {
       levelsCompletedInWorld: levelsCompletedInWorld ?? this.levelsCompletedInWorld,
       maxLevelsInWorld: maxLevelsInWorld ?? this.maxLevelsInWorld,
       currentWorldIndex: currentWorldIndex ?? this.currentWorldIndex,
+      currentDate: currentDate ?? this.currentDate,
     );
   }
 
@@ -89,5 +93,6 @@ class HomeState extends Equatable {
         levelsCompletedInWorld,
         maxLevelsInWorld,
         currentWorldIndex,
+        currentDate,
       ];
 }

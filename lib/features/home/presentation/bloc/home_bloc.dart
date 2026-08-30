@@ -5,14 +5,17 @@ import 'package:equatable/equatable.dart';
 import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/core/database/app_database.dart';
 import 'package:fixit/core/repositories/progression_repository.dart';
+import 'package:fixit/core/repositories/daily_repository.dart';
 
 part 'home_event.dart';
 part 'home_state.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Timer? _rechargeTimer;
+  Timer? _midnightTimer;
   final _db = DatabaseService().db;
   final _progressionRepo = ProgressionRepository();
+  final _dailyRepo = DailyRepository();
 
   HomeBloc() : super(const HomeState()) {
     on<LoadHomeData>(_onLoadHomeData);
@@ -24,12 +27,33 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<TickLifeRecharge>(_onTickLifeRecharge);
     on<CompleteLevel>(_onCompleteLevel);
     on<ChangeWorld>(_onChangeWorld);
+    on<MidnightReached>(_onMidnightReached);
   }
 
   Future<void> _onLoadHomeData(LoadHomeData event, Emitter<HomeState> emit) async {
     // Force a data refresh for the specific player
     await _refreshProgression(emit, event.playerId);
     _startRechargeTimer();
+    _startMidnightTimer();
+  }
+
+  Future<void> _onMidnightReached(MidnightReached event, Emitter<HomeState> emit) async {
+    print('Midnight UTC reached. Refreshing home data...');
+    // We need the player ID to refresh data. 
+    // Since we don't have it in the event, let's try to get it from Supabase current user.
+    final user = DatabaseService().supabase.auth.currentUser;
+    await _refreshProgression(emit, user?.id);
+    _startMidnightTimer(); // Schedule next midnight
+  }
+
+  void _startMidnightTimer() {
+    _midnightTimer?.cancel();
+    final secondsUntilMidnight = _dailyRepo.getSecondsUntilMidnight();
+    print('Scheduling midnight refresh in $secondsUntilMidnight seconds.');
+    
+    _midnightTimer = Timer(Duration(seconds: secondsUntilMidnight + 1), () {
+      add(MidnightReached());
+    });
   }
 
   Future<void> _refreshProgression(Emitter<HomeState> emit, String? playerId) async {
@@ -58,6 +82,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         currentLevel: progression?.currentLevel ?? 1,
         levelsCompletedInWorld: (progression?.currentLevel ?? 1) - 1,
         isLoading: false,
+        currentDate: _dailyRepo.getTodayWorldId(), // Used to detect day changes
       ));
 
       unawaited(_progressionRepo.ensureNextLevelsExist('world_1', progression?.currentLevel ?? 1));

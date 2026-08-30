@@ -1,63 +1,47 @@
-# Implementation Plan - Daily Level & Daily Series
+# Implementation Plan - Dynamic Server Time Synchronization
 
-This plan outlines the implementation of the "Daily Single Level" and "Daily Series" features as described in the project requirements.
+This plan ensures the app always uses accurate server time and dynamically handles the "New Day" transition (midnight UTC) without requiring an app restart.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - Daily Single Level: One unique level per day, no time limit.
-> - Daily Series: Consecutive chain of 3 levels, cumulative time.
-> - All players share the same daily levels (seeded generation).
-> - Daily Series progress is persisted and can be resumed.
+> - A new SQL function `get_server_time` must be created in Supabase.
+> - The app will calculate the time difference (offset) between the device and the server at startup.
+> - A background monitor will detect when the UTC date changes and automatically refresh the Home Screen and Daily Challenges.
 
 ## Proposed Changes
 
-### Core & Models
-#### [MODIFY] [app_database.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/core/database/app_database.dart)
-- Add `DailyChallengeStatus` table to track completion and series progress.
-- Fields: `playerSupabaseId`, `date`, `isDailyLevelCompleted`, `seriesCurrentLevel` (0 to 3), `seriesAccumulatedTime`, `isSeriesCompleted`.
+### 1. Backend (Supabase SQL)
+- Return the current server timestamp in ISO format.
 
-#### [NEW] [daily_mode.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/core/models/daily_mode.dart)
-- Enum for `GameMode { story, dailySingle, dailySeries }`.
+```sql
+CREATE OR REPLACE FUNCTION get_server_time() RETURNS TEXT AS $$
+  SELECT TO_CHAR(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"');
+$$ LANGUAGE SQL;
+```
 
-### Repositories
-#### [NEW] [daily_repository.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/core/repositories/daily_repository.dart)
-- Logic to generate daily levels using a date-based seed.
-- Logic to fetch and update daily status from Supabase/Drift.
+### 2. Repository Logic
+#### [MODIFY] [daily_repository.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/core/repositories/daily_repository.dart)
+- Store a static `Duration _serverTimeOffset`.
+- `syncWithServerTime()`: Fetches server timestamp, compares it to local time, and stores the offset.
+- `getTodayDate()`: Uses `DateTime.now().add(_serverTimeOffset).toUtc()` to get the current server-aligned date.
+- `getSecondsUntilMidnight()`: Helper to know when to trigger the refresh timer.
 
-### Game Logic (BLoC)
-#### [MODIFY] [game_event.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/features/game/presentation/bloc/game_event.dart)
-- Add `GameMode` to `StartGame`.
-- Add `CompleteDailyLevel` and `CompleteSeriesLevel` events if needed, or handle within `GameBloc`.
+### 3. State Management
+#### [MODIFY] [home_bloc.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/features/home/presentation/bloc/home_bloc.dart)
+- Add `CheckDateTransition` event.
+- In `_onLoadHomeData`, start a timer that fires at the next UTC midnight.
+- When the timer fires, re-trigger `LoadHomeData` and `_checkDailyChallenge` (to show the new day's popup).
 
-#### [MODIFY] [game_bloc.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/features/game/presentation/bloc/game_bloc.dart)
-- Support `GameMode.dailySingle`: Disable timer (set to a very large value or handle UI display).
-- Support `GameMode.dailySeries`: Handle transition between levels 1, 2, and 3. Accumulate time.
-- Update `_onSelectCell` to handle daily completion logic.
-
-### UI Components
-#### [NEW] [daily_challenge_button.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/features/home/presentation/widgets/daily_challenge_button.dart)
-- A floating or prominent button on the Home Screen for Daily Challenges.
-
-#### [NEW] [daily_popup.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/features/home/presentation/widgets/daily_popup.dart)
-- Popup that appears on the first connection of the day.
-
-#### [MODIFY] [home_page.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/features/home/presentation/pages/home_page.dart)
-- Integrate the Daily Challenge button.
-- Logic to show the daily popup if not completed.
-
-#### [MODIFY] [game_page.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/features/game/presentation/pages/game_page.dart)
-- UI adjustments for Daily Mode (e.g., hidden timer for single level, cumulative time display for series).
-- Different "Victory" dialog for daily modes.
+### 4. Application Startup
+#### [MODIFY] [main.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/main.dart)
+- Call `DailyRepository().syncWithServerTime()` during initialization.
 
 ## Verification Plan
 
-### Automated Tests
-- Unit tests for `DailyRepository` level generation (ensuring same date produces same level).
-- Unit tests for `DailyBloc` state transitions.
-
 ### Manual Verification
-- Launch the app and verify the daily popup appears.
-- Play the Daily Level and verify no time limit.
-- Play the Daily Series and verify time accumulates and state is persisted between levels.
-- Verify that finishing the daily challenge updates the Home Screen state.
+1.  **Anti-Cheat**: Change phone time +1 day, verify game doesn't change until internet connection confirms server time.
+2.  **Dynamic Transition**:
+    - Set phone time to 23:59:50 UTC (simulated).
+    - Stay on Home Screen.
+    - Verify that at 00:00:00 UTC, the Daily Popup automatically appears with the new level.
