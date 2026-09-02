@@ -124,10 +124,6 @@ class _HomePageState extends State<HomePage> {
                                         child: Stack(
                                           alignment: Alignment.center,
                                           children: [
-                                            Positioned(
-                                              left: 20,
-                                              child: _buildHintIndicator(context, state),
-                                            ),
                                             MainPlayButton(
                                               level: state.currentLevel,
                                               onTap: () {
@@ -136,6 +132,9 @@ class _HomePageState extends State<HomePage> {
                                                     builder: (context) => GamePage(
                                                       level: state.currentLevel,
                                                       difficulty: state.difficulty,
+                                                      invPlusTime: state.itemPlusTime,
+                                                      invMoreNumbers: state.itemMoreNumbers,
+                                                      invRevealPath: state.itemRevealPath,
                                                     ),
                                                   ),
                                                 );
@@ -215,43 +214,6 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildHintIndicator(BuildContext context, HomeState state) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          clipBehavior: Clip.none,
-          children: [
-            const Icon(Icons.lightbulb, color: Colors.black26, size: 54),
-            ShaderMask(
-              shaderCallback: (bounds) => const RadialGradient(
-                center: Alignment(-0.3, -0.3),
-                colors: [Colors.white, Colors.amber, Color(0xFFB8860B)],
-                radius: 0.8,
-              ).createShader(bounds),
-              child: const Icon(Icons.lightbulb, color: Colors.white, size: 50),
-            ),
-            Text(
-              '${state.hints}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 18,
-                shadows: [Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(2, 2))],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 2),
-        const Text(
-          'HINTS',
-          style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w900),
-        ),
-      ],
     );
   }
 

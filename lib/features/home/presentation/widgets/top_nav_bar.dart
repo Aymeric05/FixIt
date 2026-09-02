@@ -16,6 +16,7 @@ import 'package:fixit/features/home/presentation/widgets/no_ads_dialog.dart';
 import 'package:fixit/features/home/presentation/widgets/lives_store_dialog.dart';
 import 'package:fixit/features/home/presentation/widgets/leaderboard_dialog.dart';
 import 'package:fixit/features/home/presentation/widgets/map_dialog.dart';
+import 'package:fixit/features/home/presentation/widgets/shop_dialog.dart';
 
 class TopNavBar extends StatelessWidget {
   const TopNavBar({super.key});
@@ -64,11 +65,23 @@ class TopNavBar extends StatelessWidget {
                         MapDialog(
                           onWorldSelected: (worldId) {
                             int index = 0;
-                            if (worldId == 'meadow') index = 1;
-                            else if (worldId == 'desert') index = 2;
-                            else if (worldId == 'ice') index = 3;
-                            else if (worldId == 'volcano') index = 4;
-                            else if (worldId == 'city') index = 5;
+                            switch (worldId) {
+                              case 'meadow':
+                                index = 1;
+                                break;
+                              case 'desert':
+                                index = 2;
+                                break;
+                              case 'ice':
+                                index = 3;
+                                break;
+                              case 'volcano':
+                                index = 4;
+                                break;
+                              case 'city':
+                                index = 5;
+                                break;
+                            }
                             context.read<HomeBloc>().add(ChangeWorld(index, worldId));
                           },
                         ),
@@ -78,10 +91,17 @@ class TopNavBar extends StatelessWidget {
                 ),
               ),
 
-              // Center: Juicy Heart (Centered)
-              JuicyHeartIndicator(state: state),
+              // Center: Juicy Heart & Puzzles
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  JuicyHeartIndicator(state: state),
+                  const SizedBox(height: 15),
+                  _buildPuzzleIndicator(context, state),
+                ],
+              ),
 
-              // Right side: No Ads, Settings, Rank
+              // Right side: No Ads, Settings, Rank, Shop
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -113,6 +133,15 @@ class TopNavBar extends StatelessWidget {
                       darkColor: AppColors.candyYellowDark,
                       onPressed: () => _showCandyDialog(context, const LeaderboardDialog()),
                     ),
+                    const SizedBox(height: 12),
+                    _buildNavButton(
+                      context,
+                      icon: Icons.shopping_cart,
+                      label: 'Shop',
+                      color: AppColors.candyPurple,
+                      darkColor: AppColors.candyPurpleDark,
+                      onPressed: () => _showCandyDialog(context, const ShopDialog()),
+                    ),
                   ],
                 ),
               ),
@@ -120,6 +149,33 @@ class TopNavBar extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildPuzzleIndicator(BuildContext context, HomeState state) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black38,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white24, width: 2),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.extension, color: Colors.orangeAccent, size: 24),
+          const SizedBox(width: 8),
+          Text(
+            '${state.puzzlePieces}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 20,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -207,7 +263,7 @@ class TopNavBar extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: const BoxDecoration(
-                    color: Colors.red,
+                    color: AppColors.candyPurple,
                     shape: BoxShape.circle,
                     boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(2, 2))],
                   ),

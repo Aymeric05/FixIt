@@ -115,7 +115,7 @@ class SocialDialog extends StatelessWidget {
                 top: -5,
                 child: Container(
                   padding: const EdgeInsets.all(6),
-                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                  decoration: const BoxDecoration(color: AppColors.candyPurple, shape: BoxShape.circle),
                   constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                   child: Text(
                     '$badgeCount',

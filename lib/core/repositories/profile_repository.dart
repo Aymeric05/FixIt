@@ -25,6 +25,10 @@ class ProfileRepository {
         supabaseId: Value(supabaseId),
         username: response['username'],
         avatarUrl: Value(response['avatar_url']),
+        puzzlePieces: Value(response['puzzle_pieces'] ?? 50),
+        itemPlusTime: Value(response['item_plus_time'] ?? 5),
+        itemMoreNumbers: Value(response['item_more_numbers'] ?? 5),
+        itemRevealPath: Value(response['item_reveal_path'] ?? 5),
         updatedAt: Value(DateTime.now()),
       );
       
@@ -40,6 +44,10 @@ class ProfileRepository {
     await _supabase.from('profiles').upsert({
       'id': supabaseId,
       'username': defaultUsername,
+      'puzzle_pieces': 50,
+      'item_plus_time': 5,
+      'item_more_numbers': 5,
+      'item_reveal_path': 5,
     });
 
     // Ensure progression exists on Supabase
@@ -51,6 +59,10 @@ class ProfileRepository {
     final companion = PlayersCompanion.insert(
       supabaseId: Value(supabaseId),
       username: defaultUsername,
+      puzzlePieces: const Value(50),
+      itemPlusTime: const Value(5),
+      itemMoreNumbers: const Value(5),
+      itemRevealPath: const Value(5),
       updatedAt: Value(DateTime.now()),
     );
 

@@ -27,6 +27,25 @@ class BuyLives extends HomeEvent {
   List<Object> get props => [count];
 }
 
+class BuyItem extends HomeEvent {
+  final String itemKey; // 'plus_time', 'more_numbers', 'reveal_path'
+  final int cost;
+  final bool isRealMoney;
+  const BuyItem(this.itemKey, this.cost, {this.isRealMoney = false});
+  @override
+  List<Object> get props => [itemKey, cost, isRealMoney];
+}
+
+class BuyPuzzlePack extends HomeEvent {
+  final int count;
+  final double price;
+  const BuyPuzzlePack(this.count, this.price);
+  @override
+  List<Object> get props => [count, price];
+}
+
+class ClaimDailyPuzzle extends HomeEvent {}
+
 class BuyUnlimitedLives extends HomeEvent {}
 
 class BuyNoAds extends HomeEvent {}

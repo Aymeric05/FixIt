@@ -18,6 +18,13 @@ class GameState extends Equatable {
   final int averageTimeSeconds;
   final int bestTimeSeconds;
   final int levelNumber;
+  
+  // New Item Fields
+  final int inventoryPlusTime;
+  final int inventoryMoreNumbers;
+  final int inventoryRevealPath;
+  final List<GridOffset> highlightedCells;
+  final Set<String> usedItems;
 
   const GameState({
     this.hints = const [],
@@ -33,6 +40,11 @@ class GameState extends Equatable {
     this.averageTimeSeconds = 0,
     this.bestTimeSeconds = 0,
     this.levelNumber = 1,
+    this.inventoryPlusTime = 0,
+    this.inventoryMoreNumbers = 0,
+    this.inventoryRevealPath = 0,
+    this.highlightedCells = const [],
+    this.usedItems = const {},
   });
 
   GameState copyWith({
@@ -49,6 +61,11 @@ class GameState extends Equatable {
     int? averageTimeSeconds,
     int? bestTimeSeconds,
     int? levelNumber,
+    int? inventoryPlusTime,
+    int? inventoryMoreNumbers,
+    int? inventoryRevealPath,
+    List<GridOffset>? highlightedCells,
+    Set<String>? usedItems,
   }) {
     return GameState(
       hints: hints ?? this.hints,
@@ -64,6 +81,11 @@ class GameState extends Equatable {
       averageTimeSeconds: averageTimeSeconds ?? this.averageTimeSeconds,
       bestTimeSeconds: bestTimeSeconds ?? this.bestTimeSeconds,
       levelNumber: levelNumber ?? this.levelNumber,
+      inventoryPlusTime: inventoryPlusTime ?? this.inventoryPlusTime,
+      inventoryMoreNumbers: inventoryMoreNumbers ?? this.inventoryMoreNumbers,
+      inventoryRevealPath: inventoryRevealPath ?? this.inventoryRevealPath,
+      highlightedCells: highlightedCells ?? this.highlightedCells,
+      usedItems: usedItems ?? this.usedItems,
     );
   }
 
@@ -72,5 +94,7 @@ class GameState extends Equatable {
     hints, currentPath, remainingSeconds, initialSeconds, 
     status, solutionPath, hintSteps, walls, pathColor, isAngry,
     averageTimeSeconds, bestTimeSeconds, levelNumber,
+    inventoryPlusTime, inventoryMoreNumbers, inventoryRevealPath,
+    highlightedCells, usedItems,
   ];
 }
