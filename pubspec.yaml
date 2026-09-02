@@ -42,6 +42,7 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.24
   path_provider: ^2.1.2
   path: ^1.9.0
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
@@ -50,6 +51,22 @@ dev_dependencies:
   drift_dev: ^2.20.0
   build_runner: ^2.4.8
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.0
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "loading_ecran.png"
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#ffffff"
+  background_image: "loading_ecran.png"
+  fullscreen: true
+  android_12:
+    background_image: "loading_ecran.png"
+    color: "#ffffff"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -72,6 +89,7 @@ flutter:
     - world3.png
     - world4.png
     - world5.png
+    - loading_ecran.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

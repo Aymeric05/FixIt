@@ -1,43 +1,47 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/models/grid_offset.dart';
 import 'package:fixit/features/game/presentation/pages/game_page.dart';
+import 'package:fixit/features/game/presentation/bloc/game_bloc.dart';
+import 'package:fixit/features/game/presentation/bloc/game_event.dart';
 
 class TutorialDialog extends StatefulWidget {
-  final String title;
-  final String description;
   final String tutorialKey;
 
   const TutorialDialog({
     super.key,
-    required this.title,
-    required this.description,
     required this.tutorialKey,
   });
 
   static Future<void> showIfFirstTime(
     BuildContext context, {
-    required String title,
-    required String description,
     required String tutorialKey,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final hasSeen = prefs.getBool(tutorialKey) ?? false;
 
     if (!hasSeen && context.mounted) {
+      // Pause timer when tutorial starts
+      context.read<GameBloc>().add(PauseTimer());
+
       await showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => TutorialDialog(
-          title: title,
-          description: description,
+        builder: (dialogContext) => TutorialDialog(
           tutorialKey: tutorialKey,
         ),
       );
+      
       await prefs.setBool(tutorialKey, true);
+      
+      // Resume timer when tutorial ends
+      if (context.mounted) {
+        context.read<GameBloc>().add(ResumeTimer());
+      }
     }
   }
 
@@ -45,167 +49,352 @@ class TutorialDialog extends StatefulWidget {
   State<TutorialDialog> createState() => _TutorialDialogState();
 }
 
-class _TutorialDialogState extends State<TutorialDialog> {
-  List<GridOffset> _botPath = [];
-  Timer? _botTimer;
-  int _currentStep = 0;
-
-  // A simple 4x4 snake path for demonstration
-  final List<GridOffset> _demoPath = [
-    GridOffset(0, 0), GridOffset(0, 1), GridOffset(0, 2), GridOffset(0, 3),
-    GridOffset(1, 3), GridOffset(1, 2), GridOffset(1, 1), GridOffset(1, 0),
-    GridOffset(2, 0), GridOffset(2, 1), GridOffset(2, 2), GridOffset(2, 3),
-    GridOffset(3, 3), GridOffset(3, 2), GridOffset(3, 1), GridOffset(3, 0),
+class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProviderStateMixin {
+  int _currentStep = 0; // 0: Follow numbers, 1: Fill all cells
+  int _animSubStep = 0;
+  Timer? _timer;
+  late AnimationController _flashController;
+  
+  // Grid 3x3 for tutorial
+  final List<GridOffset> _step0Path = [
+    GridOffset(0, 0), GridOffset(0, 1), GridOffset(0, 2),
+    GridOffset(1, 2), GridOffset(1, 1), GridOffset(1, 0),
+    GridOffset(2, 0), GridOffset(2, 1), GridOffset(2, 2),
   ];
 
-  final List<List<int?>> _demoHints = [
-    [1, null, null, null],
-    [null, null, null, null],
-    [null, null, null, null],
-    [null, null, null, 16],
+  final List<List<int?>> _hints = [
+    [1, null, null],
+    [null, 2, null],
+    [null, null, 3],
   ];
+
+  List<GridOffset> _currentDrawingPath = [];
+  bool _showRedAlert = false;
+  bool _showYellowSuccess = false;
 
   @override
   void initState() {
     super.initState();
-    _startBot();
+    _flashController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    )..repeat(reverse: true);
+    _startAnimation();
   }
 
-  void _startBot() {
-    _botTimer = Timer.periodic(const Duration(milliseconds: 400), (timer) {
+  void _startAnimation() {
+    _timer?.cancel();
+    _animSubStep = 0;
+    _currentDrawingPath = [];
+    _showRedAlert = false;
+    _showYellowSuccess = false;
+
+    _timer = Timer.periodic(const Duration(milliseconds: 400), (timer) {
       if (!mounted) return;
       setState(() {
-        if (_currentStep < _demoPath.length) {
-          _botPath.add(_demoPath[_currentStep]);
-          _currentStep++;
+        if (_currentStep == 0) {
+          _handleStep0();
         } else {
-          // Pause at the end then restart
-          _botTimer?.cancel();
-          Future.delayed(const Duration(seconds: 1), () {
-            if (mounted) {
-              setState(() {
-                _botPath = [];
-                _currentStep = 0;
-                _startBot();
-              });
-            }
-          });
+          _handleStep1();
         }
       });
     });
   }
 
+  void _handleStep0() {
+    if (_animSubStep < _step0Path.length) {
+      _currentDrawingPath.add(_step0Path[_animSubStep]);
+      _animSubStep++;
+    } else {
+      _timer?.cancel();
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          setState(() {
+            _currentStep = 1;
+            _startAnimation();
+          });
+        }
+      });
+    }
+  }
+
+  void _handleStep1() {
+    // 1. Incomplete path
+    if (_animSubStep < 5) {
+      _currentDrawingPath.add(_step0Path[_animSubStep]);
+      _animSubStep++;
+    } else if (_animSubStep == 5) {
+      _showRedAlert = true;
+      _animSubStep++;
+      // Wait a bit before completing
+      _timer?.cancel();
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          _timer = Timer.periodic(const Duration(milliseconds: 400), (t) => _handleStep1());
+        }
+      });
+    } 
+    // 2. Complete path
+    else if (_animSubStep < _step0Path.length + 1) {
+      _showRedAlert = false;
+      int idx = _animSubStep - 1;
+      if (idx < _step0Path.length) {
+        _currentDrawingPath.add(_step0Path[idx]);
+      }
+      _animSubStep++;
+    } else {
+      _showYellowSuccess = true;
+      _timer?.cancel();
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            _currentStep = 0;
+            _startAnimation();
+          });
+        }
+      });
+    }
+  }
+
   @override
   void dispose() {
-    _botTimer?.cancel();
+    _timer?.cancel();
+    _flashController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    String titleText = _currentStep == 0 ? "FOLLOW NUMBERS" : "FILL THE GRID";
+    String description = _currentStep == 0 
+      ? "Connect all numbers in order (1, 2, 3...)"
+      : "You must fill EVERY cell to succeed!";
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.dialogBackground,
-          borderRadius: BorderRadius.circular(40),
-          border: Border.all(color: AppColors.candyBlue, width: 8),
-          boxShadow: const [
-            BoxShadow(color: Colors.black45, blurRadius: 20, offset: Offset(0, 10))
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              widget.title,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w900,
-                color: AppColors.candyBlueDark,
-                letterSpacing: 1.5,
-              ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          Container(
+            width: 320,
+            padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+            decoration: BoxDecoration(
+              color: AppColors.dialogBackground,
+              borderRadius: BorderRadius.circular(40),
+              border: Border.all(color: AppColors.candyBlue, width: 8),
+              boxShadow: const [
+                BoxShadow(color: Colors.black45, blurRadius: 20, offset: Offset(0, 10))
+              ],
             ),
-            const SizedBox(height: 20),
-            // Live Demo Grid
-            Container(
-              height: 220,
-              width: 220,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.circular(25),
-                border: Border.all(color: Colors.white, width: 4),
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final cellSize = constraints.maxWidth / 4;
-                  return Stack(
-                    children: [
-                      // Numbers
-                      GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4),
-                        itemCount: 16,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemBuilder: (context, index) {
-                          final r = index ~/ 4;
-                          final c = index % 4;
-                          final val = _demoHints[r][c];
-                          if (val == null) return const SizedBox.shrink();
-                          return Center(
-                            child: Text(
-                              '$val',
-                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
-                            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Demo Grid
+                Container(
+                  height: 200,
+                  width: 200,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: _showYellowSuccess ? Colors.yellow.withValues(alpha: 0.3) : Colors.white24,
+                    borderRadius: BorderRadius.circular(25),
+                    border: Border.all(
+                      color: _showRedAlert ? Colors.red : Colors.white, 
+                      width: 4
+                    ),
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final cellSize = constraints.maxWidth / 3;
+                      return AnimatedBuilder(
+                        animation: _flashController,
+                        builder: (context, child) {
+                          return Stack(
+                            children: [
+                              GridView.builder(
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3),
+                                itemCount: 9,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemBuilder: (context, index) {
+                                  final r = index ~/ 3;
+                                  final c = index % 3;
+                                  final pos = GridOffset(r, c);
+                                  final val = _hints[r][c];
+                                  
+                                  final isVisited = _currentDrawingPath.contains(pos);
+                                  Color cellColor = Colors.transparent;
+                                  if (_showYellowSuccess) {
+                                    cellColor = Colors.yellow.withValues(alpha: 0.6);
+                                  } else if (_showRedAlert && !isVisited) {
+                                    cellColor = Colors.red.withValues(alpha: _flashController.value * 0.6);
+                                  }
+
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: cellColor,
+                                      border: Border.all(color: Colors.white10, width: 0.5),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: val == null ? null : Text(
+                                      '$val',
+                                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20),
+                                    ),
+                                  );
+                                },
+                              ),
+                              CustomPaint(
+                                size: Size(constraints.maxWidth, constraints.maxWidth),
+                                painter: PathLinePainter(
+                                  path: _currentDrawingPath,
+                                  cellSize: cellSize,
+                                  color: AppColors.candyGreen,
+                                  isAngry: _showRedAlert,
+                                ),
+                              ),
+                              if (_currentDrawingPath.isNotEmpty)
+                                Positioned(
+                                  left: _currentDrawingPath.last.col * cellSize,
+                                  top: _currentDrawingPath.last.row * cellSize,
+                                  width: cellSize,
+                                  height: cellSize,
+                                  child: CustomPaint(
+                                    painter: HeadPainter(isAngry: _showRedAlert, cellSize: cellSize),
+                                  ),
+                                ),
+                            ],
                           );
                         },
-                      ),
-                      // Path
-                      CustomPaint(
-                        size: Size(constraints.maxWidth, constraints.maxWidth),
-                        painter: PathLinePainter(
-                          path: _botPath,
-                          cellSize: cellSize,
-                          color: AppColors.candyGreen,
-                          isAngry: false,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              widget.description,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 30),
-            CandyButton(
-              width: 200,
-              height: 60,
-              color: AppColors.candyGreen,
-              darkColor: AppColors.candyGreenDark,
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'START PLAYING',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 18,
+                      );
+                    },
+                  ),
                 ),
-              ),
+                const SizedBox(height: 20),
+                Text(
+                  description,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 30),
+                CandyButton(
+                  width: 200,
+                  height: 60,
+                  color: AppColors.candyGreen,
+                  darkColor: AppColors.candyGreenDark,
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'START PLAYING',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          _buildTitleBanner(titleText),
+        ],
       ),
     );
   }
+
+  Widget _buildTitleBanner(String text) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          height: 55,
+          width: 220,
+          decoration: BoxDecoration(
+            color: AppColors.candyBlueDark,
+            borderRadius: BorderRadius.circular(25),
+          ),
+        ),
+        Transform.translate(
+          offset: const Offset(0, -5),
+          child: Container(
+            height: 50,
+            width: 220,
+            decoration: BoxDecoration(
+              gradient: const RadialGradient(
+                colors: [AppColors.candyBlue, AppColors.candyBlueDark],
+                center: Alignment(-0.3, -0.3),
+                radius: 0.8,
+              ),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: Colors.white, width: 3),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: 1,
+                shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class HeadPainter extends CustomPainter {
+  final bool isAngry;
+  final double cellSize;
+
+  HeadPainter({required this.isAngry, required this.cellSize});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final eyePaint = Paint()..color = Colors.white;
+    final pupilPaint = Paint()..color = Colors.black;
+    final eyeSize = cellSize * 0.15;
+
+    canvas.drawCircle(center + Offset(-eyeSize, -eyeSize / 2), eyeSize, eyePaint);
+    canvas.drawCircle(center + Offset(eyeSize, -eyeSize / 2), eyeSize, eyePaint);
+    canvas.drawCircle(center + Offset(-eyeSize, -eyeSize / 2), eyeSize / 2, pupilPaint);
+    canvas.drawCircle(center + Offset(eyeSize, -eyeSize / 2), eyeSize / 2, pupilPaint);
+
+    if (isAngry) {
+      final angryPaint = Paint()
+        ..color = Colors.black
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(center + Offset(-eyeSize * 2, -eyeSize * 2), center + Offset(-eyeSize * 0.5, -eyeSize), angryPaint);
+      canvas.drawLine(center + Offset(eyeSize * 2, -eyeSize * 2), center + Offset(eyeSize * 0.5, -eyeSize), angryPaint);
+      final mouthPaint = Paint()
+        ..color = Colors.red
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3;
+      final mouthPath = Path();
+      mouthPath.moveTo(center.dx - eyeSize, center.dy + eyeSize);
+      mouthPath.quadraticBezierTo(center.dx, center.dy, center.dx + eyeSize, center.dy + eyeSize);
+      canvas.drawPath(mouthPath, mouthPaint);
+    } else {
+      final mouthPaint = Paint()
+        ..color = Colors.black
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2;
+      final mouthPath = Path();
+      mouthPath.moveTo(center.dx - eyeSize, center.dy + eyeSize);
+      mouthPath.quadraticBezierTo(center.dx, center.dy + eyeSize * 2, center.dx + eyeSize, center.dy + eyeSize);
+      canvas.drawPath(mouthPath, mouthPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant HeadPainter oldDelegate) => 
+      oldDelegate.isAngry != isAngry || oldDelegate.cellSize != cellSize;
 }

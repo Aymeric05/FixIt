@@ -5,6 +5,7 @@ import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'package:fixit/features/home/presentation/widgets/top_nav_bar.dart';
 import 'package:fixit/features/home/presentation/widgets/main_play_button.dart';
 import 'package:fixit/features/home/presentation/widgets/lives_store_dialog.dart';
+import 'package:fixit/features/home/presentation/pages/loading_screen.dart';
 import 'package:fixit/features/game/presentation/pages/game_page.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_state.dart';
@@ -58,7 +59,7 @@ class _HomePageState extends State<HomePage> {
         ),
         BlocListener<HomeBloc, HomeState>(
           listenWhen: (previous, current) =>
-              previous.levelsCompletedInWorld != current.levelsCompletedInWorld,
+              previous.levelsCompletedInWorld != current.levelsCompletedInWorld && current.lastAction == HomeLastAction.win,
           listener: (context, state) {
             _confettiController.play();
           },
@@ -68,18 +69,25 @@ class _HomePageState extends State<HomePage> {
         body: Stack(
           children: [
             Positioned.fill(
-              child: Image.asset(
-                'monde1_background.png',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.lightBlue, Colors.green],
-                      ),
-                    ),
+              child: BlocBuilder<HomeBloc, HomeState>(
+                buildWhen: (prev, curr) => prev.currentWorldIndex != curr.currentWorldIndex,
+                builder: (context, state) {
+                  String bg = 'monde1_background.png';
+                  // Add logic for other worlds if assets exist
+                  return Image.asset(
+                    bg,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Colors.lightBlue, Colors.green],
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -92,9 +100,8 @@ class _HomePageState extends State<HomePage> {
             ),
             BlocBuilder<HomeBloc, HomeState>(
               builder: (context, state) {
-                if (state.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+                // Initial data loading is now handled in main.dart wrapper
+                // to avoid background flicker.
                 return Stack(
                   children: [
                     Column(
@@ -125,13 +132,16 @@ class _HomePageState extends State<HomePage> {
                                                     builder: (context) => GamePage(
                                                       level: state.currentLevel,
                                                       difficulty: state.difficulty,
+                                                      invPlusTime: state.itemPlusTime,
+                                                      invMoreNumbers: state.itemMoreNumbers,
+                                                      invRevealPath: state.itemRevealPath,
                                                     ),
                                                   ),
                                                 );
                                               },
                                             ),
                                             Positioned(
-                                              right: 20,
+                                              right: 25,
                                               child: _FloatingBuyButton(),
                                             ),
                                           ],
@@ -149,6 +159,15 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ],
                     ),
+                    if (state.isWorldLoading)
+                      Positioned.fill(
+                        child: LoadingScreen(
+                          isDataLoading: false, // We just want the 2s animation here
+                          onComplete: () {
+                            context.read<HomeBloc>().add(FinishWorldLoading());
+                          },
+                        ),
+                      ),
                   ],
                 );
               },
@@ -282,8 +301,8 @@ class _FloatingBuyButtonState extends State<_FloatingBuyButton>
         );
       },
       child: CandyButton(
-        width: 80,
-        height: 80,
+        width: 60,
+        height: 60,
         color: AppColors.candyPink,
         darkColor: AppColors.candyPinkDark,
         onPressed: () {
@@ -298,14 +317,14 @@ class _FloatingBuyButtonState extends State<_FloatingBuyButton>
         child: const Stack(
           alignment: Alignment.center,
           children: [
-            Icon(Icons.favorite, color: Colors.white, size: 40),
+            Icon(Icons.favorite, color: Colors.white, size: 30),
             Positioned(
               right: 0,
               bottom: 0,
               child: CircleAvatar(
-                radius: 12,
+                radius: 10,
                 backgroundColor: AppColors.candyGreen,
-                child: Icon(Icons.add, color: Colors.white, size: 18),
+                child: Icon(Icons.add, color: Colors.white, size: 14),
               ),
             ),
           ],

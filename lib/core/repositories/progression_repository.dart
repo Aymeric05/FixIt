@@ -185,11 +185,11 @@ class ProgressionRepository {
   Future<void> grantLevel1Reward(String playerSupabaseId) async {
     try {
       final player = await (_db.select(_db.players)..where((t) => t.supabaseId.equals(playerSupabaseId))).getSingle();
-      final newHints = player.hints + 5;
+      final newPuzzles = player.puzzlePieces + 100;
       
-      await _supabase.from('profiles').update({'hints': newHints}).eq('id', playerSupabaseId);
+      await _supabase.from('profiles').update({'puzzle_pieces': newPuzzles}).eq('id', playerSupabaseId);
       await (_db.update(_db.players)..where((t) => t.supabaseId.equals(playerSupabaseId)))
-          .write(PlayersCompanion(hints: Value(newHints)));
+          .write(PlayersCompanion(puzzlePieces: Value(newPuzzles)));
     } catch (e) {
       print('Error granting Level 1 reward: $e');
     }

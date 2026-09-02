@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-import 'package:flutter/material.dart';
+import 'package:drift/drift.dart' as drift;
+import 'package:flutter/material.dart' hide Column;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'package:fixit/core/repositories/progression_repository.dart';
+import 'package:fixit/core/services/database_service.dart';
+import 'package:fixit/core/database/app_database.dart';
 import 'package:fixit/core/models/grid_offset.dart';
 import 'package:fixit/core/utils/level_generator.dart';
 import 'package:fixit/features/game/presentation/bloc/game_event.dart';
@@ -18,6 +21,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<StartGame>(_onStartGame);
     on<SelectCell>(_onSelectCell);
     on<TimerTick>(_onTimerTick);
+    on<PauseTimer>(_onPauseTimer);
+    on<ResumeTimer>(_onResumeTimer);
+    on<ContinueGameWithVideo>(_onContinueGameWithVideo);
+    on<UseItemPlusTime>(_onUseItemPlusTime);
+    on<UseItemMoreNumbers>(_onUseItemMoreNumbers);
+    on<UseItemRevealPath>(_onUseItemRevealPath);
   }
 
   Future<void> _onStartGame(StartGame event, Emitter<GameState> emit) async {
@@ -39,6 +48,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       initialSeconds: initialSeconds,
       levelNumber: event.level,
       hints: [],
+      inventoryPlusTime: event.invPlusTime,
+      inventoryMoreNumbers: event.invMoreNumbers,
+      inventoryRevealPath: event.invRevealPath,
+      usedItems: {},
     ));
 
     if (event.level == 1 && event.playerId.isNotEmpty) {
@@ -217,6 +230,129 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       emit(state.copyWith(remainingSeconds: 0, status: GameStatus.lost));
     } else {
       emit(state.copyWith(remainingSeconds: event.remainingSeconds));
+    }
+  }
+
+  void _onPauseTimer(PauseTimer event, Emitter<GameState> emit) {
+    _timer?.cancel();
+  }
+
+  void _onResumeTimer(ResumeTimer event, Emitter<GameState> emit) {
+    _timer?.cancel();
+    _startTimer(state.remainingSeconds);
+  }
+
+  void _onContinueGameWithVideo(ContinueGameWithVideo event, Emitter<GameState> emit) {
+    _timer?.cancel();
+    final newTime = state.remainingSeconds + 180;
+    emit(state.copyWith(
+      remainingSeconds: newTime,
+      status: GameStatus.playing,
+    ));
+    _startTimer(newTime);
+  }
+
+  Future<void> _onUseItemPlusTime(UseItemPlusTime event, Emitter<GameState> emit) async {
+    if (state.inventoryPlusTime <= 0 || state.status != GameStatus.playing || state.usedItems.contains('plus_time')) return;
+    
+    _timer?.cancel();
+    final newTime = state.remainingSeconds + 120;
+    final newInv = state.inventoryPlusTime - 1;
+    
+    emit(state.copyWith(
+      remainingSeconds: newTime, 
+      inventoryPlusTime: newInv,
+      usedItems: {...state.usedItems, 'plus_time'},
+    ));
+    _startTimer(newTime);
+    _updateLocalInventory('item_plus_time', newInv);
+  }
+
+  Future<void> _onUseItemMoreNumbers(UseItemMoreNumbers event, Emitter<GameState> emit) async {
+    if (state.inventoryMoreNumbers <= 0 || state.status != GameStatus.playing || state.usedItems.contains('more_numbers')) return;
+    
+    final solution = state.solutionPath;
+    final Map<GridOffset, int> newHintSteps = {};
+    final List<List<int?>> newHints = List.generate(6, (_) => List.filled(6, null));
+    
+    // First tier (steps 0-11): Keep approx 1 hint every 3 steps (4 hints)
+    for (int i = 0; i < 4; i++) {
+      int stepIndex = (i * 3).round();
+      final pos = solution[stepIndex];
+      newHintSteps[pos] = stepIndex;
+      newHints[pos.row][pos.col] = i + 1;
+    }
+
+    // Remaining 24 steps (12-35): Put 11 hints (Total 15)
+    for (int i = 0; i < 11; i++) {
+      int stepIndex = 12 + (i * (23 / 10)).round();
+      final pos = solution[stepIndex];
+      if (newHintSteps.containsKey(pos)) continue;
+      newHintSteps[pos] = stepIndex;
+      newHints[pos.row][pos.col] = 5 + i;
+    }
+
+    final newInv = state.inventoryMoreNumbers - 1;
+    emit(state.copyWith(
+      hints: newHints,
+      hintSteps: newHintSteps,
+      inventoryMoreNumbers: newInv,
+      usedItems: {...state.usedItems, 'more_numbers'},
+    ));
+    _updateLocalInventory('item_more_numbers', newInv);
+  }
+
+  Future<void> _onUseItemRevealPath(UseItemRevealPath event, Emitter<GameState> emit) async {
+    if (state.inventoryRevealPath <= 0 || state.status != GameStatus.playing || state.usedItems.contains('reveal_path')) return;
+
+    int lastStepIndex = -1;
+    if (state.currentPath.isNotEmpty) {
+      lastStepIndex = state.solutionPath.indexOf(state.currentPath.last);
+    }
+    
+    final nextCells = <GridOffset>[];
+    for (int i = 1; i <= 4; i++) {
+      int nextIdx = lastStepIndex + i;
+      if (nextIdx < 36) {
+        nextCells.add(state.solutionPath[nextIdx]);
+      }
+    }
+
+    if (nextCells.isEmpty) return;
+
+    final newInv = state.inventoryRevealPath - 1;
+    _updateLocalInventory('item_reveal_path', newInv);
+    
+    emit(state.copyWith(
+      inventoryRevealPath: newInv,
+      usedItems: {...state.usedItems, 'reveal_path'},
+    ));
+
+    // Animation: Reveal each cell every 0.5s
+    final revealedSoFar = <GridOffset>[];
+    for (var cell in nextCells) {
+      if (state.status != GameStatus.playing) break;
+      revealedSoFar.add(cell);
+      emit(state.copyWith(highlightedCells: List.from(revealedSoFar)));
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+    
+    // Hold all 4 lit for 2 seconds
+    if (state.status == GameStatus.playing) {
+      await Future.delayed(const Duration(seconds: 2));
+    }
+    
+    emit(state.copyWith(highlightedCells: []));
+  }
+
+  Future<void> _updateLocalInventory(String field, int newValue) async {
+    final db = DatabaseService().db;
+    if (field == 'item_plus_time') {
+      await (db.update(db.players)..where((t) => t.id.isNotNull())).write(PlayersCompanion(itemPlusTime: drift.Value(newValue)));
+    } else if (field == 'item_more_numbers') {
+      await (db.update(db.players)..where((t) => t.id.isNotNull())).write(PlayersCompanion(itemMoreNumbers: drift.Value(newValue)));
+    } else if (field == 'item_reveal_path') {
+      await (db.update(db.players)..where((t) => t.id.isNotNull())).write(PlayersCompanion(itemRevealPath: drift.Value(newValue)));
     }
   }
 
