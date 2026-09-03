@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -33,6 +34,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<ChangeWorld>(_onChangeWorld);
     on<MidnightReached>(_onMidnightReached);
     on<FinishWorldLoading>(_onFinishWorldLoading);
+    on<AppResumed>(_onAppResumed);
   }
 
   Future<void> _onLoadHomeData(LoadHomeData event, Emitter<HomeState> emit) async {
@@ -64,6 +66,36 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     _midnightTimer = Timer(Duration(seconds: secondsUntilMidnight + 1), () {
       add(MidnightReached());
     });
+  }
+
+  Future<void> _savePlayerLives(int lives, DateTime? lastLifeLostAt, String? playerId) async {
+    try {
+      final companion = PlayersCompanion(
+        lives: drift.Value(lives),
+        lastLifeLostAt: drift.Value(lastLifeLostAt),
+      );
+
+      final query = _db.update(_db.players);
+      if (playerId != null && playerId.isNotEmpty) {
+        query.where((t) => t.supabaseId.equals(playerId));
+      } else {
+        query.where((t) => t.id.isNotNull());
+      }
+      await query.write(companion);
+
+      if (playerId != null && playerId.isNotEmpty) {
+        try {
+          await DatabaseService().supabase.from('profiles').update({
+            'lives': lives,
+            'last_life_lost_at': lastLifeLostAt?.toIso8601String(),
+          }).eq('id', playerId);
+        } catch (e) {
+          print('Error syncing lives to Supabase: $e');
+        }
+      }
+    } catch (e) {
+      print('Error saving player lives: $e');
+    }
   }
 
   Future<void> _refreshProgression(Emitter<HomeState> emit, String? playerId) async {
@@ -98,8 +130,45 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       final progression = progs.isNotEmpty ? progs.first : null;
       print('HomeBloc: Progression level: ${progression?.currentLevel ?? 1}');
 
+      // 3. Persistent Life Recovery Calculation
+      int lives = player.lives;
+      DateTime? lastLifeLostAt = player.lastLifeLostAt;
+      DateTime? nextLifeTime;
+      final now = DateTime.now();
+
+      if (lives < state.maxLives) {
+        if (lastLifeLostAt == null) {
+          lastLifeLostAt = now;
+          await _savePlayerLives(lives, lastLifeLostAt, player.supabaseId);
+        }
+
+        final elapsedMinutes = now.difference(lastLifeLostAt).inMinutes;
+        final livesGained = elapsedMinutes ~/ 60;
+
+        if (livesGained > 0) {
+          lives = min(state.maxLives, lives + livesGained);
+          if (lives == state.maxLives) {
+            lastLifeLostAt = null;
+            nextLifeTime = null;
+          } else {
+            lastLifeLostAt = lastLifeLostAt.add(Duration(minutes: livesGained * 60));
+            nextLifeTime = lastLifeLostAt.add(const Duration(minutes: 60));
+          }
+          await _savePlayerLives(lives, lastLifeLostAt, player.supabaseId);
+        } else {
+          nextLifeTime = lastLifeLostAt.add(const Duration(minutes: 60));
+        }
+      } else {
+        if (lastLifeLostAt != null) {
+          lastLifeLostAt = null;
+          await _savePlayerLives(lives, null, player.supabaseId);
+        }
+        nextLifeTime = null;
+      }
+
       emit(state.copyWith(
-        lives: player.lives,
+        lives: lives,
+        nextLifeTime: nextLifeTime,
         puzzlePieces: player.puzzlePieces,
         itemPlusTime: player.itemPlusTime,
         itemMoreNumbers: player.itemMoreNumbers,
@@ -128,9 +197,24 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Future<void> _onWatchVideoForLife(WatchVideoForLife event, Emitter<HomeState> emit) async {
     if (state.videosWatched < 3 && state.lives < state.maxLives) {
       final newLives = state.lives + 1;
-      await (_db.update(_db.players)..where((t) => t.id.isNotNull())).write(PlayersCompanion(lives: drift.Value(newLives)));
+      final user = DatabaseService().supabase.auth.currentUser;
+      DateTime? newLastLifeLostAt;
+      DateTime? nextTime;
+
+      if (newLives < state.maxLives) {
+        final players = await (_db.select(_db.players)..limit(1)).get();
+        final currentLastAt = players.isNotEmpty ? players.first.lastLifeLostAt : null;
+        if (currentLastAt != null) {
+          newLastLifeLostAt = currentLastAt.add(const Duration(minutes: 60));
+          nextTime = newLastLifeLostAt.add(const Duration(minutes: 60));
+        }
+      }
+
+      await _savePlayerLives(newLives, newLastLifeLostAt, user?.id);
+
       emit(state.copyWith(
         lives: newLives,
+        nextLifeTime: nextTime,
         videosWatched: state.videosWatched + 1,
       ));
     }
@@ -139,8 +223,21 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Future<void> _onBuyLives(BuyLives event, Emitter<HomeState> emit) async {
     int newLives = state.lives + event.count;
     if (newLives > state.maxLives) newLives = state.maxLives;
-    await (_db.update(_db.players)..where((t) => t.id.isNotNull())).write(PlayersCompanion(lives: drift.Value(newLives)));
-    emit(state.copyWith(lives: newLives));
+    final user = DatabaseService().supabase.auth.currentUser;
+
+    DateTime? newLastLifeLostAt;
+    DateTime? nextTime;
+    if (newLives < state.maxLives) {
+      final players = await (_db.select(_db.players)..limit(1)).get();
+      final currentLastAt = players.isNotEmpty ? players.first.lastLifeLostAt : null;
+      if (currentLastAt != null) {
+        newLastLifeLostAt = currentLastAt.add(Duration(minutes: event.count * 60));
+        nextTime = newLastLifeLostAt.add(const Duration(minutes: 60));
+      }
+    }
+
+    await _savePlayerLives(newLives, newLastLifeLostAt, user?.id);
+    emit(state.copyWith(lives: newLives, nextLifeTime: nextTime));
   }
 
   Future<void> _onBuyItem(BuyItem event, Emitter<HomeState> emit) async {
@@ -208,21 +305,31 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     if (state.lives < state.maxLives) {
       final now = DateTime.now();
       if (state.nextLifeTime == null) {
-        emit(state.copyWith(
-          nextLifeTime: now.add(const Duration(minutes: 60)),
-          timerTick: state.timerTick + 1,
-        ));
+        final lastAt = now;
+        final nextTime = now.add(const Duration(minutes: 60));
+        final user = DatabaseService().supabase.auth.currentUser;
+        await _savePlayerLives(state.lives, lastAt, user?.id);
+        emit(state.copyWith(nextLifeTime: nextTime, timerTick: state.timerTick + 1));
       } else if (now.isAfter(state.nextLifeTime!)) {
-        final newLives = state.lives + 1;
-        final nextTime = newLives < state.maxLives 
-            ? now.add(const Duration(minutes: 60)) 
-            : null;
-        
-        await _db.update(_db.players).write(PlayersCompanion(lives: drift.Value(newLives)));
-        
+        final currentLastAt = state.nextLifeTime!.subtract(const Duration(minutes: 60));
+        final elapsedMinutes = now.difference(currentLastAt).inMinutes;
+        final livesGained = max(1, elapsedMinutes ~/ 60);
+        final newLives = min(state.maxLives, state.lives + livesGained);
+
+        final user = DatabaseService().supabase.auth.currentUser;
+        DateTime? newLastLifeLostAt;
+        DateTime? newNextLifeTime;
+
+        if (newLives < state.maxLives) {
+          newLastLifeLostAt = currentLastAt.add(Duration(minutes: livesGained * 60));
+          newNextLifeTime = newLastLifeLostAt.add(const Duration(minutes: 60));
+        }
+
+        await _savePlayerLives(newLives, newLastLifeLostAt, user?.id);
+
         emit(state.copyWith(
-          lives: newLives, 
-          nextLifeTime: nextTime,
+          lives: newLives,
+          nextLifeTime: newNextLifeTime,
           lastAction: HomeLastAction.lifeRegained,
           timerTick: state.timerTick + 1,
         ));
@@ -245,24 +352,32 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Future<void> _onLoseLife(LoseLife event, Emitter<HomeState> emit) async {
     if (state.lives > 0) {
       final newLives = state.lives - 1;
-      
-      final query = _db.update(_db.players);
-      if (event.playerId != null) {
-        query.where((t) => t.supabaseId.equals(event.playerId!));
+      final now = DateTime.now();
+
+      DateTime? newLastLifeLostAt;
+      if (state.lives == state.maxLives) {
+        newLastLifeLostAt = now;
       } else {
-        query.where((t) => t.id.isNotNull());
+        final players = await (_db.select(_db.players)..limit(1)).get();
+        newLastLifeLostAt = (players.isNotEmpty ? players.first.lastLifeLostAt : null) ?? now;
       }
-      await query.write(PlayersCompanion(lives: drift.Value(newLives)));
-      
+
+      final nextTime = newLastLifeLostAt.add(const Duration(minutes: 60));
+
+      await _savePlayerLives(newLives, newLastLifeLostAt, event.playerId);
+
       emit(state.copyWith(
         lives: newLives,
+        nextLifeTime: nextTime,
         lastAction: HomeLastAction.loss,
       ));
-      
-      if (state.lives == state.maxLives) {
-        emit(state.copyWith(nextLifeTime: DateTime.now().add(const Duration(minutes: 60))));
-      }
     }
+  }
+
+  Future<void> _onAppResumed(AppResumed event, Emitter<HomeState> emit) async {
+    print('HomeBloc: App resumed from background. Recalculating lives...');
+    final user = DatabaseService().supabase.auth.currentUser;
+    await _refreshProgression(emit, user?.id);
   }
 
   void _onChangeWorld(ChangeWorld event, Emitter<HomeState> emit) {
