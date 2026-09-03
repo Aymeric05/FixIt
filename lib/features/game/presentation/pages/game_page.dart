@@ -1112,7 +1112,7 @@ class _WallPainter extends CustomPainter {
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.round;
 
-    for (var wall in state.walls) {
+    for (var wall in walls) {
       final parts = wall.split('-');
       final a = parts[0].split(',');
       final b = parts[1].split(',');

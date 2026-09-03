@@ -25,14 +25,11 @@ class HomeState extends Equatable {
   final int levelsCompletedInWorld;
   final int maxLevelsInWorld;
   final int currentWorldIndex;
-<<<<<<< HEAD
   final String? currentDate; // YYYY-MM-DD to detect midnight transitions
-=======
   final HomeLastAction lastAction;
   final int timerTick; 
   final bool isWorldLoading;
   final DateTime? lastDailyPuzzleAt;
->>>>>>> origin/main
 
   const HomeState({
     this.currentLevel = 1,
@@ -52,14 +49,11 @@ class HomeState extends Equatable {
     this.levelsCompletedInWorld = 0,
     this.maxLevelsInWorld = 10,
     this.currentWorldIndex = 1,
-<<<<<<< HEAD
     this.currentDate,
-=======
     this.lastAction = HomeLastAction.none,
     this.timerTick = 0,
     this.isWorldLoading = false,
     this.lastDailyPuzzleAt,
->>>>>>> origin/main
   });
 
   HomeState copyWith({
@@ -80,14 +74,11 @@ class HomeState extends Equatable {
     int? levelsCompletedInWorld,
     int? maxLevelsInWorld,
     int? currentWorldIndex,
-<<<<<<< HEAD
     String? currentDate,
-=======
     HomeLastAction? lastAction,
     int? timerTick,
     bool? isWorldLoading,
     DateTime? lastDailyPuzzleAt,
->>>>>>> origin/main
   }) {
     return HomeState(
       currentLevel: currentLevel ?? this.currentLevel,
@@ -107,14 +98,11 @@ class HomeState extends Equatable {
       levelsCompletedInWorld: levelsCompletedInWorld ?? this.levelsCompletedInWorld,
       maxLevelsInWorld: maxLevelsInWorld ?? this.maxLevelsInWorld,
       currentWorldIndex: currentWorldIndex ?? this.currentWorldIndex,
-<<<<<<< HEAD
       currentDate: currentDate ?? this.currentDate,
-=======
       lastAction: lastAction ?? this.lastAction,
       timerTick: timerTick ?? this.timerTick,
       isWorldLoading: isWorldLoading ?? this.isWorldLoading,
       lastDailyPuzzleAt: lastDailyPuzzleAt ?? this.lastDailyPuzzleAt,
->>>>>>> origin/main
     );
   }
 
@@ -137,13 +125,10 @@ class HomeState extends Equatable {
         levelsCompletedInWorld,
         maxLevelsInWorld,
         currentWorldIndex,
-<<<<<<< HEAD
         currentDate,
-=======
         lastAction,
         timerTick,
         isWorldLoading,
         lastDailyPuzzleAt,
->>>>>>> origin/main
       ];
 }
