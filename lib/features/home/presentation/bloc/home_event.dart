@@ -74,4 +74,6 @@ class ChangeWorld extends HomeEvent {
   List<Object> get props => [worldIndex, worldId];
 }
 
+class MidnightReached extends HomeEvent {}
+
 class FinishWorldLoading extends HomeEvent {}

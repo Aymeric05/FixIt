@@ -1,0 +1,26 @@
+# Tasks - Daily Challenge & Series Implementation
+
+- [x] **1. Core & Database**
+    - [x] Add `DailyChallenges` table to `app_database.dart`
+    - [x] Run `build_runner` to update generated database code
+    - [x] Create `GameMode` enum in `lib/core/models/daily_mode.dart`
+- [x] **2. Repository Logic**
+    - [x] Create `DailyRepository` to handle seed-based level generation and status persistence
+    - [x] Refactor `LevelGenerator` to support seeded `Random`
+- [x] **3. BLoC & Game Logic**
+    - [x] Update `GameEvent` to support `GameMode`
+    - [x] Update `GameState` to track cumulative series time
+    - [x] Update `GameBloc` to handle daily/series logic
+- [x] **4. UI Components**
+    - [x] Create `DailyPopup` widget
+    - [x] Create `DailyChallengeButton` for Home Screen
+    - [x] Update `HomePage` to trigger popup and display button
+    - [x] Update `GamePage` for daily mode UI (timer visibility, victory dialog)
+- [x] **5. Daily Series Enhancements**
+    - [x] Add `getTodaySeriesWorldId()` to `DailyRepository`
+    - [x] Update `GameBloc` to handle series resumption and intermediate victory stats
+    - [x] Update `GamePage` victory dialog with "Faster/Slower than average" logic
+    - [x] Update `HomePage` to resume series from the last completed level's recap
+- [x] **6. Verification**
+    - [x] Verify seed consistency
+    - [x] Verify series persistence and "Faster/Slower" display

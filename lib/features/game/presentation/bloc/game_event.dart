@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
+import 'package:fixit/core/models/daily_mode.dart';
 
 abstract class GameEvent extends Equatable {
   const GameEvent();
@@ -12,21 +13,23 @@ class StartGame extends GameEvent {
   final int level;
   final GameDifficulty difficulty;
   final String playerId;
+  final GameMode mode;
   final int invPlusTime;
   final int invMoreNumbers;
   final int invRevealPath;
 
   const StartGame({
-    required this.level, 
-    required this.difficulty, 
+    required this.level,
+    required this.difficulty,
     required this.playerId,
+    this.mode = GameMode.story,
     this.invPlusTime = 5,
     this.invMoreNumbers = 5,
     this.invRevealPath = 5,
   });
 
   @override
-  List<Object> get props => [level, difficulty, playerId, invPlusTime, invMoreNumbers, invRevealPath];
+  List<Object> get props => [level, difficulty, playerId, mode, invPlusTime, invMoreNumbers, invRevealPath];
 }
 
 class SelectCell extends GameEvent {
@@ -46,6 +49,14 @@ class TimerTick extends GameEvent {
 
   @override
   List<Object> get props => [remainingSeconds];
+}
+
+class LoadFriendsLeaderboard extends GameEvent {
+  final String playerId;
+  const LoadFriendsLeaderboard({required this.playerId});
+
+  @override
+  List<Object> get props => [playerId];
 }
 
 class PauseTimer extends GameEvent {}

@@ -25,6 +25,7 @@ class HomeState extends Equatable {
   final int levelsCompletedInWorld;
   final int maxLevelsInWorld;
   final int currentWorldIndex;
+  final String? currentDate; // YYYY-MM-DD to detect midnight transitions
   final HomeLastAction lastAction;
   final int timerTick; 
   final bool isWorldLoading;
@@ -48,6 +49,7 @@ class HomeState extends Equatable {
     this.levelsCompletedInWorld = 0,
     this.maxLevelsInWorld = 10,
     this.currentWorldIndex = 1,
+    this.currentDate,
     this.lastAction = HomeLastAction.none,
     this.timerTick = 0,
     this.isWorldLoading = false,
@@ -72,6 +74,7 @@ class HomeState extends Equatable {
     int? levelsCompletedInWorld,
     int? maxLevelsInWorld,
     int? currentWorldIndex,
+    String? currentDate,
     HomeLastAction? lastAction,
     int? timerTick,
     bool? isWorldLoading,
@@ -95,6 +98,7 @@ class HomeState extends Equatable {
       levelsCompletedInWorld: levelsCompletedInWorld ?? this.levelsCompletedInWorld,
       maxLevelsInWorld: maxLevelsInWorld ?? this.maxLevelsInWorld,
       currentWorldIndex: currentWorldIndex ?? this.currentWorldIndex,
+      currentDate: currentDate ?? this.currentDate,
       lastAction: lastAction ?? this.lastAction,
       timerTick: timerTick ?? this.timerTick,
       isWorldLoading: isWorldLoading ?? this.isWorldLoading,
@@ -121,6 +125,7 @@ class HomeState extends Equatable {
         levelsCompletedInWorld,
         maxLevelsInWorld,
         currentWorldIndex,
+        currentDate,
         lastAction,
         timerTick,
         isWorldLoading,

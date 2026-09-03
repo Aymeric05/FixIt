@@ -5,14 +5,17 @@ import 'package:equatable/equatable.dart';
 import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/core/database/app_database.dart';
 import 'package:fixit/core/repositories/progression_repository.dart';
+import 'package:fixit/core/repositories/daily_repository.dart';
 
 part 'home_event.dart';
 part 'home_state.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Timer? _rechargeTimer;
+  Timer? _midnightTimer;
   final _db = DatabaseService().db;
   final _progressionRepo = ProgressionRepository();
+  final _dailyRepo = DailyRepository();
 
   HomeBloc() : super(const HomeState()) {
     on<LoadHomeData>(_onLoadHomeData);
@@ -28,6 +31,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<CompleteLevel>(_onCompleteLevel);
     on<LoseLife>(_onLoseLife);
     on<ChangeWorld>(_onChangeWorld);
+    on<MidnightReached>(_onMidnightReached);
     on<FinishWorldLoading>(_onFinishWorldLoading);
   }
 
@@ -37,11 +41,29 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       await _refreshProgression(emit, event.playerId);
       _startRechargeTimer();
+      _startMidnightTimer();
       print('HomeBloc: Data loaded successfully');
     } catch (e) {
       print('HomeBloc: Error loading data: $e');
       emit(state.copyWith(isLoading: false));
     }
+  }
+
+  Future<void> _onMidnightReached(MidnightReached event, Emitter<HomeState> emit) async {
+    print('Midnight UTC reached. Refreshing home data...');
+    final user = DatabaseService().supabase.auth.currentUser;
+    await _refreshProgression(emit, user?.id);
+    _startMidnightTimer(); // Schedule next midnight
+  }
+
+  void _startMidnightTimer() {
+    _midnightTimer?.cancel();
+    final secondsUntilMidnight = _dailyRepo.getSecondsUntilMidnight();
+    print('Scheduling midnight refresh in $secondsUntilMidnight seconds.');
+    
+    _midnightTimer = Timer(Duration(seconds: secondsUntilMidnight + 1), () {
+      add(MidnightReached());
+    });
   }
 
   Future<void> _refreshProgression(Emitter<HomeState> emit, String? playerId) async {
@@ -76,6 +98,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         currentLevel: progression?.currentLevel ?? 1,
         levelsCompletedInWorld: (progression?.currentLevel ?? 1) - 1,
         isLoading: false,
+        currentDate: _dailyRepo.getTodayWorldId(), // Used to detect day changes
       ));
 
       unawaited(_progressionRepo.ensureNextLevelsExist('world_1', progression?.currentLevel ?? 1));
@@ -159,7 +182,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
 
     final newPuzzles = state.puzzlePieces + 10;
-    // In a real app, save lastDailyPuzzleAt to DB too.
     emit(state.copyWith(
       puzzlePieces: newPuzzles,
       lastDailyPuzzleAt: now,
@@ -196,7 +218,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           timerTick: state.timerTick + 1,
         ));
       } else {
-        // Just increment tick to force UI refresh
         emit(state.copyWith(timerTick: state.timerTick + 1));
       }
     } else {
@@ -229,7 +250,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         lastAction: HomeLastAction.loss,
       ));
       
-      // If we were at max, start the timer
       if (state.lives == state.maxLives) {
         emit(state.copyWith(nextLifeTime: DateTime.now().add(const Duration(minutes: 60))));
       }
@@ -257,6 +277,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   @override
   Future<void> close() {
     _rechargeTimer?.cancel();
+    _midnightTimer?.cancel();
     return super.close();
   }
 }

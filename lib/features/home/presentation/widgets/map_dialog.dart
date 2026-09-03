@@ -211,7 +211,7 @@ class _MapDialogState extends State<MapDialog> {
                                 width: 90,
                                 height: 90,
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.5),
+                                  color: Colors.black.withValues(alpha: 0.5),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(Icons.lock, color: Colors.white, size: 45),
@@ -337,7 +337,7 @@ class _MapDialogState extends State<MapDialog> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.lock, color: Colors.white, size: 20),

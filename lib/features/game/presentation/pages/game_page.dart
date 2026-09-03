@@ -5,21 +5,28 @@ import 'package:fixit/features/game/presentation/bloc/game_bloc.dart';
 import 'package:fixit/features/game/presentation/bloc/game_event.dart';
 import 'package:fixit/features/game/presentation/bloc/game_state.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
+import 'package:fixit/features/lives/presentation/bloc/lives_bloc.dart';
+import 'package:fixit/features/lives/presentation/bloc/lives_event.dart';
 import 'package:fixit/core/models/grid_offset.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_state.dart';
+import 'package:fixit/core/repositories/progression_repository.dart';
 import 'package:fixit/features/home/presentation/widgets/settings_dialog.dart';
 import 'package:fixit/features/home/presentation/widgets/candy_dialog.dart';
-import 'package:fixit/core/repositories/progression_repository.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:confetti/confetti.dart';
 import 'package:fixit/core/widgets/tutorial_dialog.dart';
+import 'package:fixit/core/utils/app_notifications.dart';
+import 'package:fixit/features/game/presentation/widgets/friends_leaderboard_dialog.dart';
+import 'package:fixit/core/models/level_win_summary.dart';
+import 'package:fixit/core/models/daily_mode.dart';
 import 'package:fixit/core/widgets/breaking_heart_animation.dart';
 
 class GamePage extends StatefulWidget {
   final int level;
   final GameDifficulty difficulty;
+  final GameMode mode;
   final int invPlusTime;
   final int invMoreNumbers;
   final int invRevealPath;
@@ -28,6 +35,7 @@ class GamePage extends StatefulWidget {
     super.key,
     required this.level,
     required this.difficulty,
+    this.mode = GameMode.story,
     this.invPlusTime = 5,
     this.invMoreNumbers = 5,
     this.invRevealPath = 5,
@@ -63,6 +71,7 @@ class _GamePageState extends State<GamePage> {
           level: widget.level,
           difficulty: widget.difficulty,
           playerId: playerId,
+          mode: widget.mode,
           invPlusTime: widget.invPlusTime,
           invMoreNumbers: widget.invMoreNumbers,
           invRevealPath: widget.invRevealPath,
@@ -97,16 +106,18 @@ class _GamePageState extends State<GamePage> {
                 String? currentUserId;
                 if (authStateInner is AuthAuthenticated) {
                   currentUserId = authStateInner.user.id;
-                  final repo = ProgressionRepository();
-                  try {
-                    await repo.markLevelAsCompleted(
-                      playerSupabaseId: currentUserId,
-                      worldId: 'world_1',
-                      levelNumber: widget.level,
-                      timeSeconds: state.initialSeconds - state.remainingSeconds,
-                    );
-                  } catch (e) {
-                    debugPrint('Error saving completion: $e');
+                  if (widget.mode == GameMode.story) {
+                    final repo = ProgressionRepository();
+                    try {
+                      await repo.markLevelAsCompleted(
+                        playerSupabaseId: currentUserId,
+                        worldId: 'world_1',
+                        levelNumber: widget.level,
+                        timeSeconds: state.initialSeconds - state.remainingSeconds,
+                      );
+                    } catch (e) {
+                      debugPrint('Error saving completion: $e');
+                    }
                   }
                 }
                 if (!mounted) return;
@@ -148,8 +159,14 @@ class _GamePageState extends State<GamePage> {
 
     return BlocBuilder<GameBloc, GameState>(
       builder: (context, state) {
-        final minutes = (state.remainingSeconds / 60).floor();
-        final seconds = (state.remainingSeconds % 60).toString().padLeft(2, '0');
+        final totalSeconds = state.mode == GameMode.dailySeries 
+            ? state.seriesAccumulatedTime + (state.initialSeconds - state.remainingSeconds)
+            : state.remainingSeconds;
+        
+        final minutes = (totalSeconds / 60).floor();
+        final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
+        
+        final isCountingUp = state.mode != GameMode.story;
 
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
@@ -188,7 +205,7 @@ class _GamePageState extends State<GamePage> {
                     children: [
                       Container(
                         height: 55,
-                        width: 180,
+                        width: 220,
                         decoration: BoxDecoration(
                           color: AppColors.candyBlueDark,
                           borderRadius: BorderRadius.circular(28),
@@ -198,7 +215,7 @@ class _GamePageState extends State<GamePage> {
                         offset: const Offset(0, -4),
                         child: Container(
                           height: 50,
-                          width: 180,
+                          width: 220,
                           decoration: BoxDecoration(
                             gradient: const RadialGradient(
                               colors: [AppColors.candyBlue, AppColors.candyBlueDark],
@@ -210,9 +227,13 @@ class _GamePageState extends State<GamePage> {
                           ),
                           alignment: Alignment.center,
                           child: Text(
-                            'LEVEL ${widget.level}',
+                            state.mode == GameMode.dailySeries 
+                                ? 'SERIES ${widget.level}/3' 
+                                : state.mode == GameMode.dailySingle 
+                                    ? 'DAILY LEVEL' 
+                                    : 'LEVEL ${widget.level}',
                             style: const TextStyle(
-                              fontSize: 24,
+                              fontSize: 20,
                               fontWeight: FontWeight.w900,
                               color: Colors.white,
                               letterSpacing: 1.5,
@@ -254,7 +275,7 @@ class _GamePageState extends State<GamePage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.timer, color: Colors.white, size: 22),
+                    Icon(isCountingUp ? Icons.timer_outlined : Icons.timer, color: Colors.white, size: 22),
                     const SizedBox(width: 8),
                     Text(
                       '$minutes:$seconds',
@@ -648,7 +669,9 @@ class _GamePageState extends State<GamePage> {
                   color: AppColors.candyPink,
                   darkColor: AppColors.candyPinkDark,
                   onPressed: () {
-                    context.read<HomeBloc>().add(LoseLife(playerId: playerId));
+                    if (widget.mode == GameMode.story) {
+                      context.read<HomeBloc>().add(LoseLife(playerId: playerId));
+                    }
                     Navigator.pop(dialogContext);
                     Navigator.pop(context);
                   },
@@ -718,7 +741,9 @@ class _GamePageState extends State<GamePage> {
                 color: AppColors.candyPink,
                 darkColor: AppColors.candyPinkDark,
                 onPressed: () {
-                  context.read<HomeBloc>().add(LoseLife(playerId: playerId));
+                  if (widget.mode == GameMode.story) {
+                    context.read<HomeBloc>().add(LoseLife(playerId: playerId));
+                  }
                   Navigator.pop(dialogContext);
                   Navigator.pop(context);
                 },
@@ -735,19 +760,34 @@ class _GamePageState extends State<GamePage> {
   }
 
   void _showWinDialog(BuildContext context, GameState state, String? playerId) {
-    final timeTaken = state.initialSeconds - state.remainingSeconds;
-    final timeStr = "${(timeTaken / 60).floor()}:${(timeTaken % 60).toString().padLeft(2, '0')}";
+    final summary = state.winSummary;
+    if (summary == null) return;
 
-    final String averageTimeStr = state.averageTimeSeconds > 0
-        ? "${(state.averageTimeSeconds / 60).floor()}:${(state.averageTimeSeconds % 60).toString().padLeft(2, '0')}"
-        : "--:--";
+    final int displayTime = state.wonTime ?? (state.initialSeconds - state.remainingSeconds);
+    final timeStr = "${(displayTime / 60).floor()}:${(displayTime % 60).toString().padLeft(2, '0')}";
+    
+    final avgSeconds = summary.globalAverageSeconds;
+    final avgTimeStr = avgSeconds > 0 
+      ? "${(avgSeconds / 60).floor()}:${(avgSeconds % 60).toString().padLeft(2, '0')}" 
+      : "--:--";
+      
+    final wrSeconds = summary.worldRecordSeconds;
+    final wrTimeStr = wrSeconds > 0 
+      ? "${(wrSeconds / 60).floor()}:${(wrSeconds % 60).toString().padLeft(2, '0')}" 
+      : "--:--";
 
-    final String bestTimeStr = (state.bestTimeSeconds > 0 && state.bestTimeSeconds < 999999)
-        ? "${(state.bestTimeSeconds / 60).floor()}:${(state.bestTimeSeconds % 60).toString().padLeft(2, '0')}"
-        : "--:--";
-
-    final isNewRecord = (state.bestTimeSeconds == 0 || state.bestTimeSeconds >= 999999) || (timeTaken <= state.bestTimeSeconds);
-    final isFasterThanAverage = (state.averageTimeSeconds > 0) && (timeTaken < state.averageTimeSeconds);
+    final bool isFirstGlobal = summary.globalCompletionCount == 0;
+    final isNewRecord = wrSeconds == 0 || displayTime < wrSeconds || isFirstGlobal;
+    
+    final int fasterBy = avgSeconds - displayTime;
+    final bool isFaster = fasterBy > 0;
+    
+    String? diffStr;
+    if (!isFirstGlobal && avgSeconds > 0 && fasterBy != 0) {
+      diffStr = isFaster 
+        ? "${fasterBy}s faster than average!" 
+        : "${fasterBy.abs()}s slower than average!";
+    }
 
     Future.delayed(Duration.zero, () {
       if (!mounted) return;
@@ -759,181 +799,211 @@ class _GamePageState extends State<GamePage> {
           children: [
             CandyDialog(
               title: 'VICTORY!',
-              onClose: () {
-                context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
-                Navigator.pop(dialogContext);
-                Navigator.pop(context);
-              },
-              content: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: Column(
-                      children: [
-                        const Text(
-                          "YOUR TIME",
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.candyGreenDark),
+              content: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 320),
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // PERSONAL TIME BLOCK
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white, width: 2),
                         ),
-                        Text(
-                          timeStr,
-                          style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: AppColors.candyGreenDark),
-                        ),
-                        const Divider(color: Colors.white, height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Column(
                           children: [
-                            const Text("Average Time:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                            Text(averageTimeStr, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+                            Text(
+                              state.mode == GameMode.dailySeries ? "TOTAL SERIES TIME" : "YOUR TIME", 
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.candyGreenDark)
+                            ),
+                            Text(timeStr, style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: AppColors.candyGreenDark)),
+                            
+                            if (isNewRecord)
+                              const Text("NEW WORLD RECORD!", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.orangeAccent))
+                            else if (diffStr != null)
+                              Text(
+                                diffStr,
+                                style: TextStyle(
+                                  fontSize: 12, 
+                                  fontWeight: FontWeight.bold, 
+                                  color: isFaster ? Colors.green : Colors.redAccent
+                                ),
+                              ),
                           ],
                         ),
+                      ),
+                      const SizedBox(height: 15),
+
+                      // STATS BLOCK - Only show if not intermediate series level
+                      if (state.mode != GameMode.dailySeries || widget.level == 3) ...[
+                        // GLOBAL STATS BLOCK
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("Best Time:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                            Text(bestTimeStr, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.blue, fontSize: 14)),
+                            Expanded(child: _buildStatBadge("GLOBAL AVG", avgTimeStr, Icons.public, Colors.blue)),
+                            const SizedBox(width: 8),
+                            Expanded(child: _buildStatBadge("BEST TIME", "$wrTimeStr by ${summary.worldRecordHolder}", Icons.emoji_events, Colors.amber)),
                           ],
                         ),
                         const SizedBox(height: 10),
-                        if (isNewRecord)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(10)),
-                            child: const Text("NEW WORLD RECORD!", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, fontSize: 12)),
-                          )
-                        else if (isFasterThanAverage)
-                          const Text(
-                            "You are faster than average!",
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.candyGreenDark),
-                          )
-                        else if (state.averageTimeSeconds > 0)
-                          Text(
-                            "Average is ${timeTaken - state.averageTimeSeconds}s faster than you",
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.redAccent),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    "GREAT JOB! YOU SOLVED THE PUZZLE!",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.candyGreenDark,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      CandyButton(
-                        width: 140,
-                        height: 60,
-                        color: AppColors.candyPink,
-                        darkColor: AppColors.candyPinkDark,
-                        onPressed: () {
-                          context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
-                          Navigator.pop(dialogContext);
-                          Navigator.pop(context);
-                        },
-                        child: const Text(
-                          'HOME',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
-                        ),
-                      ),
-                      CandyButton(
-                        width: 140,
-                        height: 60,
-                        color: AppColors.candyGreen,
-                        darkColor: AppColors.candyGreenDark,
-                        onPressed: () async {
-                          context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
-
-                          Navigator.pop(dialogContext);
-                          final nextLevel = widget.level + 1;
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => GamePage(
-                                level: nextLevel,
-                                difficulty: widget.difficulty,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text("${summary.globalCompletionCount} players finished", style: const TextStyle(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.bold)),
+                            if (summary.globalPercentile != null && summary.globalPercentile! <= 0.5 && summary.globalCompletionCount > 1)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(color: Colors.purple.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+                                child: Text(
+                                  "TOP ${max(1, (summary.globalPercentile! * 100).round())}%", 
+                                  style: const TextStyle(color: Colors.purple, fontWeight: FontWeight.w900, fontSize: 10),
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          'NEXT LEVEL',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                          ],
                         ),
+                        const Divider(height: 25),
+
+                        // FRIENDS MINI LEADERBOARD
+                        const Text("FRIENDS RANKING", style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.candyPurple, fontSize: 14)),
+                        const SizedBox(height: 8),
+                        
+                        if (summary.friendsMiniLeaderboard.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text("You are the first of your friends!", style: TextStyle(fontSize: 12, color: Colors.black45, fontStyle: FontStyle.italic)),
+                          )
+                        else
+                          ...summary.friendsMiniLeaderboard.map((e) => _buildFriendRankRow(e, playerId == e.playerId)),
+                        
+                        const SizedBox(height: 10),
+                        TextButton(
+                          onPressed: () => _showFullLeaderboard(context, playerId ?? ''),
+                          child: const Text("VIEW FULL RANKINGS", style: TextStyle(color: AppColors.candyBlue, fontWeight: FontWeight.w900, fontSize: 12)),
+                        ),
+                      ],
+
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          CandyButton(
+                            width: 130, height: 55, color: AppColors.candyPink, darkColor: AppColors.candyPinkDark,
+                            onPressed: () {
+                              if (widget.mode == GameMode.story) {
+                                context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
+                              }
+                              Navigator.pop(dialogContext);
+                              Navigator.pop(context);
+                            },
+                            child: const Text('HOME', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+                          ),
+                          CandyButton(
+                            width: 130, height: 55, color: AppColors.candyGreen, darkColor: AppColors.candyGreenDark,
+                            onPressed: () {
+                              if (widget.mode == GameMode.story) {
+                                context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
+                              }
+                              Navigator.pop(dialogContext);
+                              
+                              if (widget.mode == GameMode.dailySeries && widget.level < 3) {
+                                final nextLevel = widget.level + 1;
+                                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => GamePage(level: nextLevel, difficulty: widget.difficulty, mode: GameMode.dailySeries)));
+                              } else if (widget.mode == GameMode.story) {
+                                final nextLevel = widget.level + 1;
+                                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => GamePage(level: nextLevel, difficulty: widget.difficulty)));
+                              } else {
+                                Navigator.pop(context);
+                              }
+                            },
+                            child: Text(
+                              (widget.mode == GameMode.dailySeries && widget.level < 3) || widget.mode == GameMode.story 
+                                ? 'NEXT' 
+                                : 'CLOSE', 
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
+            // Confetti
             IgnorePointer(
               child: ConfettiWidget(
                 confettiController: _confettiController,
                 blastDirectionality: BlastDirectionality.explosive,
                 shouldLoop: false,
-                createParticlePath: drawFireworkSparkle,
-                colors: const [
-                  Colors.yellow,
-                  Colors.white,
-                  Colors.amber,
-                  Colors.orangeAccent,
-                ],
-                numberOfParticles: 8,
+                createParticlePath: drawFireworkSparkle, 
+                colors: const [Colors.yellow, Colors.white, Colors.amber, Colors.orangeAccent],
+                numberOfParticles: 12,
                 gravity: 0.1,
                 minBlastForce: 15,
                 maxBlastForce: 30,
-                blastDirection: 3.14 * 1.5,
-              ),
-            ),
-            Positioned(
-              left: 30,
-              top: 150,
-              child: IgnorePointer(
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirectionality: BlastDirectionality.explosive,
-                  shouldLoop: false,
-                  createParticlePath: drawFireworkSparkle,
-                  numberOfParticles: 5,
-                  gravity: 0.1,
-                  minBlastForce: 10,
-                  maxBlastForce: 25,
-                  colors: const [Colors.lightBlueAccent, Colors.white],
-                ),
-              ),
-            ),
-            Positioned(
-              right: 30,
-              top: 150,
-              child: IgnorePointer(
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirectionality: BlastDirectionality.explosive,
-                  shouldLoop: false,
-                  createParticlePath: drawFireworkSparkle,
-                  numberOfParticles: 5,
-                  gravity: 0.1,
-                  minBlastForce: 10,
-                  maxBlastForce: 25,
-                  colors: const [Colors.pinkAccent, Colors.white],
-                ),
               ),
             ),
           ],
         ),
       );
     });
+  }
+
+  Widget _buildStatBadge(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(15), border: Border.all(color: color.withValues(alpha: 0.3))),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 4),
+              Flexible(child: Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: color), overflow: TextOverflow.ellipsis)),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(value, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black87), overflow: TextOverflow.ellipsis),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFriendRankRow(FriendRankEntry entry, bool isMe) {
+    final minutes = (entry.timeSeconds / 60).floor();
+    final seconds = (entry.timeSeconds % 60).toString().padLeft(2, '0');
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isMe ? AppColors.candyBlue.withValues(alpha: 0.1) : Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: isMe ? AppColors.candyBlue : Colors.black12),
+      ),
+      child: Row(
+        children: [
+          Text("#${entry.rank}", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: entry.rank == 1 ? Colors.amber : Colors.grey)),
+          const SizedBox(width: 10),
+          Expanded(child: Text(entry.username, style: TextStyle(fontWeight: isMe ? FontWeight.w900 : FontWeight.bold, fontSize: 12), overflow: TextOverflow.ellipsis)),
+          Text("$minutes:$seconds", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  void _showFullLeaderboard(BuildContext context, String playerId) {
+    showDialog(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => BlocProvider.value(
+        value: context.read<GameBloc>(),
+        child: FriendsLeaderboardDialog(playerId: playerId),
+      ),
+    );
   }
 }
 

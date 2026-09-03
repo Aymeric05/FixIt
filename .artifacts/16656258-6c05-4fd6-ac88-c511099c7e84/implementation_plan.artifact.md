@@ -1,80 +1,55 @@
-# Implementation Plan: Comprehensive Friend System
+# Plan d'implémentation : Monétisation Intelligente et Intégration de Publicités
 
-Add a social layer allowing players to manage friends, search for new ones, and handle incoming friend requests with real-time badges.
+Mettre en place une stratégie publicitaire à haut revenu et haute rétention via Google AdMob, en privilégiant les publicités récompensées (Rewarded) et les interstitiels optimisés.
 
-## User Review Required
+## Révision utilisateur requise
 
 > [!IMPORTANT]
-> **Action sur Supabase (SQL Editor)** : Tu dois exécuter ce script pour créer les tables d'amis et les règles de sécurité associées.
-> ```sql
-> -- 1. Table des amis
-> CREATE TABLE public.friends (
->     player_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
->     friend_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
->     created_at timestamptz DEFAULT now(),
->     PRIMARY KEY (player_id, friend_id)
-> );
-> ALTER TABLE public.friends ENABLE ROW LEVEL SECURITY;
-> CREATE POLICY "Users can view their own friends." ON public.friends FOR SELECT USING (auth.uid() = player_id);
-> CREATE POLICY "Users can add friends." ON public.friends FOR INSERT WITH CHECK (auth.uid() = player_id);
-> CREATE POLICY "Users can remove friends." ON public.friends FOR DELETE USING (auth.uid() = player_id);
->
-> -- 2. Table des demandes d'amis
-> CREATE TABLE public.friend_requests (
->     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
->     sender_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
->     receiver_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
->     status text DEFAULT 'pending', -- 'pending', 'accepted', 'rejected'
->     created_at timestamptz DEFAULT now(),
->     UNIQUE(sender_id, receiver_id)
-> );
-> ALTER TABLE public.friend_requests ENABLE ROW LEVEL SECURITY;
-> CREATE POLICY "Users can see requests they sent or received." ON public.friend_requests FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
-> CREATE POLICY "Users can send requests." ON public.friend_requests FOR INSERT WITH CHECK (auth.uid() = sender_id);
-> CREATE POLICY "Receivers can update request status." ON public.friend_requests FOR UPDATE USING (auth.uid() = receiver_id);
-> ```
+> **Limitation de fréquence (Capping)** : Pour garantir une bonne rétention des joueurs, je propose de ne jamais afficher d'interstitiel (pub plein écran forcée) plus d'une fois toutes les 3 minutes, et jamais avant que le joueur n'ait atteint le Niveau 5. Cela permet de laisser le joueur s'attacher au jeu avant de lui imposer des interruptions.
 
-## Proposed Changes
+## Stratégie Publicitaire Proposée
 
-### 1. Database Update (Drift)
-#### [MODIFY] [app_database.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/core/database/app_database.dart)
-- Upgrade to Schema **Version 3**.
-- Add `Friends` table: `playerId`, `friendId`, `friendUsername`.
-- Add `FriendRequests` table: `id`, `senderId`, `receiverId`, `senderUsername`, `createdAt`.
+### 1. Publicités Récompensées (Rewarded Ads)
+*Le levier le plus rentable et le mieux accepté par les joueurs.*
+- **Vie supplémentaire** : Si le joueur tombe à 0 vie, proposer "+1 vie gratuite" contre le visionnage d'une vidéo.
+- **Indice gratuit** : Dans la grille de jeu, permettre d'obtenir un indice immédiat sans dépenser de jetons en regardant une pub.
+- **Multiplicateur quotidien** : Doubler les récompenses du défi journalier en fin de niveau.
 
-### 2. Logic Layer (Repository & Bloc)
-#### [NEW] `lib/core/repositories/friends_repository.dart`
-- `fetchFriends()`: Get list of friends from Supabase.
-- `searchPlayer(query)`: Find players by nickname.
-- `sendFriendRequest(targetId)`: Send a request (checks for duplicates first).
-- `handleFriendRequest(requestId, accept)`: Accept/Reject logic.
-- `removeFriend(friendId)`: Delete from `friends` table.
+### 2. Publicités Interstitielles (Interstitial Ads)
+*Revenu passif généré par les transitions.*
+- **Fin de niveau** : Afficher une publicité uniquement après une victoire, tous les X niveaux (ex: tous les 3 niveaux), pour ne pas casser le rythme de réflexion.
+- **Retour Accueil** : Une publicité lors du retour au menu principal après une longue session.
 
-#### [NEW] `lib/features/friends/presentation/bloc/friends_bloc.dart`
-- State: `friendsList`, `pendingRequests` (list), `searchResults`, `isLoading`.
-- Events: `LoadFriends`, `SearchPlayer`, `SendRequest`, `AcceptRequest`, `RejectRequest`, `RemoveFriend`.
+### 3. Publicités à l'ouverture (App Open Ads)
+- S'affiche brièvement au démarrage (splash screen). Très efficace pour le revenu sans interrompre le gameplay actif.
 
-### 3. UI Redesign
-#### [MODIFY] [social_dialog.dart](file:///C:/Users/FlowUP/StudioProjects/FixIt/lib/features/home/presentation/widgets/social_dialog.dart)
-- Replace search bar with a **Friend List** view.
-- Add "Add Friend" (➕) and "Requests" (📩) icons at the top.
-- Add a **Red Badge** on the "Requests" icon showing the count of pending requests.
-- Add a "X" button on each friend row to remove them.
+---
 
-#### [NEW] `lib/features/friends/presentation/widgets/add_friend_dialog.dart`
-- Search bar for nicknames.
-- List of results with a "Add" button.
-- Prevent adding if already friends or request pending.
+## Changements Proposés
 
-#### [NEW] `lib/features/friends/presentation/widgets/friend_requests_dialog.dart`
-- List of incoming requests.
-- Green (Accept) and Red (Reject) buttons for each.
+### 1. Infrastructure de base
+#### [NOUVEAU] `lib/core/services/ad_service.dart`
+- Création d'un service singleton pour initialiser AdMob.
+- Gestion du préchargement (Pre-loading) en arrière-plan pour un affichage instantané.
+- Intégration du statut "No Ads" (achat In-App) pour désactiver les pubs automatiques.
 
-## Verification Plan
+### 2. Intégration dans les Blocs
+#### [MODIFIER] `lib/features/home/presentation/bloc/home_bloc.dart`
+- Ajout de la logique pour appeler `AdService.showRewardedAd()` lors de la demande de vies.
+#### [MODIFIER] `lib/features/game/presentation/bloc/game_bloc.dart`
+- Ajout de la logique pour récompenser le joueur avec un indice après une pub.
 
-### Manual Verification
-1. **Search**: Search for "chocolat" (or any existing user). Verify result appears.
-2. **Request**: Send a request. Verify Supabase `friend_requests` has the row.
-3. **Badge**: On the receiver's account, verify the red bubble shows "1".
-4. **Accept**: Click Green button. Verify both players now have each other in their friend list.
-5. **Remove**: Click "X" on a friend. Verify they disappear from both UI and database.
+### 3. Logique d'affichage UI
+#### [MODIFIER] `lib/features/game/presentation/pages/game_page.dart`
+- Dans le dialogue de victoire, déclencher une vérification d'interstitiel avant de passer au niveau suivant.
+
+### 4. Désactivation des publicités
+#### [MODIFIER] `lib/features/home/presentation/widgets/no_ads_dialog.dart`
+- Relier le bouton d'achat "No Ads" au service publicitaire pour supprimer définitivement les interstitiels et App Open ads.
+
+## Plan de vérification
+
+### Vérification Manuelle
+1. **Vie Récompensée** : Passer à 0 vie, cliquer sur "Vidéo", vérifier que la vie est ajoutée UNIQUEMENT si la vidéo est vue jusqu'au bout.
+2. **Respect des fréquences** : Enchaîner 3 niveaux et vérifier que l'interstitiel ne s'affiche qu'à l'intervalle prévu.
+3. **Achat "No Ads"** : Simuler un achat et vérifier que seules les pubs récompensées (au choix du joueur) restent actives.

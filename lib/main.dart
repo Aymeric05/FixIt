@@ -10,16 +10,36 @@ import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_event.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'package:fixit/features/friends/presentation/bloc/friends_bloc.dart';
+import 'package:fixit/core/repositories/daily_repository.dart';
 
 void main() async {
-  // Ensure Flutter bindings are initialized
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize Databases
-  final dbService = DatabaseService();
-  await dbService.initialize();
-  
-  runApp(const CandyPuzzleGame());
+  try {
+    // Ensure Flutter bindings are initialized
+    WidgetsFlutterBinding.ensureInitialized();
+    
+    print('App starting...');
+    // Initialize Databases
+    final dbService = DatabaseService();
+    await dbService.initialize();
+    
+    // Sync with server time to prevent cheating and handle midnight transitions
+    await DailyRepository().syncWithServerTime();
+    
+    print('Databases initialized. Launching app...');
+    
+    runApp(const CandyPuzzleGame());
+  } catch (e, stack) {
+    print('CRITICAL ERROR DURING STARTUP: $e');
+    print(stack);
+    // Even if it fails, try to run something to avoid white screen
+    runApp(MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Text('Fatal Error: $e'),
+        ),
+      ),
+    ));
+  }
 }
 
 class CandyPuzzleGame extends StatelessWidget {

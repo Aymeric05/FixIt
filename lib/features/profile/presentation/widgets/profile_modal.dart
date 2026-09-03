@@ -11,6 +11,7 @@ import 'package:fixit/features/auth/presentation/bloc/auth_event.dart';
 import 'package:fixit/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:fixit/features/profile/presentation/bloc/profile_event.dart';
 import 'package:fixit/features/profile/presentation/bloc/profile_state.dart';
+import 'package:fixit/core/utils/app_notifications.dart';
 
 class ProfileModal extends StatefulWidget {
   final Player player;
@@ -86,18 +87,12 @@ class _ProfileModalState extends State<ProfileModal> {
               setState(() => _isEditing = false);
               context.read<AuthBloc>().add(RefreshProfileRequested());
               if (state.newName != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Nickname updated!')),
-                );
+                AppNotifications.show(context, 'Nickname updated!');
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Avatar updated!')),
-                );
+                AppNotifications.show(context, 'Avatar updated!');
               }
             } else if (state is ProfileError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message)),
-              );
+              AppNotifications.show(context, state.message, isError: true);
             }
           },
           child: Stack(
@@ -269,42 +264,6 @@ class _ProfileModalState extends State<ProfileModal> {
           },
         );
       },
-    );
-  }
-
-  Widget _buildStatsOverview() {
-    return Container(
-      margin: const EdgeInsets.only(top: 20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Colors.white, width: 2),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildStatItem(Icons.videogame_asset, widget.player.totalGamesPlayed.toString(), "GAMES"),
-          Container(width: 2, height: 30, color: Colors.white),
-          _buildStatItem(Icons.emoji_events, widget.player.highscore.toString(), "BEST"),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(IconData icon, String value, String label) {
-    return Column(
-      children: [
-        Icon(icon, color: AppColors.candyPurple, size: 24),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.candyPurple),
-        ),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54),
-        ),
-      ],
     );
   }
 

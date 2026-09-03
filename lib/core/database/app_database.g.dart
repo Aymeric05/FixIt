@@ -864,6 +864,158 @@ return map;
 @override
 String toString() {return (StringBuffer('FriendRequestsCompanion(')..write('id: $id, ')..write('senderId: $senderId, ')..write('receiverId: $receiverId, ')..write('senderUsername: $senderUsername, ')..write('status: $status, ')..write('createdAt: $createdAt, ')..write('rowid: $rowid')..write(')')).toString();}
 }
+class $DailyChallengesTable extends DailyChallenges with TableInfo<$DailyChallengesTable, DailyChallenge>{
+@override final GeneratedDatabase attachedDatabase;
+final String? _alias;
+$DailyChallengesTable(this.attachedDatabase, [this._alias]);
+static const VerificationMeta _idMeta = const VerificationMeta('id');
+@override
+late final GeneratedColumn<int> id = GeneratedColumn<int>('id', aliasedName, false, hasAutoIncrement: true, type: DriftSqlType.int, requiredDuringInsert: false, defaultConstraints: GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+static const VerificationMeta _playerSupabaseIdMeta = const VerificationMeta('playerSupabaseId');
+@override
+late final GeneratedColumn<String> playerSupabaseId = GeneratedColumn<String>('player_supabase_id', aliasedName, false, type: DriftSqlType.string, requiredDuringInsert: true);
+static const VerificationMeta _dateMeta = const VerificationMeta('date');
+@override
+late final GeneratedColumn<String> date = GeneratedColumn<String>('date', aliasedName, false, type: DriftSqlType.string, requiredDuringInsert: true);
+static const VerificationMeta _isDailyLevelCompletedMeta = const VerificationMeta('isDailyLevelCompleted');
+@override
+late final GeneratedColumn<bool> isDailyLevelCompleted = GeneratedColumn<bool>('is_daily_level_completed', aliasedName, false, type: DriftSqlType.bool, requiredDuringInsert: false, defaultConstraints: GeneratedColumn.constraintIsAlways('CHECK ("is_daily_level_completed" IN (0, 1))'), defaultValue: const Constant(false));
+static const VerificationMeta _dailyLevelTimeMeta = const VerificationMeta('dailyLevelTime');
+@override
+late final GeneratedColumn<int> dailyLevelTime = GeneratedColumn<int>('daily_level_time', aliasedName, false, type: DriftSqlType.int, requiredDuringInsert: false, defaultValue: const Constant(0));
+static const VerificationMeta _seriesCurrentLevelMeta = const VerificationMeta('seriesCurrentLevel');
+@override
+late final GeneratedColumn<int> seriesCurrentLevel = GeneratedColumn<int>('series_current_level', aliasedName, false, type: DriftSqlType.int, requiredDuringInsert: false, defaultValue: const Constant(0));
+static const VerificationMeta _seriesAccumulatedTimeMeta = const VerificationMeta('seriesAccumulatedTime');
+@override
+late final GeneratedColumn<int> seriesAccumulatedTime = GeneratedColumn<int>('series_accumulated_time', aliasedName, false, type: DriftSqlType.int, requiredDuringInsert: false, defaultValue: const Constant(0));
+static const VerificationMeta _isSeriesCompletedMeta = const VerificationMeta('isSeriesCompleted');
+@override
+late final GeneratedColumn<bool> isSeriesCompleted = GeneratedColumn<bool>('is_series_completed', aliasedName, false, type: DriftSqlType.bool, requiredDuringInsert: false, defaultConstraints: GeneratedColumn.constraintIsAlways('CHECK ("is_series_completed" IN (0, 1))'), defaultValue: const Constant(false));
+@override
+List<GeneratedColumn> get $columns => [id, playerSupabaseId, date, isDailyLevelCompleted, dailyLevelTime, seriesCurrentLevel, seriesAccumulatedTime, isSeriesCompleted];
+@override
+String get aliasedName => _alias ?? actualTableName;
+@override
+ String get actualTableName => $name;
+static const String $name = 'daily_challenges';
+@override
+VerificationContext validateIntegrity(Insertable<DailyChallenge> instance, {bool isInserting = false}) {
+final context = VerificationContext();
+final data = instance.toColumns(true);
+if (data.containsKey('id')) {
+context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));}if (data.containsKey('player_supabase_id')) {
+context.handle(_playerSupabaseIdMeta, playerSupabaseId.isAcceptableOrUnknown(data['player_supabase_id']!, _playerSupabaseIdMeta));} else if (isInserting) {
+context.missing(_playerSupabaseIdMeta);
+}
+if (data.containsKey('date')) {
+context.handle(_dateMeta, date.isAcceptableOrUnknown(data['date']!, _dateMeta));} else if (isInserting) {
+context.missing(_dateMeta);
+}
+if (data.containsKey('is_daily_level_completed')) {
+context.handle(_isDailyLevelCompletedMeta, isDailyLevelCompleted.isAcceptableOrUnknown(data['is_daily_level_completed']!, _isDailyLevelCompletedMeta));}if (data.containsKey('daily_level_time')) {
+context.handle(_dailyLevelTimeMeta, dailyLevelTime.isAcceptableOrUnknown(data['daily_level_time']!, _dailyLevelTimeMeta));}if (data.containsKey('series_current_level')) {
+context.handle(_seriesCurrentLevelMeta, seriesCurrentLevel.isAcceptableOrUnknown(data['series_current_level']!, _seriesCurrentLevelMeta));}if (data.containsKey('series_accumulated_time')) {
+context.handle(_seriesAccumulatedTimeMeta, seriesAccumulatedTime.isAcceptableOrUnknown(data['series_accumulated_time']!, _seriesAccumulatedTimeMeta));}if (data.containsKey('is_series_completed')) {
+context.handle(_isSeriesCompletedMeta, isSeriesCompleted.isAcceptableOrUnknown(data['is_series_completed']!, _isSeriesCompletedMeta));}return context;
+}
+@override
+Set<GeneratedColumn> get $primaryKey => {id};
+@override
+List<Set<GeneratedColumn>> get uniqueKeys => [{playerSupabaseId, date},
+];
+@override DailyChallenge map(Map<String, dynamic> data, {String? tablePrefix})  {
+final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';return DailyChallenge(id: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}id'])!, playerSupabaseId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}player_supabase_id'])!, date: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}date'])!, isDailyLevelCompleted: attachedDatabase.typeMapping.read(DriftSqlType.bool, data['${effectivePrefix}is_daily_level_completed'])!, dailyLevelTime: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}daily_level_time'])!, seriesCurrentLevel: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}series_current_level'])!, seriesAccumulatedTime: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}series_accumulated_time'])!, isSeriesCompleted: attachedDatabase.typeMapping.read(DriftSqlType.bool, data['${effectivePrefix}is_series_completed'])!, );
+}
+@override
+$DailyChallengesTable createAlias(String alias) {
+return $DailyChallengesTable(attachedDatabase, alias);}}class DailyChallenge extends DataClass implements Insertable<DailyChallenge> 
+{
+final int id;
+final String playerSupabaseId;
+final String date;
+final bool isDailyLevelCompleted;
+final int dailyLevelTime;
+final int seriesCurrentLevel;
+final int seriesAccumulatedTime;
+final bool isSeriesCompleted;
+const DailyChallenge({required this.id, required this.playerSupabaseId, required this.date, required this.isDailyLevelCompleted, required this.dailyLevelTime, required this.seriesCurrentLevel, required this.seriesAccumulatedTime, required this.isSeriesCompleted});@override
+Map<String, Expression> toColumns(bool nullToAbsent) {
+final map = <String, Expression> {};map['id'] = Variable<int>(id);
+map['player_supabase_id'] = Variable<String>(playerSupabaseId);
+map['date'] = Variable<String>(date);
+map['is_daily_level_completed'] = Variable<bool>(isDailyLevelCompleted);
+map['daily_level_time'] = Variable<int>(dailyLevelTime);
+map['series_current_level'] = Variable<int>(seriesCurrentLevel);
+map['series_accumulated_time'] = Variable<int>(seriesAccumulatedTime);
+map['is_series_completed'] = Variable<bool>(isSeriesCompleted);
+return map; 
+}
+DailyChallengesCompanion toCompanion(bool nullToAbsent) {
+return DailyChallengesCompanion(id: Value(id),playerSupabaseId: Value(playerSupabaseId),date: Value(date),isDailyLevelCompleted: Value(isDailyLevelCompleted),dailyLevelTime: Value(dailyLevelTime),seriesCurrentLevel: Value(seriesCurrentLevel),seriesAccumulatedTime: Value(seriesAccumulatedTime),isSeriesCompleted: Value(isSeriesCompleted),);
+}
+factory DailyChallenge.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
+serializer ??= driftRuntimeOptions.defaultSerializer;
+return DailyChallenge(id: serializer.fromJson<int>(json['id']),playerSupabaseId: serializer.fromJson<String>(json['playerSupabaseId']),date: serializer.fromJson<String>(json['date']),isDailyLevelCompleted: serializer.fromJson<bool>(json['isDailyLevelCompleted']),dailyLevelTime: serializer.fromJson<int>(json['dailyLevelTime']),seriesCurrentLevel: serializer.fromJson<int>(json['seriesCurrentLevel']),seriesAccumulatedTime: serializer.fromJson<int>(json['seriesAccumulatedTime']),isSeriesCompleted: serializer.fromJson<bool>(json['isSeriesCompleted']),);}
+@override Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+serializer ??= driftRuntimeOptions.defaultSerializer;
+return <String, dynamic>{
+'id': serializer.toJson<int>(id),'playerSupabaseId': serializer.toJson<String>(playerSupabaseId),'date': serializer.toJson<String>(date),'isDailyLevelCompleted': serializer.toJson<bool>(isDailyLevelCompleted),'dailyLevelTime': serializer.toJson<int>(dailyLevelTime),'seriesCurrentLevel': serializer.toJson<int>(seriesCurrentLevel),'seriesAccumulatedTime': serializer.toJson<int>(seriesAccumulatedTime),'isSeriesCompleted': serializer.toJson<bool>(isSeriesCompleted),};}DailyChallenge copyWith({int? id,String? playerSupabaseId,String? date,bool? isDailyLevelCompleted,int? dailyLevelTime,int? seriesCurrentLevel,int? seriesAccumulatedTime,bool? isSeriesCompleted}) => DailyChallenge(id: id ?? this.id,playerSupabaseId: playerSupabaseId ?? this.playerSupabaseId,date: date ?? this.date,isDailyLevelCompleted: isDailyLevelCompleted ?? this.isDailyLevelCompleted,dailyLevelTime: dailyLevelTime ?? this.dailyLevelTime,seriesCurrentLevel: seriesCurrentLevel ?? this.seriesCurrentLevel,seriesAccumulatedTime: seriesAccumulatedTime ?? this.seriesAccumulatedTime,isSeriesCompleted: isSeriesCompleted ?? this.isSeriesCompleted,);DailyChallenge copyWithCompanion(DailyChallengesCompanion data) {
+return DailyChallenge(
+id: data.id.present ? data.id.value : this.id,playerSupabaseId: data.playerSupabaseId.present ? data.playerSupabaseId.value : this.playerSupabaseId,date: data.date.present ? data.date.value : this.date,isDailyLevelCompleted: data.isDailyLevelCompleted.present ? data.isDailyLevelCompleted.value : this.isDailyLevelCompleted,dailyLevelTime: data.dailyLevelTime.present ? data.dailyLevelTime.value : this.dailyLevelTime,seriesCurrentLevel: data.seriesCurrentLevel.present ? data.seriesCurrentLevel.value : this.seriesCurrentLevel,seriesAccumulatedTime: data.seriesAccumulatedTime.present ? data.seriesAccumulatedTime.value : this.seriesAccumulatedTime,isSeriesCompleted: data.isSeriesCompleted.present ? data.isSeriesCompleted.value : this.isSeriesCompleted,);
+}
+@override
+String toString() {return (StringBuffer('DailyChallenge(')..write('id: $id, ')..write('playerSupabaseId: $playerSupabaseId, ')..write('date: $date, ')..write('isDailyLevelCompleted: $isDailyLevelCompleted, ')..write('dailyLevelTime: $dailyLevelTime, ')..write('seriesCurrentLevel: $seriesCurrentLevel, ')..write('seriesAccumulatedTime: $seriesAccumulatedTime, ')..write('isSeriesCompleted: $isSeriesCompleted')..write(')')).toString();}
+@override
+ int get hashCode => Object.hash(id, playerSupabaseId, date, isDailyLevelCompleted, dailyLevelTime, seriesCurrentLevel, seriesAccumulatedTime, isSeriesCompleted);@override
+bool operator ==(Object other) => identical(this, other) || (other is DailyChallenge && other.id == this.id && other.playerSupabaseId == this.playerSupabaseId && other.date == this.date && other.isDailyLevelCompleted == this.isDailyLevelCompleted && other.dailyLevelTime == this.dailyLevelTime && other.seriesCurrentLevel == this.seriesCurrentLevel && other.seriesAccumulatedTime == this.seriesAccumulatedTime && other.isSeriesCompleted == this.isSeriesCompleted);
+}class DailyChallengesCompanion extends UpdateCompanion<DailyChallenge> {
+final Value<int> id;
+final Value<String> playerSupabaseId;
+final Value<String> date;
+final Value<bool> isDailyLevelCompleted;
+final Value<int> dailyLevelTime;
+final Value<int> seriesCurrentLevel;
+final Value<int> seriesAccumulatedTime;
+final Value<bool> isSeriesCompleted;
+const DailyChallengesCompanion({this.id = const Value.absent(),this.playerSupabaseId = const Value.absent(),this.date = const Value.absent(),this.isDailyLevelCompleted = const Value.absent(),this.dailyLevelTime = const Value.absent(),this.seriesCurrentLevel = const Value.absent(),this.seriesAccumulatedTime = const Value.absent(),this.isSeriesCompleted = const Value.absent(),});
+DailyChallengesCompanion.insert({this.id = const Value.absent(),required String playerSupabaseId,required String date,this.isDailyLevelCompleted = const Value.absent(),this.dailyLevelTime = const Value.absent(),this.seriesCurrentLevel = const Value.absent(),this.seriesAccumulatedTime = const Value.absent(),this.isSeriesCompleted = const Value.absent(),}): playerSupabaseId = Value(playerSupabaseId), date = Value(date);
+static Insertable<DailyChallenge> custom({Expression<int>? id, 
+Expression<String>? playerSupabaseId, 
+Expression<String>? date, 
+Expression<bool>? isDailyLevelCompleted, 
+Expression<int>? dailyLevelTime, 
+Expression<int>? seriesCurrentLevel, 
+Expression<int>? seriesAccumulatedTime, 
+Expression<bool>? isSeriesCompleted, 
+}) {
+return RawValuesInsertable({if (id != null)'id': id,if (playerSupabaseId != null)'player_supabase_id': playerSupabaseId,if (date != null)'date': date,if (isDailyLevelCompleted != null)'is_daily_level_completed': isDailyLevelCompleted,if (dailyLevelTime != null)'daily_level_time': dailyLevelTime,if (seriesCurrentLevel != null)'series_current_level': seriesCurrentLevel,if (seriesAccumulatedTime != null)'series_accumulated_time': seriesAccumulatedTime,if (isSeriesCompleted != null)'is_series_completed': isSeriesCompleted,});
+}DailyChallengesCompanion copyWith({Value<int>? id, Value<String>? playerSupabaseId, Value<String>? date, Value<bool>? isDailyLevelCompleted, Value<int>? dailyLevelTime, Value<int>? seriesCurrentLevel, Value<int>? seriesAccumulatedTime, Value<bool>? isSeriesCompleted}) {
+return DailyChallengesCompanion(id: id ?? this.id,playerSupabaseId: playerSupabaseId ?? this.playerSupabaseId,date: date ?? this.date,isDailyLevelCompleted: isDailyLevelCompleted ?? this.isDailyLevelCompleted,dailyLevelTime: dailyLevelTime ?? this.dailyLevelTime,seriesCurrentLevel: seriesCurrentLevel ?? this.seriesCurrentLevel,seriesAccumulatedTime: seriesAccumulatedTime ?? this.seriesAccumulatedTime,isSeriesCompleted: isSeriesCompleted ?? this.isSeriesCompleted,);
+}
+@override
+Map<String, Expression> toColumns(bool nullToAbsent) {
+final map = <String, Expression> {};if (id.present) {
+map['id'] = Variable<int>(id.value);}
+if (playerSupabaseId.present) {
+map['player_supabase_id'] = Variable<String>(playerSupabaseId.value);}
+if (date.present) {
+map['date'] = Variable<String>(date.value);}
+if (isDailyLevelCompleted.present) {
+map['is_daily_level_completed'] = Variable<bool>(isDailyLevelCompleted.value);}
+if (dailyLevelTime.present) {
+map['daily_level_time'] = Variable<int>(dailyLevelTime.value);}
+if (seriesCurrentLevel.present) {
+map['series_current_level'] = Variable<int>(seriesCurrentLevel.value);}
+if (seriesAccumulatedTime.present) {
+map['series_accumulated_time'] = Variable<int>(seriesAccumulatedTime.value);}
+if (isSeriesCompleted.present) {
+map['is_series_completed'] = Variable<bool>(isSeriesCompleted.value);}
+return map; 
+}
+@override
+String toString() {return (StringBuffer('DailyChallengesCompanion(')..write('id: $id, ')..write('playerSupabaseId: $playerSupabaseId, ')..write('date: $date, ')..write('isDailyLevelCompleted: $isDailyLevelCompleted, ')..write('dailyLevelTime: $dailyLevelTime, ')..write('seriesCurrentLevel: $seriesCurrentLevel, ')..write('seriesAccumulatedTime: $seriesAccumulatedTime, ')..write('isSeriesCompleted: $isSeriesCompleted')..write(')')).toString();}
+}
 abstract class _$AppDatabase extends GeneratedDatabase{
 _$AppDatabase(QueryExecutor e): super(e);
 $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -873,10 +1025,11 @@ late final $LevelCompletionsTable levelCompletions = $LevelCompletionsTable(this
 late final $GlobalLevelsTable globalLevels = $GlobalLevelsTable(this);
 late final $FriendsTable friends = $FriendsTable(this);
 late final $FriendRequestsTable friendRequests = $FriendRequestsTable(this);
+late final $DailyChallengesTable dailyChallenges = $DailyChallengesTable(this);
 @override
 Iterable<TableInfo<Table, Object?>> get allTables => allSchemaEntities.whereType<TableInfo<Table, Object?>>();
 @override
-List<DatabaseSchemaEntity> get allSchemaEntities => [players, progressions, levelCompletions, globalLevels, friends, friendRequests];
+List<DatabaseSchemaEntity> get allSchemaEntities => [players, progressions, levelCompletions, globalLevels, friends, friendRequests, dailyChallenges];
 }
 typedef $$PlayersTableCreateCompanionBuilder = PlayersCompanion Function({Value<int> id,Value<String?> supabaseId,required String username,Value<String?> avatarUrl,Value<int> totalGamesPlayed,Value<int> highscore,Value<int> lives,Value<int> puzzlePieces,Value<int> itemPlusTime,Value<int> itemMoreNumbers,Value<int> itemRevealPath,Value<DateTime?> lastLifeLostAt,Value<DateTime?> updatedAt,});
 typedef $$PlayersTableUpdateCompanionBuilder = PlayersCompanion Function({Value<int> id,Value<String?> supabaseId,Value<String> username,Value<String?> avatarUrl,Value<int> totalGamesPlayed,Value<int> highscore,Value<int> lives,Value<int> puzzlePieces,Value<int> itemPlusTime,Value<int> itemMoreNumbers,Value<int> itemRevealPath,Value<DateTime?> lastLifeLostAt,Value<DateTime?> updatedAt,});
@@ -1922,6 +2075,194 @@ GeneratedColumn<DateTime> get createdAt => $composableBuilder(
     (FriendRequest,BaseReferences<_$AppDatabase,$FriendRequestsTable,FriendRequest>),
     FriendRequest,
     PrefetchHooks Function()
+    >;typedef $$DailyChallengesTableCreateCompanionBuilder = DailyChallengesCompanion Function({Value<int> id,required String playerSupabaseId,required String date,Value<bool> isDailyLevelCompleted,Value<int> dailyLevelTime,Value<int> seriesCurrentLevel,Value<int> seriesAccumulatedTime,Value<bool> isSeriesCompleted,});
+typedef $$DailyChallengesTableUpdateCompanionBuilder = DailyChallengesCompanion Function({Value<int> id,Value<String> playerSupabaseId,Value<String> date,Value<bool> isDailyLevelCompleted,Value<int> dailyLevelTime,Value<int> seriesCurrentLevel,Value<int> seriesAccumulatedTime,Value<bool> isSeriesCompleted,});
+class $$DailyChallengesTableFilterComposer extends Composer<
+        _$AppDatabase,
+        $DailyChallengesTable> {
+        $$DailyChallengesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+          ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<String> get playerSupabaseId => $composableBuilder(
+      column: $table.playerSupabaseId,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<String> get date => $composableBuilder(
+      column: $table.date,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<bool> get isDailyLevelCompleted => $composableBuilder(
+      column: $table.isDailyLevelCompleted,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<int> get dailyLevelTime => $composableBuilder(
+      column: $table.dailyLevelTime,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<int> get seriesCurrentLevel => $composableBuilder(
+      column: $table.seriesCurrentLevel,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<int> get seriesAccumulatedTime => $composableBuilder(
+      column: $table.seriesAccumulatedTime,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<bool> get isSeriesCompleted => $composableBuilder(
+      column: $table.isSeriesCompleted,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+        }
+      class $$DailyChallengesTableOrderingComposer extends Composer<
+        _$AppDatabase,
+        $DailyChallengesTable> {
+        $$DailyChallengesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+          ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<String> get playerSupabaseId => $composableBuilder(
+      column: $table.playerSupabaseId,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<String> get date => $composableBuilder(
+      column: $table.date,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<bool> get isDailyLevelCompleted => $composableBuilder(
+      column: $table.isDailyLevelCompleted,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<int> get dailyLevelTime => $composableBuilder(
+      column: $table.dailyLevelTime,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<int> get seriesCurrentLevel => $composableBuilder(
+      column: $table.seriesCurrentLevel,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<int> get seriesAccumulatedTime => $composableBuilder(
+      column: $table.seriesAccumulatedTime,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<bool> get isSeriesCompleted => $composableBuilder(
+      column: $table.isSeriesCompleted,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+        }
+      class $$DailyChallengesTableAnnotationComposer extends Composer<
+        _$AppDatabase,
+        $DailyChallengesTable> {
+        $$DailyChallengesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+          GeneratedColumn<int> get id => $composableBuilder(
+      column: $table.id,
+      builder: (column) => column);
+      
+GeneratedColumn<String> get playerSupabaseId => $composableBuilder(
+      column: $table.playerSupabaseId,
+      builder: (column) => column);
+      
+GeneratedColumn<String> get date => $composableBuilder(
+      column: $table.date,
+      builder: (column) => column);
+      
+GeneratedColumn<bool> get isDailyLevelCompleted => $composableBuilder(
+      column: $table.isDailyLevelCompleted,
+      builder: (column) => column);
+      
+GeneratedColumn<int> get dailyLevelTime => $composableBuilder(
+      column: $table.dailyLevelTime,
+      builder: (column) => column);
+      
+GeneratedColumn<int> get seriesCurrentLevel => $composableBuilder(
+      column: $table.seriesCurrentLevel,
+      builder: (column) => column);
+      
+GeneratedColumn<int> get seriesAccumulatedTime => $composableBuilder(
+      column: $table.seriesAccumulatedTime,
+      builder: (column) => column);
+      
+GeneratedColumn<bool> get isSeriesCompleted => $composableBuilder(
+      column: $table.isSeriesCompleted,
+      builder: (column) => column);
+      
+        }
+      class $$DailyChallengesTableTableManager extends RootTableManager    <_$AppDatabase,
+    $DailyChallengesTable,
+    DailyChallenge,
+    $$DailyChallengesTableFilterComposer,
+    $$DailyChallengesTableOrderingComposer,
+    $$DailyChallengesTableAnnotationComposer,
+    $$DailyChallengesTableCreateCompanionBuilder,
+    $$DailyChallengesTableUpdateCompanionBuilder,
+    (DailyChallenge,BaseReferences<_$AppDatabase,$DailyChallengesTable,DailyChallenge>),
+    DailyChallenge,
+    PrefetchHooks Function()
+    > {
+    $$DailyChallengesTableTableManager(_$AppDatabase db, $DailyChallengesTable table) : super(
+      TableManagerState(
+        db: db,
+        table: table,
+        createFilteringComposer: () => $$DailyChallengesTableFilterComposer($db: db,$table:table),
+        createOrderingComposer: () => $$DailyChallengesTableOrderingComposer($db: db,$table:table),
+        createComputedFieldComposer: () => $$DailyChallengesTableAnnotationComposer($db: db,$table:table),
+        updateCompanionCallback: ({Value<int> id = const Value.absent(),Value<String> playerSupabaseId = const Value.absent(),Value<String> date = const Value.absent(),Value<bool> isDailyLevelCompleted = const Value.absent(),Value<int> dailyLevelTime = const Value.absent(),Value<int> seriesCurrentLevel = const Value.absent(),Value<int> seriesAccumulatedTime = const Value.absent(),Value<bool> isSeriesCompleted = const Value.absent(),})=> DailyChallengesCompanion(id: id,playerSupabaseId: playerSupabaseId,date: date,isDailyLevelCompleted: isDailyLevelCompleted,dailyLevelTime: dailyLevelTime,seriesCurrentLevel: seriesCurrentLevel,seriesAccumulatedTime: seriesAccumulatedTime,isSeriesCompleted: isSeriesCompleted,),
+        createCompanionCallback: ({Value<int> id = const Value.absent(),required String playerSupabaseId,required String date,Value<bool> isDailyLevelCompleted = const Value.absent(),Value<int> dailyLevelTime = const Value.absent(),Value<int> seriesCurrentLevel = const Value.absent(),Value<int> seriesAccumulatedTime = const Value.absent(),Value<bool> isSeriesCompleted = const Value.absent(),})=> DailyChallengesCompanion.insert(id: id,playerSupabaseId: playerSupabaseId,date: date,isDailyLevelCompleted: isDailyLevelCompleted,dailyLevelTime: dailyLevelTime,seriesCurrentLevel: seriesCurrentLevel,seriesAccumulatedTime: seriesAccumulatedTime,isSeriesCompleted: isSeriesCompleted,),
+        withReferenceMapper: (p0) => p0
+              .map(
+                  (e) =>
+                     (e.readTable(table), BaseReferences(db, table, e))
+                  )
+              .toList(),
+        prefetchHooksCallback: null,
+        ));
+        }
+    typedef $$DailyChallengesTableProcessedTableManager = ProcessedTableManager    <_$AppDatabase,
+    $DailyChallengesTable,
+    DailyChallenge,
+    $$DailyChallengesTableFilterComposer,
+    $$DailyChallengesTableOrderingComposer,
+    $$DailyChallengesTableAnnotationComposer,
+    $$DailyChallengesTableCreateCompanionBuilder,
+    $$DailyChallengesTableUpdateCompanionBuilder,
+    (DailyChallenge,BaseReferences<_$AppDatabase,$DailyChallengesTable,DailyChallenge>),
+    DailyChallenge,
+    PrefetchHooks Function()
     >;class $AppDatabaseManager {
 final _$AppDatabase _db;
 $AppDatabaseManager(this._db);
@@ -1931,4 +2272,5 @@ $$LevelCompletionsTableTableManager get levelCompletions => $$LevelCompletionsTa
 $$GlobalLevelsTableTableManager get globalLevels => $$GlobalLevelsTableTableManager(_db, _db.globalLevels);
 $$FriendsTableTableManager get friends => $$FriendsTableTableManager(_db, _db.friends);
 $$FriendRequestsTableTableManager get friendRequests => $$FriendRequestsTableTableManager(_db, _db.friendRequests);
+$$DailyChallengesTableTableManager get dailyChallenges => $$DailyChallengesTableTableManager(_db, _db.dailyChallenges);
 }
