@@ -30,17 +30,32 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late ConfettiController _confettiController;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _confettiController = ConfettiController(duration: const Duration(milliseconds: 800));
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkDailyChallenge();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _confettiController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      context.read<HomeBloc>().add(AppResumed());
+    }
   }
 
   Future<void> _checkDailyChallenge() async {
@@ -103,11 +118,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  @override
-  void dispose() {
-    _confettiController.dispose();
-    super.dispose();
-  }
+
 
   @override
   Widget build(BuildContext context) {

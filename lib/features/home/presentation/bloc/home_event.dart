@@ -77,3 +77,5 @@ class ChangeWorld extends HomeEvent {
 class MidnightReached extends HomeEvent {}
 
 class FinishWorldLoading extends HomeEvent {}
+
+class AppResumed extends HomeEvent {}
