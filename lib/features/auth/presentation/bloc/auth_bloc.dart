@@ -19,8 +19,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               .timeout(const Duration(seconds: 10));
           emit(AuthAuthenticated(user, profile));
           print('AuthBloc: Authenticated successfully');
-        } catch (e) {
+        } catch (e, stack) {
           print('AuthBloc: Auth check error: $e');
+          print('AuthBloc: Stack trace:\n$stack');
           emit(AuthFailure(e.toString()));
         }
       } else {

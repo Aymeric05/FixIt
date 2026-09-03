@@ -130,6 +130,77 @@ class AppDatabase extends _$AppDatabase {
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
+      beforeOpen: (details) async {
+        // 1. Auto-heal missing columns in 'players' table on disk
+        try {
+          final pragma = await customSelect('PRAGMA table_info(players)').get();
+          final cols = pragma.map((row) => row.read<String>('name')).toSet();
+
+          if (!cols.contains('lives')) {
+            await customStatement('ALTER TABLE players ADD COLUMN lives INTEGER DEFAULT 5;');
+          }
+          if (!cols.contains('puzzle_pieces')) {
+            await customStatement('ALTER TABLE players ADD COLUMN puzzle_pieces INTEGER DEFAULT 50;');
+          }
+          if (!cols.contains('item_plus_time')) {
+            await customStatement('ALTER TABLE players ADD COLUMN item_plus_time INTEGER DEFAULT 5;');
+          }
+          if (!cols.contains('item_more_numbers')) {
+            await customStatement('ALTER TABLE players ADD COLUMN item_more_numbers INTEGER DEFAULT 5;');
+          }
+          if (!cols.contains('item_reveal_path')) {
+            await customStatement('ALTER TABLE players ADD COLUMN item_reveal_path INTEGER DEFAULT 5;');
+          }
+        } catch (e) {
+          print('Error checking players table columns: $e');
+        }
+
+        // 2. Auto-heal missing columns in 'daily_challenges' table on disk
+        try {
+          final pragmaDaily = await customSelect("SELECT name FROM sqlite_master WHERE type='table' AND name='daily_challenges';").get();
+          if (pragmaDaily.isNotEmpty) {
+            final colsDaily = (await customSelect('PRAGMA table_info(daily_challenges)').get())
+                .map((row) => row.read<String>('name'))
+                .toSet();
+            if (!colsDaily.contains('daily_level_time')) {
+              await customStatement('ALTER TABLE daily_challenges ADD COLUMN daily_level_time INTEGER DEFAULT 0;');
+            }
+          }
+        } catch (e) {
+          print('Error checking daily_challenges table columns: $e');
+        }
+
+        // 3. Backfill any null values in existing SQLite rows from previous column migrations
+        try {
+          await customStatement('''
+            UPDATE players SET 
+              lives = COALESCE(lives, 5),
+              puzzle_pieces = COALESCE(puzzle_pieces, 50),
+              item_plus_time = COALESCE(item_plus_time, 5),
+              item_more_numbers = COALESCE(item_more_numbers, 5),
+              item_reveal_path = COALESCE(item_reveal_path, 5),
+              total_games_played = COALESCE(total_games_played, 0),
+              highscore = COALESCE(highscore, 0),
+              username = COALESCE(username, 'Guest')
+            WHERE lives IS NULL 
+               OR puzzle_pieces IS NULL 
+               OR item_plus_time IS NULL 
+               OR item_more_numbers IS NULL 
+               OR item_reveal_path IS NULL
+               OR total_games_played IS NULL
+               OR highscore IS NULL
+               OR username IS NULL;
+          ''');
+          await customStatement('''
+            UPDATE progressions SET
+              current_level = COALESCE(current_level, 1),
+              unlocked_worlds = COALESCE(unlocked_worlds, 'world_1')
+            WHERE current_level IS NULL OR unlocked_worlds IS NULL;
+          ''');
+        } catch (e) {
+          print('Error in beforeOpen database cleanup: $e');
+        }
+      },
       onUpgrade: (m, from, to) async {
         if (from < 2) {
           await m.addColumn(players, players.lives);

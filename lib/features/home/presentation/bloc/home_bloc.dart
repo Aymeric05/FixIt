@@ -69,20 +69,29 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Future<void> _refreshProgression(Emitter<HomeState> emit, String? playerId) async {
     print('HomeBloc: Refreshing progression...');
     // 1. Fetch player data
-    final players = await (_db.select(_db.players)
-          ..where((t) => playerId != null 
-              ? t.supabaseId.equals(playerId) 
-              : t.id.isNotNull())
-          ..limit(1))
-        .get();
+    List<Player> players = [];
+    try {
+      final query = _db.select(_db.players);
+      if (playerId != null && playerId.isNotEmpty) {
+        query.where((t) => t.supabaseId.equals(playerId));
+      } else {
+        query.where((t) => t.id.isNotNull());
+      }
+      query.limit(1);
+
+      players = await query.get();
+    } catch (e) {
+      print('HomeBloc: Error reading local players: $e');
+    }
     
     if (players.isNotEmpty) {
       final player = players.first;
       print('HomeBloc: Found local player: ${player.username}');
       
       // 2. Fetch progression for THIS specific player
+      final playerSupabaseId = player.supabaseId ?? '';
       final progs = await (_db.select(_db.progressions)
-            ..where((t) => t.playerSupabaseId.equals(player.supabaseId ?? ''))
+            ..where((t) => t.playerSupabaseId.equals(playerSupabaseId))
             ..limit(1))
           .get();
       

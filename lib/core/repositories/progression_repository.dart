@@ -32,8 +32,9 @@ class ProgressionRepository {
       int wrSeconds = 0;
       String wrHolder = '--';
       if (allRecords.isNotEmpty) {
-        wrSeconds = allRecords[0]['completion_time_seconds'];
-        wrHolder = allRecords[0]['profiles']['username'] ?? 'Unknown';
+        wrSeconds = allRecords[0]['completion_time_seconds'] as int? ?? 0;
+        final profiles = allRecords[0]['profiles'];
+        wrHolder = (profiles != null && profiles['username'] != null) ? profiles['username'] as String : 'Unknown';
       }
 
       // 3. Global Average
@@ -80,25 +81,28 @@ class ProgressionRepository {
       // Update social data with current performance if it's better or if it doesn't exist yet
       bool userIncluded = false;
       for (var entry in socialData) {
-        String entryId = entry['player_id'];
-        int time = entry['completion_time_seconds'];
+        String entryId = entry['player_id'] as String;
+        int time = entry['completion_time_seconds'] as int;
         if (entryId == playerId) {
           userIncluded = true;
           if (playerTime < time) time = playerTime; // Use better time for ranking display
         }
+        final profiles = entry['profiles'];
+        final username = (profiles != null && profiles['username'] != null) ? profiles['username'] as String : 'Unknown';
         socialRankings.add(FriendRankEntry(
           playerId: entryId,
-          username: entry['profiles']['username'] ?? 'Unknown',
+          username: username,
           timeSeconds: time,
           rank: 0, // Will calculate below
         ));
       }
       
       if (!userIncluded) {
-        final myProfile = await _supabase.from('profiles').select('username').eq('id', playerId).single();
+        final myProfile = await _supabase.from('profiles').select('username').eq('id', playerId).maybeSingle();
+        final username = (myProfile != null && myProfile['username'] != null) ? myProfile['username'] as String : 'Me';
         socialRankings.add(FriendRankEntry(
           playerId: playerId,
-          username: myProfile['username'] ?? 'Me',
+          username: username,
           timeSeconds: playerTime,
           rank: 0,
         ));
@@ -169,10 +173,12 @@ class ProgressionRepository {
       final List<dynamic> data = response as List<dynamic>;
       final List<FriendRankEntry> rankings = [];
       for (int i = 0; i < data.length; i++) {
+        final profiles = data[i]['profiles'];
+        final username = (profiles != null && profiles['username'] != null) ? profiles['username'] as String : 'Unknown';
         rankings.add(FriendRankEntry(
-          playerId: data[i]['player_id'],
-          username: data[i]['profiles']['username'] ?? 'Unknown',
-          timeSeconds: data[i]['completion_time_seconds'],
+          playerId: data[i]['player_id'] as String,
+          username: username,
+          timeSeconds: data[i]['completion_time_seconds'] as int,
           rank: i + 1,
         ));
       }

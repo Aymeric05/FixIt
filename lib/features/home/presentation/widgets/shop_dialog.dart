@@ -325,8 +325,8 @@ class ShopDialog extends StatelessWidget {
 
   Widget _buildPuzzlePack(BuildContext context, int count, double price, {bool isDaily = false, HomeState? state}) {
     if (isDaily && state != null) {
-      bool canClaim = state.lastDailyPuzzleAt == null || 
-                      DateTime.now().difference(state.lastDailyPuzzleAt!).inHours >= 24;
+      final lastAt = state.lastDailyPuzzleAt;
+      bool canClaim = lastAt == null ? true : DateTime.now().difference(lastAt).inHours >= 24;
 
       return Container(
         margin: const EdgeInsets.only(bottom: 10),
