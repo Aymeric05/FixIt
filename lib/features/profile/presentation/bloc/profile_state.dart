@@ -4,17 +4,17 @@ abstract class ProfileState extends Equatable {
   const ProfileState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class ProfileInitial extends ProfileState {}
 class ProfileUpdating extends ProfileState {}
 class ProfileUpdated extends ProfileState {
-  final String newNickname;
-  const ProfileUpdated(this.newNickname);
+  final String? newName;
+  const ProfileUpdated(this.newName);
 
   @override
-  List<Object> get props => [newNickname];
+  List<Object?> get props => [newName];
 }
 class ProfileError extends ProfileState {
   final String message;

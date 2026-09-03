@@ -2,14 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 
-/// Dialogue "Carte du Monde" : le parchemin est divisé en une grille
-/// 3x3 (9 cases). Chaque case est soit un monde (recouvert de nuages
-/// tant qu'il n'est pas débloqué), soit une case "mystère" (toujours
-/// recouverte, futur monde non développé). La case du monde 1
-/// (meadow, bas-gauche) n'est jamais recouverte.
-import 'package:fixit/core/utils/app_notifications.dart';
-
-class MapDialog extends StatelessWidget {
+class MapDialog extends StatefulWidget {
   final Set<String> unlockedWorldIds;
   final ValueChanged<String>? onWorldSelected;
 
@@ -19,238 +12,386 @@ class MapDialog extends StatelessWidget {
     this.onWorldSelected,
   });
 
-  static const double _mapRatio = 1024 / 1536;
+  @override
+  State<MapDialog> createState() => _MapDialogState();
+}
 
-  // Marge fixe tout autour de la carte : les nuages ne dessinent JAMAIS
-  // au-delà de cette zone, donc le contour du parchemin reste visible.
-  static const double _marginX = 0.08;
-  static const double _marginY = 0.06;
-
-  static const List<_GridCell> _grid = [
-    _GridCell(row: 0, col: 0, id: null, label: null),
-    _GridCell(row: 0, col: 1, id: null, label: null),
-    _GridCell(row: 0, col: 2, id: null, label: null),
-    _GridCell(row: 1, col: 0, id: 'ice', label: 'ICE'),
-    _GridCell(row: 1, col: 1, id: null, label: null),
-    _GridCell(row: 1, col: 2, id: 'city', label: 'CITY'),
-    _GridCell(row: 2, col: 0, id: 'meadow', label: 'MEADOW'),
-    _GridCell(row: 2, col: 1, id: 'desert', label: 'DESERT'),
-    _GridCell(row: 2, col: 2, id: 'volcano', label: 'VOLCANO'),
+class _MapDialogState extends State<MapDialog> {
+  final List<WorldData> worlds = [
+    WorldData(id: 'meadow', name: 'Meadow', asset: 'world1.png', color: Colors.green),
+    WorldData(id: 'desert', name: 'Desert', asset: 'world2.png', color: Colors.orange),
+    WorldData(id: 'ice', name: 'Ice', asset: 'world3.png', color: Colors.blueAccent),
+    WorldData(id: 'volcano', name: 'Volcano', asset: 'world4.png', color: Colors.red),
+    WorldData(id: 'city', name: 'City', asset: 'world5.png', color: Colors.purple),
   ];
 
-  bool _isUnlocked(String id) => unlockedWorldIds.contains(id);
+  late final PageController _rollController;
+  int _viewMode = 0; // 0: Roll, 1: Path
+  
+  // For infinite scroll
+  static const int _infiniteFactor = 10000;
+  late int _currentRollIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentRollIndex = _infiniteFactor ~/ 2;
+    _rollController = PageController(
+      viewportFraction: 0.6,
+      initialPage: _currentRollIndex,
+    );
+  }
+
+  @override
+  void dispose() {
+    _rollController.dispose();
+    super.dispose();
+  }
+
+  bool _isUnlocked(String id) => widget.unlockedWorldIds.contains(id);
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.topCenter,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 34),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: AspectRatio(
-                aspectRatio: _mapRatio,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.55),
-                        blurRadius: 26,
-                        offset: const Offset(0, 14),
+          // Main Body
+          Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(40),
+              border: Border.all(color: AppColors.candyPink, width: 8),
+              boxShadow: const [
+                BoxShadow(color: Colors.black45, blurRadius: 20, offset: Offset(0, 10))
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(32),
+              child: Stack(
+                children: [
+                  // Background
+                  Positioned.fill(
+                    child: Image.asset(
+                      'ciel.png',
+                      fit: BoxFit.cover,
+                      alignment: Alignment.center,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.lightBlue.shade100,
                       ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(17),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final size =
-                        Size(constraints.maxWidth, constraints.maxHeight);
-                        return Stack(
-                          children: [
-                            Positioned.fill(
-                              child: Image.asset('parchemin.png',
-                                  fit: BoxFit.cover),
-                            ),
-                            for (final cell in _grid)
-                              if (cell.id != null)
-                                _buildWorldButton(context, cell, size),
-                            // Nuages, clippés strictement à la zone
-                            // intérieure pour ne jamais déborder du bord
-                            // visible du parchemin.
-                            Positioned(
-                              left: _marginX * size.width,
-                              top: _marginY * size.height,
-                              width: (1 - _marginX * 2) * size.width,
-                              height: (1 - _marginY * 2) * size.height,
-                              child: ClipRect(
-                                child: OverflowBox(
-                                  minWidth: 0,
-                                  minHeight: 0,
-                                  maxWidth: double.infinity,
-                                  maxHeight: double.infinity,
-                                  alignment: Alignment.topLeft,
-                                  child: SizedBox(
-                                    width: size.width,
-                                    height: size.height,
-                                    child: Stack(
-                                      children: [
-                                        for (final cell in _grid)
-                                          if (cell.id != 'meadow' &&
-                                              !(cell.id != null &&
-                                                  _isUnlocked(cell.id!)))
-                                            _buildCloudCell(cell, size),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
                     ),
                   ),
-                ),
+                  
+                  // Content
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 70, 0, 20),
+                    child: Column(
+                      children: [
+                        // Tabs
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildTab(0, 'ISLANDS'),
+                            const SizedBox(width: 30),
+                            _buildTab(1, 'MAP PATH'),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        
+                        // Switchable Views
+                        Expanded(
+                          child: _viewMode == 0 ? _buildIslandsRoll() : _buildPathView(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
+          
+          // Title Banner
           _buildTitleBanner(),
+          
+          // Close Button
           _buildCloseButton(context),
         ],
       ),
     );
   }
 
-  Rect _cellRect(_GridCell cell) {
-    final gridW = 1 - _marginX * 2;
-    final gridH = 1 - _marginY * 2;
-    final cellW = gridW / 3;
-    final cellH = gridH / 3;
-    return Rect.fromLTWH(
-      _marginX + cell.col * cellW,
-      _marginY + cell.row * cellH,
-      cellW,
-      cellH,
-    );
-  }
-
-  Widget _buildWorldButton(BuildContext context, _GridCell cell, Size size) {
-    final id = cell.id!;
-    final unlocked = _isUnlocked(id);
-    final rect = _cellRect(cell);
-    final isMeadow = id == 'meadow';
-    return Positioned(
-      left: rect.left * size.width,
-      top: rect.top * size.height,
-      width: rect.width * size.width,
-      height: rect.height * size.height,
-      child: IgnorePointer(
-        ignoring: isMeadow,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: isMeadow
-              ? null
-              : () {
-            if (unlocked) {
-              Navigator.of(context).pop();
-              onWorldSelected?.call(id);
-            } else {
-              AppNotifications.show(context, '🔒 World Locked', isError: true);
-            }
-          },
-          child: Center(child: _worldLabel(cell.label!)),
-        ),
-      ),
-    );
-  }
-
-  Widget _worldLabel(String text) {
-    return Text(
-      text,
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.w900,
-        fontSize: 14,
-        letterSpacing: 0.6,
-        shadows: [
-          Shadow(
-              color: Colors.black.withOpacity(0.9),
-              offset: const Offset(1, 1),
-              blurRadius: 1),
-          Shadow(
-              color: Colors.black.withOpacity(0.9),
-              offset: const Offset(-1, -1),
-              blurRadius: 1),
-          Shadow(
-              color: Colors.black.withOpacity(0.9),
-              offset: const Offset(1, -1),
-              blurRadius: 1),
-          Shadow(
-              color: Colors.black.withOpacity(0.9),
-              offset: const Offset(-1, 1),
-              blurRadius: 1),
+  Widget _buildTab(int mode, String label) {
+    final active = _viewMode == mode;
+    return GestureDetector(
+      onTap: () => setState(() => _viewMode = mode),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              color: active ? Colors.white : Colors.white60,
+              fontSize: 16,
+              letterSpacing: 1.2,
+              shadows: active ? [const Shadow(color: Colors.black45, blurRadius: 4)] : null,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            height: 4,
+            width: 50,
+            decoration: BoxDecoration(
+              color: active ? AppColors.candyPink : Colors.transparent,
+              borderRadius: BorderRadius.circular(2),
+              boxShadow: active ? [const BoxShadow(color: Colors.black26, blurRadius: 2)] : null,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  /// Remplit une case avec 6 nuages ENTIERS (BoxFit.contain dans une
-  /// boîte carrée -> jamais de recadrage) qui se superposent fortement
-  /// pour ne laisser aucun trou. Le débordement vers les cases voisines
-  /// est volontaire ; le ClipRect global (voir build()) garantit que
-  /// rien ne dépasse le bord visible de la carte.
-  Widget _buildCloudCell(_GridCell cell, Size size) {
-    final rect = _cellRect(cell);
-    final left = rect.left * size.width;
-    final top = rect.top * size.height;
-    final w = rect.width * size.width;
-    final h = rect.height * size.height;
-    final cx = left + w / 2;
-    final cy = top + h / 2;
-    final ref = w > h ? w : h; // dimension de référence pour la taille
-    final idx = cell.row * 3 + cell.col;
+  Widget _buildIslandsRoll() {
+    return PageView.builder(
+      controller: _rollController,
+      scrollDirection: Axis.vertical,
+      onPageChanged: (page) => setState(() => _currentRollIndex = page),
+      itemBuilder: (context, index) {
+        final worldIndex = index % worlds.length;
+        final world = worlds[worldIndex];
+        final unlocked = _isUnlocked(world.id);
+        
+        return AnimatedBuilder(
+          animation: _rollController,
+          builder: (context, child) {
+            double value = 1.0;
+            if (_rollController.position.haveDimensions) {
+              value = _rollController.page! - index;
+              value = (1 - (value.abs() * 0.4)).clamp(0.0, 1.0);
+            }
+            return Center(
+              child: Transform.scale(
+                scale: 0.8 + (value * 0.2),
+                child: Opacity(
+                  opacity: value,
+                  child: GestureDetector(
+                    onTap: () {
+                      if (unlocked) {
+                        Navigator.of(context).pop();
+                        widget.onWorldSelected?.call(world.id);
+                      }
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            ColorFiltered(
+                              colorFilter: unlocked 
+                                ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
+                                : const ColorFilter.matrix([
+                                    0.2126, 0.7152, 0.0722, 0, 0,
+                                    0.2126, 0.7152, 0.0722, 0, 0,
+                                    0.2126, 0.7152, 0.0722, 0, 0,
+                                    0,      0,      0,      1, 0,
+                                  ]),
+                              child: Image.asset(
+                                world.asset,
+                                height: 200, // Enlarged
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            if (!unlocked)
+                              Container(
+                                width: 90,
+                                height: 90,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.5),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.lock, color: Colors.white, size: 45),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.black38,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: Text(
+                            world.name.toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 24,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
-    final specs = [
-      _CloudSpec(dx: 0.0, dy: 0.0, size: 1.15, rot: 0.0),
-      _CloudSpec(dx: -0.34, dy: -0.28, size: 0.85, rot: -0.12),
-      _CloudSpec(dx: 0.32, dy: -0.26, size: 0.8, rot: 0.10),
-      _CloudSpec(dx: -0.30, dy: 0.30, size: 0.8, rot: 0.08),
-      _CloudSpec(dx: 0.34, dy: 0.28, size: 0.85, rot: -0.09),
-      _CloudSpec(dx: 0.0, dy: -0.36, size: 0.6, rot: 0.05),
-    ];
+  Widget _buildPathView() {
+    final hasWorld4 = worlds.length > 3;
+    final hasWorld5 = worlds.length > 4;
+    final hasWorld6 = worlds.length > 5;
 
-    return IgnorePointer(
-      child: Stack(
-        children: List.generate(specs.length, (i) {
-          final spec = specs[i];
-          final j = ((idx * 1.7 + i * 0.9) % 1);
-          final scaleJ = 0.9 + j * 0.3; // variation de taille
-          final rotJ = (j - 0.5) * 0.4;
-          final box = ref * spec.size * scaleJ;
-          final offX = (j - 0.5) * w * 0.08;
-          final offY = ((j * 3.1) % 1 - 0.5) * h * 0.08;
-          return Positioned(
-            left: cx + spec.dx * w + offX - box / 2,
-            top: cy + spec.dy * h + offY - box / 2,
-            width: box,
-            height: box,
-            child: Transform.rotate(
-              angle: spec.rot + rotJ,
-              // BoxFit.contain dans une boîte carrée : l'image entière
-              // est toujours affichée, jamais rognée, seulement mise
-              // à l'échelle et centrée.
-              child: Image.asset('nuages.png', fit: BoxFit.contain),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          // Row 2: (6) -- 5 -- 4
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildEmptyNode(),
+              hasWorld6 ? _buildDashedLine() : const SizedBox(width: 40),
+              _buildPathIsland(4), // World 5
+              hasWorld5 ? _buildDashedLine() : const SizedBox(width: 40),
+              _buildPathIsland(3), // World 4
+            ],
+          ),
+          // Vertical connector on the RIGHT (between 3 and 4)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(width: 85), // island 6
+              const SizedBox(width: 40), // line
+              const SizedBox(width: 85), // island 5
+              const SizedBox(width: 40), // line
+              hasWorld4 ? _buildVerticalDashedLine() : const SizedBox(width: 85, height: 40),
+            ],
+          ),
+          // Row 1: 1 -- 2 -- 3
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildPathIsland(0), // World 1
+              worlds.length > 1 ? _buildDashedLine() : const SizedBox(width: 40),
+              _buildPathIsland(1), // World 2
+              worlds.length > 2 ? _buildDashedLine() : const SizedBox(width: 40),
+              _buildPathIsland(2), // World 3
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPathIsland(int index) {
+    if (index >= worlds.length) return _buildEmptyNode();
+    final world = worlds[index];
+    final unlocked = _isUnlocked(world.id);
+
+    return GestureDetector(
+      onTap: () {
+        if (unlocked) {
+          Navigator.of(context).pop();
+          widget.onWorldSelected?.call(world.id);
+        }
+      },
+      child: SizedBox(
+        width: 85,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                ColorFiltered(
+                  colorFilter: unlocked 
+                    ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
+                    : const ColorFilter.matrix([
+                        0.2126, 0.7152, 0.0722, 0, 0,
+                        0.2126, 0.7152, 0.0722, 0, 0,
+                        0.2126, 0.7152, 0.0722, 0, 0,
+                        0,      0,      0,      1, 0,
+                      ]),
+                  child: Image.asset(
+                    world.asset,
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                if (!unlocked)
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.lock, color: Colors.white, size: 20),
+                  ),
+              ],
             ),
-          );
-        }),
+            const SizedBox(height: 2),
+            Text(
+              "${index + 1}",
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 14,
+                shadows: [Shadow(color: Colors.black45, blurRadius: 2)],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyNode() {
+    return const SizedBox(width: 85, height: 85);
+  }
+
+  Widget _buildDashedLine() {
+    const dashColor = Color(0xFF8D6E63); // Slightly browner
+    return SizedBox(
+      width: 40,
+      height: 4,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: List.generate(3, (index) => Container(
+          width: 8,
+          height: 4,
+          decoration: BoxDecoration(
+            color: dashColor,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        )),
+      ),
+    );
+  }
+
+  Widget _buildVerticalDashedLine() {
+    return SizedBox(
+      width: 85,
+      height: 40,
+      child: Center(
+        child: RotatedBox(
+          quarterTurns: 1,
+          child: _buildDashedLine(),
+        ),
       ),
     );
   }
@@ -259,26 +400,26 @@ class MapDialog extends StatelessWidget {
     return Stack(
       children: [
         Container(
-          height: 62,
-          width: 250,
+          height: 65,
+          width: 240,
           decoration: BoxDecoration(
             color: AppColors.candyBlueDark,
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(32),
           ),
         ),
         Transform.translate(
-          offset: const Offset(0, -5),
+          offset: const Offset(0, -6),
           child: Container(
-            height: 56,
-            width: 250,
+            height: 60,
+            width: 240,
             decoration: BoxDecoration(
               gradient: const RadialGradient(
                 colors: [AppColors.candyBlue, AppColors.candyBlueDark],
                 center: Alignment(-0.3, -0.3),
                 radius: 0.8,
               ),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Colors.white, width: 3),
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(color: Colors.white, width: 4),
             ),
             alignment: Alignment.center,
             child: const Text(
@@ -288,7 +429,7 @@ class MapDialog extends StatelessWidget {
                 fontWeight: FontWeight.w900,
                 color: Colors.white,
                 letterSpacing: 2,
-                shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
+                shadows: [Shadow(color: Colors.black45, blurRadius: 6)],
               ),
             ),
           ),
@@ -302,37 +443,29 @@ class MapDialog extends StatelessWidget {
       right: -10,
       top: -10,
       child: CandyButton(
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        width: 52,
+        height: 52,
+        borderRadius: 26,
         depth: 4,
         color: Colors.redAccent,
         darkColor: Colors.red.shade900,
         onPressed: () => Navigator.of(context).pop(),
-        child: const Icon(Icons.close, color: Colors.white, size: 32),
+        child: const Icon(Icons.close, color: Colors.white, size: 30),
       ),
     );
   }
 }
 
-class _GridCell {
-  final int row;
-  final int col;
-  final String? id;
-  final String? label;
+class WorldData {
+  final String id;
+  final String name;
+  final String asset;
+  final Color color;
 
-  const _GridCell({required this.row, required this.col, this.id, this.label});
-}
-
-class _CloudSpec {
-  final double dx, dy;
-  final double size; // fraction de la dimension de référence de la case
-  final double rot;
-
-  const _CloudSpec({
-    required this.dx,
-    required this.dy,
-    required this.size,
-    required this.rot,
+  WorldData({
+    required this.id, 
+    required this.name, 
+    required this.asset,
+    required this.color,
   });
 }

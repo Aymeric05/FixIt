@@ -143,9 +143,9 @@ class LivesStoreDialog extends StatelessWidget {
             height: 40,
             borderRadius: 20,
             depth: 4,
-            color: onPressed == null ? Colors.grey : color,
-            darkColor: onPressed == null ? Colors.grey.shade700 : darkColor,
-            onPressed: onPressed ?? () {},
+            color: color,
+            darkColor: darkColor,
+            onPressed: onPressed,
             child: Text(
               price,
               style: const TextStyle(

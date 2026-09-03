@@ -3,7 +3,7 @@ import 'package:fixit/core/theme/app_colors.dart';
 
 class CandyButton extends StatefulWidget {
   final Widget child;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final Color color;
   final Color darkColor;
   final double width;
@@ -14,7 +14,7 @@ class CandyButton extends StatefulWidget {
   const CandyButton({
     super.key,
     required this.child,
-    required this.onPressed,
+    this.onPressed,
     required this.color,
     required this.darkColor,
     this.width = 85,
@@ -32,10 +32,14 @@ class _CandyButtonState extends State<CandyButton> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDisabled = widget.onPressed == null;
+    final Color buttonColor = isDisabled ? Colors.grey : widget.color;
+    final Color shadowColor = isDisabled ? Colors.grey.shade700 : widget.darkColor;
+
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
+      onTapDown: isDisabled ? null : (_) => setState(() => _isPressed = true),
+      onTapUp: isDisabled ? null : (_) => setState(() => _isPressed = false),
+      onTapCancel: isDisabled ? null : () => setState(() => _isPressed = false),
       onTap: widget.onPressed,
       child: SizedBox(
         width: widget.width,
@@ -49,7 +53,7 @@ class _CandyButtonState extends State<CandyButton> {
                 width: widget.width,
                 height: widget.height,
                 decoration: BoxDecoration(
-                  color: widget.darkColor,
+                  color: shadowColor,
                   borderRadius: BorderRadius.circular(widget.borderRadius),
                 ),
               ),
@@ -63,7 +67,7 @@ class _CandyButtonState extends State<CandyButton> {
                 height: widget.height,
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
-                    colors: [widget.color.withValues(alpha: 0.8), widget.color],
+                    colors: [buttonColor.withValues(alpha: 0.8), buttonColor],
                     center: const Alignment(-0.3, -0.3),
                     radius: 0.8,
                   ),

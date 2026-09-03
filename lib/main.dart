@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fixit/core/theme/app_theme.dart';
 import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/features/home/presentation/pages/home_page.dart';
+import 'package:fixit/features/home/presentation/pages/loading_screen.dart';
 import 'package:fixit/features/lives/presentation/bloc/lives_bloc.dart';
 import 'package:fixit/features/lives/presentation/bloc/lives_event.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
@@ -57,8 +58,36 @@ class CandyPuzzleGame extends StatelessWidget {
         title: 'Puzzle Quest',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        home: const HomePage(),
+        home: _AppStartupWrapper(),
       ),
+    );
+  }
+}
+
+class _AppStartupWrapper extends StatefulWidget {
+  @override
+  State<_AppStartupWrapper> createState() => _AppStartupWrapperState();
+}
+
+class _AppStartupWrapperState extends State<_AppStartupWrapper> {
+  bool _loadingAnimationDone = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<HomeBloc, HomeState>(
+      builder: (context, state) {
+        if (!_loadingAnimationDone) {
+          return LoadingScreen(
+            isDataLoading: state.isLoading,
+            onComplete: () {
+              setState(() {
+                _loadingAnimationDone = true;
+              });
+            },
+          );
+        }
+        return const HomePage();
+      },
     );
   }
 }

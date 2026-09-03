@@ -16,7 +16,10 @@ class Players extends Table {
   
   // New Inventory Fields
   IntColumn get lives => integer().withDefault(const Constant(5))();
-  IntColumn get hints => integer().withDefault(const Constant(10))();
+  IntColumn get puzzlePieces => integer().withDefault(const Constant(50))();
+  IntColumn get itemPlusTime => integer().withDefault(const Constant(5))();
+  IntColumn get itemMoreNumbers => integer().withDefault(const Constant(5))();
+  IntColumn get itemRevealPath => integer().withDefault(const Constant(5))();
   DateTimeColumn get lastLifeLostAt => dateTime().nullable()();
   
   DateTimeColumn get updatedAt => dateTime().nullable()();
@@ -130,8 +133,6 @@ class AppDatabase extends _$AppDatabase {
       onUpgrade: (m, from, to) async {
         if (from < 2) {
           await m.addColumn(players, players.lives);
-          await m.addColumn(players, players.hints);
-          await m.addColumn(players, players.lastLifeLostAt);
           await m.createTable(levelCompletions);
           await m.createTable(globalLevels);
         }
@@ -141,6 +142,14 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 4) {
           await m.createTable(dailyChallenges);
+          try {
+            await m.addColumn(players, players.puzzlePieces);
+            await m.addColumn(players, players.itemPlusTime);
+            await m.addColumn(players, players.itemMoreNumbers);
+            await m.addColumn(players, players.itemRevealPath);
+          } catch (e) {
+            print('Migration: Column might already exist: $e');
+          }
         }
         if (from < 5) {
           try {

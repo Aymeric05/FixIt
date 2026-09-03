@@ -14,16 +14,22 @@ class StartGame extends GameEvent {
   final GameDifficulty difficulty;
   final String playerId;
   final GameMode mode;
+  final int invPlusTime;
+  final int invMoreNumbers;
+  final int invRevealPath;
 
   const StartGame({
     required this.level,
     required this.difficulty,
     required this.playerId,
     this.mode = GameMode.story,
+    this.invPlusTime = 5,
+    this.invMoreNumbers = 5,
+    this.invRevealPath = 5,
   });
 
   @override
-  List<Object> get props => [level, difficulty, playerId, mode];
+  List<Object> get props => [level, difficulty, playerId, mode, invPlusTime, invMoreNumbers, invRevealPath];
 }
 
 class SelectCell extends GameEvent {
@@ -52,3 +58,12 @@ class LoadFriendsLeaderboard extends GameEvent {
   @override
   List<Object> get props => [playerId];
 }
+
+class PauseTimer extends GameEvent {}
+class ResumeTimer extends GameEvent {}
+
+class ContinueGameWithVideo extends GameEvent {}
+
+class UseItemPlusTime extends GameEvent {}
+class UseItemMoreNumbers extends GameEvent {}
+class UseItemRevealPath extends GameEvent {}

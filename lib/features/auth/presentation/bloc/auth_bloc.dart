@@ -10,16 +10,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   AuthBloc() : super(AuthInitial()) {
     on<AuthCheckRequested>((event, emit) async {
+      print('AuthBloc: Checking session...');
       final user = _supabase.auth.currentUser;
       if (user != null) {
+        print('AuthBloc: Existing user found: ${user.id}');
         try {
-          final profile = await _profileRepository.getOrCreateProfile(user.id);
+          final profile = await _profileRepository.getOrCreateProfile(user.id)
+              .timeout(const Duration(seconds: 10));
           emit(AuthAuthenticated(user, profile));
+          print('AuthBloc: Authenticated successfully');
         } catch (e) {
+          print('AuthBloc: Auth check error: $e');
           emit(AuthFailure(e.toString()));
         }
       } else {
-        // Auto-sign in anonymously if no user is found
+        print('AuthBloc: No user session, signing in anonymously...');
         add(AuthSignInAnonymous());
       }
     });
@@ -27,18 +32,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthSignInAnonymous>((event, emit) async {
       emit(AuthLoading());
       try {
-        print('Signing in anonymously...');
-        final authResponse = await _supabase.auth.signInAnonymously().timeout(const Duration(seconds: 15));
+        print('AuthBloc: Signing in anonymously...');
+        final authResponse = await _supabase.auth.signInAnonymously()
+            .timeout(const Duration(seconds: 15));
         final user = authResponse.user;
         if (user != null) {
-          print('Anonymous sign in successful: ${user.id}');
-          final profile = await _profileRepository.getOrCreateProfile(user.id);
+          print('AuthBloc: Anonymous sign in successful: ${user.id}');
+          final profile = await _profileRepository.getOrCreateProfile(user.id)
+              .timeout(const Duration(seconds: 10));
           emit(AuthAuthenticated(user, profile));
+          print('AuthBloc: Profile created/fetched');
         } else {
+          print('AuthBloc: Anonymous sign-in returned no user');
           emit(const AuthFailure('Failed to sign in.'));
         }
       } catch (e) {
-        print('Error during anonymous sign in: $e');
+        print('AuthBloc: Sign-in error: $e');
         emit(AuthFailure(e.toString()));
       }
     });
@@ -54,7 +63,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final user = _supabase.auth.currentUser;
       if (user != null) {
         try {
-          // Force a fresh fetch from Supabase to ensure consistency
+          // 1. Fetch latest from Supabase
           final response = await _supabase
               .from('profiles')
               .select()
@@ -62,11 +71,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               .maybeSingle();
 
           if (response != null) {
-            // Update local Drift too
+            // 2. Update local Drift cache with EVERYTHING from Supabase
             await _profileRepository.updateUsername(user.id, response['username']);
-            final profile = await _profileRepository.getOrCreateProfile(user.id);
-            emit(AuthAuthenticated(user, profile));
+            if (response['avatar_url'] != null) {
+              await _profileRepository.updateAvatar(user.id, response['avatar_url']);
+            }
           }
+          
+          // 3. Re-fetch from Repo (which now has updated cache) and emit
+          final profile = await _profileRepository.getOrCreateProfile(user.id);
+          emit(AuthAuthenticated(user, profile));
         } catch (e) {
           print('Error refreshing profile: $e');
         }

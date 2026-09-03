@@ -2,7 +2,6 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:fixit/core/models/grid_offset.dart';
 import 'package:fixit/core/models/daily_mode.dart';
-
 import 'package:fixit/core/models/level_win_summary.dart';
 
 enum GameStatus { initial, playing, won, lost }
@@ -26,6 +25,13 @@ class GameState extends Equatable {
   final GameMode mode;
   final int seriesAccumulatedTime;
   final int? wonTime; // Explicit time when won, to avoid recalculation bugs
+  
+  // New Item Fields
+  final int inventoryPlusTime;
+  final int inventoryMoreNumbers;
+  final int inventoryRevealPath;
+  final List<GridOffset> highlightedCells;
+  final Set<String> usedItems;
 
   const GameState({
     this.hints = const [],
@@ -46,6 +52,11 @@ class GameState extends Equatable {
     this.mode = GameMode.story,
     this.seriesAccumulatedTime = 0,
     this.wonTime,
+    this.inventoryPlusTime = 0,
+    this.inventoryMoreNumbers = 0,
+    this.inventoryRevealPath = 0,
+    this.highlightedCells = const [],
+    this.usedItems = const {},
   });
 
   GameState copyWith({
@@ -67,6 +78,11 @@ class GameState extends Equatable {
     GameMode? mode,
     int? seriesAccumulatedTime,
     int? wonTime,
+    int? inventoryPlusTime,
+    int? inventoryMoreNumbers,
+    int? inventoryRevealPath,
+    List<GridOffset>? highlightedCells,
+    Set<String>? usedItems,
   }) {
     return GameState(
       hints: hints ?? this.hints,
@@ -87,6 +103,11 @@ class GameState extends Equatable {
       mode: mode ?? this.mode,
       seriesAccumulatedTime: seriesAccumulatedTime ?? this.seriesAccumulatedTime,
       wonTime: wonTime ?? this.wonTime,
+      inventoryPlusTime: inventoryPlusTime ?? this.inventoryPlusTime,
+      inventoryMoreNumbers: inventoryMoreNumbers ?? this.inventoryMoreNumbers,
+      inventoryRevealPath: inventoryRevealPath ?? this.inventoryRevealPath,
+      highlightedCells: highlightedCells ?? this.highlightedCells,
+      usedItems: usedItems ?? this.usedItems,
     );
   }
 
@@ -96,5 +117,7 @@ class GameState extends Equatable {
     status, solutionPath, hintSteps, walls, pathColor, isAngry,
     averageTimeSeconds, bestTimeSeconds, levelNumber, winSummary,
     friendsLeaderboard, mode, seriesAccumulatedTime, wonTime,
+    inventoryPlusTime, inventoryMoreNumbers, inventoryRevealPath,
+    highlightedCells, usedItems,
   ];
 }

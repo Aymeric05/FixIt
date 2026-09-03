@@ -21,5 +21,18 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         emit(ProfileError(e.toString()));
       }
     });
+
+    on<UpdateAvatarRequested>((event, emit) async {
+      emit(ProfileUpdating());
+      try {
+        final user = _supabase.auth.currentUser;
+        if (user == null) throw Exception('User not authenticated');
+        
+        await _profileRepository.updateAvatar(user.id, event.imagePath);
+        emit(ProfileUpdated(null)); // null means name didn't change
+      } catch (e) {
+        emit(ProfileError(e.toString()));
+      }
+    });
   }
 }

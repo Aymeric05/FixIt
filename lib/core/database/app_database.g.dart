@@ -28,9 +28,18 @@ late final GeneratedColumn<int> highscore = GeneratedColumn<int>('highscore', al
 static const VerificationMeta _livesMeta = const VerificationMeta('lives');
 @override
 late final GeneratedColumn<int> lives = GeneratedColumn<int>('lives', aliasedName, false, type: DriftSqlType.int, requiredDuringInsert: false, defaultValue: const Constant(5));
-static const VerificationMeta _hintsMeta = const VerificationMeta('hints');
+static const VerificationMeta _puzzlePiecesMeta = const VerificationMeta('puzzlePieces');
 @override
-late final GeneratedColumn<int> hints = GeneratedColumn<int>('hints', aliasedName, false, type: DriftSqlType.int, requiredDuringInsert: false, defaultValue: const Constant(10));
+late final GeneratedColumn<int> puzzlePieces = GeneratedColumn<int>('puzzle_pieces', aliasedName, false, type: DriftSqlType.int, requiredDuringInsert: false, defaultValue: const Constant(50));
+static const VerificationMeta _itemPlusTimeMeta = const VerificationMeta('itemPlusTime');
+@override
+late final GeneratedColumn<int> itemPlusTime = GeneratedColumn<int>('item_plus_time', aliasedName, false, type: DriftSqlType.int, requiredDuringInsert: false, defaultValue: const Constant(5));
+static const VerificationMeta _itemMoreNumbersMeta = const VerificationMeta('itemMoreNumbers');
+@override
+late final GeneratedColumn<int> itemMoreNumbers = GeneratedColumn<int>('item_more_numbers', aliasedName, false, type: DriftSqlType.int, requiredDuringInsert: false, defaultValue: const Constant(5));
+static const VerificationMeta _itemRevealPathMeta = const VerificationMeta('itemRevealPath');
+@override
+late final GeneratedColumn<int> itemRevealPath = GeneratedColumn<int>('item_reveal_path', aliasedName, false, type: DriftSqlType.int, requiredDuringInsert: false, defaultValue: const Constant(5));
 static const VerificationMeta _lastLifeLostAtMeta = const VerificationMeta('lastLifeLostAt');
 @override
 late final GeneratedColumn<DateTime> lastLifeLostAt = GeneratedColumn<DateTime>('last_life_lost_at', aliasedName, true, type: DriftSqlType.dateTime, requiredDuringInsert: false);
@@ -38,7 +47,7 @@ static const VerificationMeta _updatedAtMeta = const VerificationMeta('updatedAt
 @override
 late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>('updated_at', aliasedName, true, type: DriftSqlType.dateTime, requiredDuringInsert: false);
 @override
-List<GeneratedColumn> get $columns => [id, supabaseId, username, avatarUrl, totalGamesPlayed, highscore, lives, hints, lastLifeLostAt, updatedAt];
+List<GeneratedColumn> get $columns => [id, supabaseId, username, avatarUrl, totalGamesPlayed, highscore, lives, puzzlePieces, itemPlusTime, itemMoreNumbers, itemRevealPath, lastLifeLostAt, updatedAt];
 @override
 String get aliasedName => _alias ?? actualTableName;
 @override
@@ -58,15 +67,18 @@ if (data.containsKey('avatar_url')) {
 context.handle(_avatarUrlMeta, avatarUrl.isAcceptableOrUnknown(data['avatar_url']!, _avatarUrlMeta));}if (data.containsKey('total_games_played')) {
 context.handle(_totalGamesPlayedMeta, totalGamesPlayed.isAcceptableOrUnknown(data['total_games_played']!, _totalGamesPlayedMeta));}if (data.containsKey('highscore')) {
 context.handle(_highscoreMeta, highscore.isAcceptableOrUnknown(data['highscore']!, _highscoreMeta));}if (data.containsKey('lives')) {
-context.handle(_livesMeta, lives.isAcceptableOrUnknown(data['lives']!, _livesMeta));}if (data.containsKey('hints')) {
-context.handle(_hintsMeta, hints.isAcceptableOrUnknown(data['hints']!, _hintsMeta));}if (data.containsKey('last_life_lost_at')) {
+context.handle(_livesMeta, lives.isAcceptableOrUnknown(data['lives']!, _livesMeta));}if (data.containsKey('puzzle_pieces')) {
+context.handle(_puzzlePiecesMeta, puzzlePieces.isAcceptableOrUnknown(data['puzzle_pieces']!, _puzzlePiecesMeta));}if (data.containsKey('item_plus_time')) {
+context.handle(_itemPlusTimeMeta, itemPlusTime.isAcceptableOrUnknown(data['item_plus_time']!, _itemPlusTimeMeta));}if (data.containsKey('item_more_numbers')) {
+context.handle(_itemMoreNumbersMeta, itemMoreNumbers.isAcceptableOrUnknown(data['item_more_numbers']!, _itemMoreNumbersMeta));}if (data.containsKey('item_reveal_path')) {
+context.handle(_itemRevealPathMeta, itemRevealPath.isAcceptableOrUnknown(data['item_reveal_path']!, _itemRevealPathMeta));}if (data.containsKey('last_life_lost_at')) {
 context.handle(_lastLifeLostAtMeta, lastLifeLostAt.isAcceptableOrUnknown(data['last_life_lost_at']!, _lastLifeLostAtMeta));}if (data.containsKey('updated_at')) {
 context.handle(_updatedAtMeta, updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));}return context;
 }
 @override
 Set<GeneratedColumn> get $primaryKey => {id};
 @override Player map(Map<String, dynamic> data, {String? tablePrefix})  {
-final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';return Player(id: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}id'])!, supabaseId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}supabase_id']), username: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}username'])!, avatarUrl: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}avatar_url']), totalGamesPlayed: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}total_games_played'])!, highscore: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}highscore'])!, lives: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}lives'])!, hints: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}hints'])!, lastLifeLostAt: attachedDatabase.typeMapping.read(DriftSqlType.dateTime, data['${effectivePrefix}last_life_lost_at']), updatedAt: attachedDatabase.typeMapping.read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']), );
+final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';return Player(id: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}id'])!, supabaseId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}supabase_id']), username: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}username'])!, avatarUrl: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}avatar_url']), totalGamesPlayed: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}total_games_played'])!, highscore: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}highscore'])!, lives: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}lives'])!, puzzlePieces: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}puzzle_pieces'])!, itemPlusTime: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}item_plus_time'])!, itemMoreNumbers: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}item_more_numbers'])!, itemRevealPath: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}item_reveal_path'])!, lastLifeLostAt: attachedDatabase.typeMapping.read(DriftSqlType.dateTime, data['${effectivePrefix}last_life_lost_at']), updatedAt: attachedDatabase.typeMapping.read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']), );
 }
 @override
 $PlayersTable createAlias(String alias) {
@@ -79,10 +91,13 @@ final String? avatarUrl;
 final int totalGamesPlayed;
 final int highscore;
 final int lives;
-final int hints;
+final int puzzlePieces;
+final int itemPlusTime;
+final int itemMoreNumbers;
+final int itemRevealPath;
 final DateTime? lastLifeLostAt;
 final DateTime? updatedAt;
-const Player({required this.id, this.supabaseId, required this.username, this.avatarUrl, required this.totalGamesPlayed, required this.highscore, required this.lives, required this.hints, this.lastLifeLostAt, this.updatedAt});@override
+const Player({required this.id, this.supabaseId, required this.username, this.avatarUrl, required this.totalGamesPlayed, required this.highscore, required this.lives, required this.puzzlePieces, required this.itemPlusTime, required this.itemMoreNumbers, required this.itemRevealPath, this.lastLifeLostAt, this.updatedAt});@override
 Map<String, Expression> toColumns(bool nullToAbsent) {
 final map = <String, Expression> {};map['id'] = Variable<int>(id);
 if (!nullToAbsent || supabaseId != null){map['supabase_id'] = Variable<String>(supabaseId);
@@ -91,29 +106,32 @@ if (!nullToAbsent || avatarUrl != null){map['avatar_url'] = Variable<String>(ava
 }map['total_games_played'] = Variable<int>(totalGamesPlayed);
 map['highscore'] = Variable<int>(highscore);
 map['lives'] = Variable<int>(lives);
-map['hints'] = Variable<int>(hints);
+map['puzzle_pieces'] = Variable<int>(puzzlePieces);
+map['item_plus_time'] = Variable<int>(itemPlusTime);
+map['item_more_numbers'] = Variable<int>(itemMoreNumbers);
+map['item_reveal_path'] = Variable<int>(itemRevealPath);
 if (!nullToAbsent || lastLifeLostAt != null){map['last_life_lost_at'] = Variable<DateTime>(lastLifeLostAt);
 }if (!nullToAbsent || updatedAt != null){map['updated_at'] = Variable<DateTime>(updatedAt);
 }return map; 
 }
 PlayersCompanion toCompanion(bool nullToAbsent) {
-return PlayersCompanion(id: Value(id),supabaseId: supabaseId == null && nullToAbsent ? const Value.absent() : Value(supabaseId),username: Value(username),avatarUrl: avatarUrl == null && nullToAbsent ? const Value.absent() : Value(avatarUrl),totalGamesPlayed: Value(totalGamesPlayed),highscore: Value(highscore),lives: Value(lives),hints: Value(hints),lastLifeLostAt: lastLifeLostAt == null && nullToAbsent ? const Value.absent() : Value(lastLifeLostAt),updatedAt: updatedAt == null && nullToAbsent ? const Value.absent() : Value(updatedAt),);
+return PlayersCompanion(id: Value(id),supabaseId: supabaseId == null && nullToAbsent ? const Value.absent() : Value(supabaseId),username: Value(username),avatarUrl: avatarUrl == null && nullToAbsent ? const Value.absent() : Value(avatarUrl),totalGamesPlayed: Value(totalGamesPlayed),highscore: Value(highscore),lives: Value(lives),puzzlePieces: Value(puzzlePieces),itemPlusTime: Value(itemPlusTime),itemMoreNumbers: Value(itemMoreNumbers),itemRevealPath: Value(itemRevealPath),lastLifeLostAt: lastLifeLostAt == null && nullToAbsent ? const Value.absent() : Value(lastLifeLostAt),updatedAt: updatedAt == null && nullToAbsent ? const Value.absent() : Value(updatedAt),);
 }
 factory Player.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
 serializer ??= driftRuntimeOptions.defaultSerializer;
-return Player(id: serializer.fromJson<int>(json['id']),supabaseId: serializer.fromJson<String?>(json['supabaseId']),username: serializer.fromJson<String>(json['username']),avatarUrl: serializer.fromJson<String?>(json['avatarUrl']),totalGamesPlayed: serializer.fromJson<int>(json['totalGamesPlayed']),highscore: serializer.fromJson<int>(json['highscore']),lives: serializer.fromJson<int>(json['lives']),hints: serializer.fromJson<int>(json['hints']),lastLifeLostAt: serializer.fromJson<DateTime?>(json['lastLifeLostAt']),updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),);}
+return Player(id: serializer.fromJson<int>(json['id']),supabaseId: serializer.fromJson<String?>(json['supabaseId']),username: serializer.fromJson<String>(json['username']),avatarUrl: serializer.fromJson<String?>(json['avatarUrl']),totalGamesPlayed: serializer.fromJson<int>(json['totalGamesPlayed']),highscore: serializer.fromJson<int>(json['highscore']),lives: serializer.fromJson<int>(json['lives']),puzzlePieces: serializer.fromJson<int>(json['puzzlePieces']),itemPlusTime: serializer.fromJson<int>(json['itemPlusTime']),itemMoreNumbers: serializer.fromJson<int>(json['itemMoreNumbers']),itemRevealPath: serializer.fromJson<int>(json['itemRevealPath']),lastLifeLostAt: serializer.fromJson<DateTime?>(json['lastLifeLostAt']),updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),);}
 @override Map<String, dynamic> toJson({ValueSerializer? serializer}) {
 serializer ??= driftRuntimeOptions.defaultSerializer;
 return <String, dynamic>{
-'id': serializer.toJson<int>(id),'supabaseId': serializer.toJson<String?>(supabaseId),'username': serializer.toJson<String>(username),'avatarUrl': serializer.toJson<String?>(avatarUrl),'totalGamesPlayed': serializer.toJson<int>(totalGamesPlayed),'highscore': serializer.toJson<int>(highscore),'lives': serializer.toJson<int>(lives),'hints': serializer.toJson<int>(hints),'lastLifeLostAt': serializer.toJson<DateTime?>(lastLifeLostAt),'updatedAt': serializer.toJson<DateTime?>(updatedAt),};}Player copyWith({int? id,Value<String?> supabaseId = const Value.absent(),String? username,Value<String?> avatarUrl = const Value.absent(),int? totalGamesPlayed,int? highscore,int? lives,int? hints,Value<DateTime?> lastLifeLostAt = const Value.absent(),Value<DateTime?> updatedAt = const Value.absent()}) => Player(id: id ?? this.id,supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,username: username ?? this.username,avatarUrl: avatarUrl.present ? avatarUrl.value : this.avatarUrl,totalGamesPlayed: totalGamesPlayed ?? this.totalGamesPlayed,highscore: highscore ?? this.highscore,lives: lives ?? this.lives,hints: hints ?? this.hints,lastLifeLostAt: lastLifeLostAt.present ? lastLifeLostAt.value : this.lastLifeLostAt,updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,);Player copyWithCompanion(PlayersCompanion data) {
+'id': serializer.toJson<int>(id),'supabaseId': serializer.toJson<String?>(supabaseId),'username': serializer.toJson<String>(username),'avatarUrl': serializer.toJson<String?>(avatarUrl),'totalGamesPlayed': serializer.toJson<int>(totalGamesPlayed),'highscore': serializer.toJson<int>(highscore),'lives': serializer.toJson<int>(lives),'puzzlePieces': serializer.toJson<int>(puzzlePieces),'itemPlusTime': serializer.toJson<int>(itemPlusTime),'itemMoreNumbers': serializer.toJson<int>(itemMoreNumbers),'itemRevealPath': serializer.toJson<int>(itemRevealPath),'lastLifeLostAt': serializer.toJson<DateTime?>(lastLifeLostAt),'updatedAt': serializer.toJson<DateTime?>(updatedAt),};}Player copyWith({int? id,Value<String?> supabaseId = const Value.absent(),String? username,Value<String?> avatarUrl = const Value.absent(),int? totalGamesPlayed,int? highscore,int? lives,int? puzzlePieces,int? itemPlusTime,int? itemMoreNumbers,int? itemRevealPath,Value<DateTime?> lastLifeLostAt = const Value.absent(),Value<DateTime?> updatedAt = const Value.absent()}) => Player(id: id ?? this.id,supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,username: username ?? this.username,avatarUrl: avatarUrl.present ? avatarUrl.value : this.avatarUrl,totalGamesPlayed: totalGamesPlayed ?? this.totalGamesPlayed,highscore: highscore ?? this.highscore,lives: lives ?? this.lives,puzzlePieces: puzzlePieces ?? this.puzzlePieces,itemPlusTime: itemPlusTime ?? this.itemPlusTime,itemMoreNumbers: itemMoreNumbers ?? this.itemMoreNumbers,itemRevealPath: itemRevealPath ?? this.itemRevealPath,lastLifeLostAt: lastLifeLostAt.present ? lastLifeLostAt.value : this.lastLifeLostAt,updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,);Player copyWithCompanion(PlayersCompanion data) {
 return Player(
-id: data.id.present ? data.id.value : this.id,supabaseId: data.supabaseId.present ? data.supabaseId.value : this.supabaseId,username: data.username.present ? data.username.value : this.username,avatarUrl: data.avatarUrl.present ? data.avatarUrl.value : this.avatarUrl,totalGamesPlayed: data.totalGamesPlayed.present ? data.totalGamesPlayed.value : this.totalGamesPlayed,highscore: data.highscore.present ? data.highscore.value : this.highscore,lives: data.lives.present ? data.lives.value : this.lives,hints: data.hints.present ? data.hints.value : this.hints,lastLifeLostAt: data.lastLifeLostAt.present ? data.lastLifeLostAt.value : this.lastLifeLostAt,updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,);
+id: data.id.present ? data.id.value : this.id,supabaseId: data.supabaseId.present ? data.supabaseId.value : this.supabaseId,username: data.username.present ? data.username.value : this.username,avatarUrl: data.avatarUrl.present ? data.avatarUrl.value : this.avatarUrl,totalGamesPlayed: data.totalGamesPlayed.present ? data.totalGamesPlayed.value : this.totalGamesPlayed,highscore: data.highscore.present ? data.highscore.value : this.highscore,lives: data.lives.present ? data.lives.value : this.lives,puzzlePieces: data.puzzlePieces.present ? data.puzzlePieces.value : this.puzzlePieces,itemPlusTime: data.itemPlusTime.present ? data.itemPlusTime.value : this.itemPlusTime,itemMoreNumbers: data.itemMoreNumbers.present ? data.itemMoreNumbers.value : this.itemMoreNumbers,itemRevealPath: data.itemRevealPath.present ? data.itemRevealPath.value : this.itemRevealPath,lastLifeLostAt: data.lastLifeLostAt.present ? data.lastLifeLostAt.value : this.lastLifeLostAt,updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,);
 }
 @override
-String toString() {return (StringBuffer('Player(')..write('id: $id, ')..write('supabaseId: $supabaseId, ')..write('username: $username, ')..write('avatarUrl: $avatarUrl, ')..write('totalGamesPlayed: $totalGamesPlayed, ')..write('highscore: $highscore, ')..write('lives: $lives, ')..write('hints: $hints, ')..write('lastLifeLostAt: $lastLifeLostAt, ')..write('updatedAt: $updatedAt')..write(')')).toString();}
+String toString() {return (StringBuffer('Player(')..write('id: $id, ')..write('supabaseId: $supabaseId, ')..write('username: $username, ')..write('avatarUrl: $avatarUrl, ')..write('totalGamesPlayed: $totalGamesPlayed, ')..write('highscore: $highscore, ')..write('lives: $lives, ')..write('puzzlePieces: $puzzlePieces, ')..write('itemPlusTime: $itemPlusTime, ')..write('itemMoreNumbers: $itemMoreNumbers, ')..write('itemRevealPath: $itemRevealPath, ')..write('lastLifeLostAt: $lastLifeLostAt, ')..write('updatedAt: $updatedAt')..write(')')).toString();}
 @override
- int get hashCode => Object.hash(id, supabaseId, username, avatarUrl, totalGamesPlayed, highscore, lives, hints, lastLifeLostAt, updatedAt);@override
-bool operator ==(Object other) => identical(this, other) || (other is Player && other.id == this.id && other.supabaseId == this.supabaseId && other.username == this.username && other.avatarUrl == this.avatarUrl && other.totalGamesPlayed == this.totalGamesPlayed && other.highscore == this.highscore && other.lives == this.lives && other.hints == this.hints && other.lastLifeLostAt == this.lastLifeLostAt && other.updatedAt == this.updatedAt);
+ int get hashCode => Object.hash(id, supabaseId, username, avatarUrl, totalGamesPlayed, highscore, lives, puzzlePieces, itemPlusTime, itemMoreNumbers, itemRevealPath, lastLifeLostAt, updatedAt);@override
+bool operator ==(Object other) => identical(this, other) || (other is Player && other.id == this.id && other.supabaseId == this.supabaseId && other.username == this.username && other.avatarUrl == this.avatarUrl && other.totalGamesPlayed == this.totalGamesPlayed && other.highscore == this.highscore && other.lives == this.lives && other.puzzlePieces == this.puzzlePieces && other.itemPlusTime == this.itemPlusTime && other.itemMoreNumbers == this.itemMoreNumbers && other.itemRevealPath == this.itemRevealPath && other.lastLifeLostAt == this.lastLifeLostAt && other.updatedAt == this.updatedAt);
 }class PlayersCompanion extends UpdateCompanion<Player> {
 final Value<int> id;
 final Value<String?> supabaseId;
@@ -122,11 +140,14 @@ final Value<String?> avatarUrl;
 final Value<int> totalGamesPlayed;
 final Value<int> highscore;
 final Value<int> lives;
-final Value<int> hints;
+final Value<int> puzzlePieces;
+final Value<int> itemPlusTime;
+final Value<int> itemMoreNumbers;
+final Value<int> itemRevealPath;
 final Value<DateTime?> lastLifeLostAt;
 final Value<DateTime?> updatedAt;
-const PlayersCompanion({this.id = const Value.absent(),this.supabaseId = const Value.absent(),this.username = const Value.absent(),this.avatarUrl = const Value.absent(),this.totalGamesPlayed = const Value.absent(),this.highscore = const Value.absent(),this.lives = const Value.absent(),this.hints = const Value.absent(),this.lastLifeLostAt = const Value.absent(),this.updatedAt = const Value.absent(),});
-PlayersCompanion.insert({this.id = const Value.absent(),this.supabaseId = const Value.absent(),required String username,this.avatarUrl = const Value.absent(),this.totalGamesPlayed = const Value.absent(),this.highscore = const Value.absent(),this.lives = const Value.absent(),this.hints = const Value.absent(),this.lastLifeLostAt = const Value.absent(),this.updatedAt = const Value.absent(),}): username = Value(username);
+const PlayersCompanion({this.id = const Value.absent(),this.supabaseId = const Value.absent(),this.username = const Value.absent(),this.avatarUrl = const Value.absent(),this.totalGamesPlayed = const Value.absent(),this.highscore = const Value.absent(),this.lives = const Value.absent(),this.puzzlePieces = const Value.absent(),this.itemPlusTime = const Value.absent(),this.itemMoreNumbers = const Value.absent(),this.itemRevealPath = const Value.absent(),this.lastLifeLostAt = const Value.absent(),this.updatedAt = const Value.absent(),});
+PlayersCompanion.insert({this.id = const Value.absent(),this.supabaseId = const Value.absent(),required String username,this.avatarUrl = const Value.absent(),this.totalGamesPlayed = const Value.absent(),this.highscore = const Value.absent(),this.lives = const Value.absent(),this.puzzlePieces = const Value.absent(),this.itemPlusTime = const Value.absent(),this.itemMoreNumbers = const Value.absent(),this.itemRevealPath = const Value.absent(),this.lastLifeLostAt = const Value.absent(),this.updatedAt = const Value.absent(),}): username = Value(username);
 static Insertable<Player> custom({Expression<int>? id, 
 Expression<String>? supabaseId, 
 Expression<String>? username, 
@@ -134,13 +155,16 @@ Expression<String>? avatarUrl,
 Expression<int>? totalGamesPlayed, 
 Expression<int>? highscore, 
 Expression<int>? lives, 
-Expression<int>? hints, 
+Expression<int>? puzzlePieces, 
+Expression<int>? itemPlusTime, 
+Expression<int>? itemMoreNumbers, 
+Expression<int>? itemRevealPath, 
 Expression<DateTime>? lastLifeLostAt, 
 Expression<DateTime>? updatedAt, 
 }) {
-return RawValuesInsertable({if (id != null)'id': id,if (supabaseId != null)'supabase_id': supabaseId,if (username != null)'username': username,if (avatarUrl != null)'avatar_url': avatarUrl,if (totalGamesPlayed != null)'total_games_played': totalGamesPlayed,if (highscore != null)'highscore': highscore,if (lives != null)'lives': lives,if (hints != null)'hints': hints,if (lastLifeLostAt != null)'last_life_lost_at': lastLifeLostAt,if (updatedAt != null)'updated_at': updatedAt,});
-}PlayersCompanion copyWith({Value<int>? id, Value<String?>? supabaseId, Value<String>? username, Value<String?>? avatarUrl, Value<int>? totalGamesPlayed, Value<int>? highscore, Value<int>? lives, Value<int>? hints, Value<DateTime?>? lastLifeLostAt, Value<DateTime?>? updatedAt}) {
-return PlayersCompanion(id: id ?? this.id,supabaseId: supabaseId ?? this.supabaseId,username: username ?? this.username,avatarUrl: avatarUrl ?? this.avatarUrl,totalGamesPlayed: totalGamesPlayed ?? this.totalGamesPlayed,highscore: highscore ?? this.highscore,lives: lives ?? this.lives,hints: hints ?? this.hints,lastLifeLostAt: lastLifeLostAt ?? this.lastLifeLostAt,updatedAt: updatedAt ?? this.updatedAt,);
+return RawValuesInsertable({if (id != null)'id': id,if (supabaseId != null)'supabase_id': supabaseId,if (username != null)'username': username,if (avatarUrl != null)'avatar_url': avatarUrl,if (totalGamesPlayed != null)'total_games_played': totalGamesPlayed,if (highscore != null)'highscore': highscore,if (lives != null)'lives': lives,if (puzzlePieces != null)'puzzle_pieces': puzzlePieces,if (itemPlusTime != null)'item_plus_time': itemPlusTime,if (itemMoreNumbers != null)'item_more_numbers': itemMoreNumbers,if (itemRevealPath != null)'item_reveal_path': itemRevealPath,if (lastLifeLostAt != null)'last_life_lost_at': lastLifeLostAt,if (updatedAt != null)'updated_at': updatedAt,});
+}PlayersCompanion copyWith({Value<int>? id, Value<String?>? supabaseId, Value<String>? username, Value<String?>? avatarUrl, Value<int>? totalGamesPlayed, Value<int>? highscore, Value<int>? lives, Value<int>? puzzlePieces, Value<int>? itemPlusTime, Value<int>? itemMoreNumbers, Value<int>? itemRevealPath, Value<DateTime?>? lastLifeLostAt, Value<DateTime?>? updatedAt}) {
+return PlayersCompanion(id: id ?? this.id,supabaseId: supabaseId ?? this.supabaseId,username: username ?? this.username,avatarUrl: avatarUrl ?? this.avatarUrl,totalGamesPlayed: totalGamesPlayed ?? this.totalGamesPlayed,highscore: highscore ?? this.highscore,lives: lives ?? this.lives,puzzlePieces: puzzlePieces ?? this.puzzlePieces,itemPlusTime: itemPlusTime ?? this.itemPlusTime,itemMoreNumbers: itemMoreNumbers ?? this.itemMoreNumbers,itemRevealPath: itemRevealPath ?? this.itemRevealPath,lastLifeLostAt: lastLifeLostAt ?? this.lastLifeLostAt,updatedAt: updatedAt ?? this.updatedAt,);
 }
 @override
 Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -158,8 +182,14 @@ if (highscore.present) {
 map['highscore'] = Variable<int>(highscore.value);}
 if (lives.present) {
 map['lives'] = Variable<int>(lives.value);}
-if (hints.present) {
-map['hints'] = Variable<int>(hints.value);}
+if (puzzlePieces.present) {
+map['puzzle_pieces'] = Variable<int>(puzzlePieces.value);}
+if (itemPlusTime.present) {
+map['item_plus_time'] = Variable<int>(itemPlusTime.value);}
+if (itemMoreNumbers.present) {
+map['item_more_numbers'] = Variable<int>(itemMoreNumbers.value);}
+if (itemRevealPath.present) {
+map['item_reveal_path'] = Variable<int>(itemRevealPath.value);}
 if (lastLifeLostAt.present) {
 map['last_life_lost_at'] = Variable<DateTime>(lastLifeLostAt.value);}
 if (updatedAt.present) {
@@ -167,7 +197,7 @@ map['updated_at'] = Variable<DateTime>(updatedAt.value);}
 return map; 
 }
 @override
-String toString() {return (StringBuffer('PlayersCompanion(')..write('id: $id, ')..write('supabaseId: $supabaseId, ')..write('username: $username, ')..write('avatarUrl: $avatarUrl, ')..write('totalGamesPlayed: $totalGamesPlayed, ')..write('highscore: $highscore, ')..write('lives: $lives, ')..write('hints: $hints, ')..write('lastLifeLostAt: $lastLifeLostAt, ')..write('updatedAt: $updatedAt')..write(')')).toString();}
+String toString() {return (StringBuffer('PlayersCompanion(')..write('id: $id, ')..write('supabaseId: $supabaseId, ')..write('username: $username, ')..write('avatarUrl: $avatarUrl, ')..write('totalGamesPlayed: $totalGamesPlayed, ')..write('highscore: $highscore, ')..write('lives: $lives, ')..write('puzzlePieces: $puzzlePieces, ')..write('itemPlusTime: $itemPlusTime, ')..write('itemMoreNumbers: $itemMoreNumbers, ')..write('itemRevealPath: $itemRevealPath, ')..write('lastLifeLostAt: $lastLifeLostAt, ')..write('updatedAt: $updatedAt')..write(')')).toString();}
 }
 class $ProgressionsTable extends Progressions with TableInfo<$ProgressionsTable, Progression>{
 @override final GeneratedDatabase attachedDatabase;
@@ -1001,8 +1031,8 @@ Iterable<TableInfo<Table, Object?>> get allTables => allSchemaEntities.whereType
 @override
 List<DatabaseSchemaEntity> get allSchemaEntities => [players, progressions, levelCompletions, globalLevels, friends, friendRequests, dailyChallenges];
 }
-typedef $$PlayersTableCreateCompanionBuilder = PlayersCompanion Function({Value<int> id,Value<String?> supabaseId,required String username,Value<String?> avatarUrl,Value<int> totalGamesPlayed,Value<int> highscore,Value<int> lives,Value<int> hints,Value<DateTime?> lastLifeLostAt,Value<DateTime?> updatedAt,});
-typedef $$PlayersTableUpdateCompanionBuilder = PlayersCompanion Function({Value<int> id,Value<String?> supabaseId,Value<String> username,Value<String?> avatarUrl,Value<int> totalGamesPlayed,Value<int> highscore,Value<int> lives,Value<int> hints,Value<DateTime?> lastLifeLostAt,Value<DateTime?> updatedAt,});
+typedef $$PlayersTableCreateCompanionBuilder = PlayersCompanion Function({Value<int> id,Value<String?> supabaseId,required String username,Value<String?> avatarUrl,Value<int> totalGamesPlayed,Value<int> highscore,Value<int> lives,Value<int> puzzlePieces,Value<int> itemPlusTime,Value<int> itemMoreNumbers,Value<int> itemRevealPath,Value<DateTime?> lastLifeLostAt,Value<DateTime?> updatedAt,});
+typedef $$PlayersTableUpdateCompanionBuilder = PlayersCompanion Function({Value<int> id,Value<String?> supabaseId,Value<String> username,Value<String?> avatarUrl,Value<int> totalGamesPlayed,Value<int> highscore,Value<int> lives,Value<int> puzzlePieces,Value<int> itemPlusTime,Value<int> itemMoreNumbers,Value<int> itemRevealPath,Value<DateTime?> lastLifeLostAt,Value<DateTime?> updatedAt,});
 class $$PlayersTableFilterComposer extends Composer<
         _$AppDatabase,
         $PlayersTable> {
@@ -1048,8 +1078,23 @@ ColumnFilters<int> get lives => $composableBuilder(
       builder: (column) => 
       ColumnFilters(column));
       
-ColumnFilters<int> get hints => $composableBuilder(
-      column: $table.hints,
+ColumnFilters<int> get puzzlePieces => $composableBuilder(
+      column: $table.puzzlePieces,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<int> get itemPlusTime => $composableBuilder(
+      column: $table.itemPlusTime,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<int> get itemMoreNumbers => $composableBuilder(
+      column: $table.itemMoreNumbers,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<int> get itemRevealPath => $composableBuilder(
+      column: $table.itemRevealPath,
       builder: (column) => 
       ColumnFilters(column));
       
@@ -1109,8 +1154,23 @@ ColumnOrderings<int> get lives => $composableBuilder(
       builder: (column) => 
       ColumnOrderings(column));
       
-ColumnOrderings<int> get hints => $composableBuilder(
-      column: $table.hints,
+ColumnOrderings<int> get puzzlePieces => $composableBuilder(
+      column: $table.puzzlePieces,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<int> get itemPlusTime => $composableBuilder(
+      column: $table.itemPlusTime,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<int> get itemMoreNumbers => $composableBuilder(
+      column: $table.itemMoreNumbers,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
+ColumnOrderings<int> get itemRevealPath => $composableBuilder(
+      column: $table.itemRevealPath,
       builder: (column) => 
       ColumnOrderings(column));
       
@@ -1163,8 +1223,20 @@ GeneratedColumn<int> get lives => $composableBuilder(
       column: $table.lives,
       builder: (column) => column);
       
-GeneratedColumn<int> get hints => $composableBuilder(
-      column: $table.hints,
+GeneratedColumn<int> get puzzlePieces => $composableBuilder(
+      column: $table.puzzlePieces,
+      builder: (column) => column);
+      
+GeneratedColumn<int> get itemPlusTime => $composableBuilder(
+      column: $table.itemPlusTime,
+      builder: (column) => column);
+      
+GeneratedColumn<int> get itemMoreNumbers => $composableBuilder(
+      column: $table.itemMoreNumbers,
+      builder: (column) => column);
+      
+GeneratedColumn<int> get itemRevealPath => $composableBuilder(
+      column: $table.itemRevealPath,
       builder: (column) => column);
       
 GeneratedColumn<DateTime> get lastLifeLostAt => $composableBuilder(
@@ -1195,8 +1267,8 @@ GeneratedColumn<DateTime> get updatedAt => $composableBuilder(
         createFilteringComposer: () => $$PlayersTableFilterComposer($db: db,$table:table),
         createOrderingComposer: () => $$PlayersTableOrderingComposer($db: db,$table:table),
         createComputedFieldComposer: () => $$PlayersTableAnnotationComposer($db: db,$table:table),
-        updateCompanionCallback: ({Value<int> id = const Value.absent(),Value<String?> supabaseId = const Value.absent(),Value<String> username = const Value.absent(),Value<String?> avatarUrl = const Value.absent(),Value<int> totalGamesPlayed = const Value.absent(),Value<int> highscore = const Value.absent(),Value<int> lives = const Value.absent(),Value<int> hints = const Value.absent(),Value<DateTime?> lastLifeLostAt = const Value.absent(),Value<DateTime?> updatedAt = const Value.absent(),})=> PlayersCompanion(id: id,supabaseId: supabaseId,username: username,avatarUrl: avatarUrl,totalGamesPlayed: totalGamesPlayed,highscore: highscore,lives: lives,hints: hints,lastLifeLostAt: lastLifeLostAt,updatedAt: updatedAt,),
-        createCompanionCallback: ({Value<int> id = const Value.absent(),Value<String?> supabaseId = const Value.absent(),required String username,Value<String?> avatarUrl = const Value.absent(),Value<int> totalGamesPlayed = const Value.absent(),Value<int> highscore = const Value.absent(),Value<int> lives = const Value.absent(),Value<int> hints = const Value.absent(),Value<DateTime?> lastLifeLostAt = const Value.absent(),Value<DateTime?> updatedAt = const Value.absent(),})=> PlayersCompanion.insert(id: id,supabaseId: supabaseId,username: username,avatarUrl: avatarUrl,totalGamesPlayed: totalGamesPlayed,highscore: highscore,lives: lives,hints: hints,lastLifeLostAt: lastLifeLostAt,updatedAt: updatedAt,),
+        updateCompanionCallback: ({Value<int> id = const Value.absent(),Value<String?> supabaseId = const Value.absent(),Value<String> username = const Value.absent(),Value<String?> avatarUrl = const Value.absent(),Value<int> totalGamesPlayed = const Value.absent(),Value<int> highscore = const Value.absent(),Value<int> lives = const Value.absent(),Value<int> puzzlePieces = const Value.absent(),Value<int> itemPlusTime = const Value.absent(),Value<int> itemMoreNumbers = const Value.absent(),Value<int> itemRevealPath = const Value.absent(),Value<DateTime?> lastLifeLostAt = const Value.absent(),Value<DateTime?> updatedAt = const Value.absent(),})=> PlayersCompanion(id: id,supabaseId: supabaseId,username: username,avatarUrl: avatarUrl,totalGamesPlayed: totalGamesPlayed,highscore: highscore,lives: lives,puzzlePieces: puzzlePieces,itemPlusTime: itemPlusTime,itemMoreNumbers: itemMoreNumbers,itemRevealPath: itemRevealPath,lastLifeLostAt: lastLifeLostAt,updatedAt: updatedAt,),
+        createCompanionCallback: ({Value<int> id = const Value.absent(),Value<String?> supabaseId = const Value.absent(),required String username,Value<String?> avatarUrl = const Value.absent(),Value<int> totalGamesPlayed = const Value.absent(),Value<int> highscore = const Value.absent(),Value<int> lives = const Value.absent(),Value<int> puzzlePieces = const Value.absent(),Value<int> itemPlusTime = const Value.absent(),Value<int> itemMoreNumbers = const Value.absent(),Value<int> itemRevealPath = const Value.absent(),Value<DateTime?> lastLifeLostAt = const Value.absent(),Value<DateTime?> updatedAt = const Value.absent(),})=> PlayersCompanion.insert(id: id,supabaseId: supabaseId,username: username,avatarUrl: avatarUrl,totalGamesPlayed: totalGamesPlayed,highscore: highscore,lives: lives,puzzlePieces: puzzlePieces,itemPlusTime: itemPlusTime,itemMoreNumbers: itemMoreNumbers,itemRevealPath: itemRevealPath,lastLifeLostAt: lastLifeLostAt,updatedAt: updatedAt,),
         withReferenceMapper: (p0) => p0
               .map(
                   (e) =>

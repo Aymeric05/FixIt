@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fixit/core/database/app_database.dart';
 
 class DatabaseService {
@@ -22,7 +23,7 @@ class DatabaseService {
 
       // 2. Initialize Drift
       db = AppDatabase();
-      print('Drift Database initialized.');
+      print('DatabaseService: Initialization complete');
     } catch (e) {
       print('Error during DatabaseService initialization: $e');
       rethrow;
@@ -55,7 +56,12 @@ class DatabaseService {
       await db.customStatement('DELETE FROM players');
       print('Local tables cleared.');
       
-      // 3. Sign out from Supabase
+      // 3. Clear SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      print('Local flags and tutorials cleared.');
+
+      // 4. Sign out from Supabase
       print('Signing out from Supabase...');
       await supabase.auth.signOut().timeout(const Duration(seconds: 5));
       print('Signed out.');
