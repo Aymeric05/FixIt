@@ -52,4 +52,4 @@ Lorsque je suis prêt à proposer mon code pour intégration, tu dois m'assister
 ## 5. Limites d'intervention de l'IA
 - Ne propose pas de commandes de push forcé (`git push -f`) sauf si je te demande explicitement comment corriger une erreur sur une PR distante non fusionnée.
 - Limite le scope de tes refactorings. Si je te demande de corriger un bug localisé, ne suggère pas de réécrire l'architecture globale d'un module, car cela générera des conflits massifs avec les branches en cours de l'équipe.
-- Rappelle-moi régulièrement que la validation finale d'une PR sur GitHub devra se faire de préférence via un "Squash and merge" pour garder `main` propre.
+- Rappelle-moi régulièrement que la validation finale d'une PR sur GitHub DOIT se faire via un **"Squash and merge"**. C'est une règle obligatoire pour maintenir une branche `main` propre et un historique lisible.

@@ -30,9 +30,20 @@ Une suite de niveaux de difficulté croissante organisée par "Mondes". Chaque m
 
 ## 5. Aspects Sociaux
 *   Le joueur peut ajouter des amis par leur pseudonyme.
+*   **Système de Requêtes** : Les demandes d'amis sont notifiées en temps réel via un badge rouge sur l'icône sociale.
 *   Classements en temps réel sur les niveaux quotidiens.
 *   Recap de victoire montrant le record mondial et le rang parmi les amis.
 
-## 6. Vision Future
+## 6. Authentification & Profil
+*   **Login Anonyme** : Chaque nouveau joueur est automatiquement connecté avec un compte anonyme Supabase au premier lancement.
+*   **Guest Profile** : Un profil Drift (local) et Supabase (distant) est créé avec un pseudo aléatoire (`Guest#1234`).
+*   **Synchronisation** : Le pseudo et l'avatar sont synchronisés entre le cache local et le serveur dès qu'une connexion internet est disponible.
+
+## 7. Monétisation
+*   **Vidéos Récompensées (Ads)** : Le joueur peut regarder une publicité pour gagner une vie supplémentaire (limité à 3 par jour) ou pour ajouter du temps (+3 min) après un Game Over.
+*   **Achat "No Ads"** : Possibilité de supprimer les publicités forcées via un achat in-app.
+*   **Boutique (Shop)** : Achat de packs de pièces de puzzle (puzzle pieces) pour débloquer des boosters.
+
+## 8. Vision Future
 *   Intégration d'un tableau de bord administrateur (Flutter Web) pour gérer les statistiques joueurs et la modération.
 *   Introduction de nouveaux types de mini-jeux dans les futurs mondes.
