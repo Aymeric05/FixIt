@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:fixit/core/theme/app_colors.dart';
 
 class CandyIcon extends StatelessWidget {
   final IconData icon;

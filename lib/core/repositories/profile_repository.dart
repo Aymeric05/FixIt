@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:drift/drift.dart';
 import 'package:fixit/core/database/app_database.dart';
 import 'package:fixit/core/services/database_service.dart';
+import 'package:fixit/core/utils/app_logger.dart';
 
 class ProfileRepository {
   final _supabase = DatabaseService().supabase;
@@ -9,21 +10,21 @@ class ProfileRepository {
 
   Future<Player> getOrCreateProfile(String supabaseId) async {
     try {
-      print('ProfileRepository: Checking local Drift for $supabaseId');
+      AppLogger.log('ProfileRepository: Checking local Drift for $supabaseId');
       // 1. Check Drift (local cache) safely
       Player? localPlayer;
       try {
         localPlayer = await (_db.select(_db.players)..where((t) => t.supabaseId.equals(supabaseId))).getSingleOrNull();
       } catch (e) {
-        print('ProfileRepository: Warning - local player map failed ($e). Re-syncing from Supabase.');
+        AppLogger.log('ProfileRepository: Warning - local player map failed ($e). Re-syncing from Supabase.');
       }
 
       if (localPlayer != null) {
-        print('ProfileRepository: Found player in local Drift');
+        AppLogger.log('ProfileRepository: Found player in local Drift');
         return localPlayer;
       }
 
-      print('ProfileRepository: Checking Supabase for $supabaseId');
+      AppLogger.log('ProfileRepository: Checking Supabase for $supabaseId');
       // 2. Check Supabase
       final response = await _supabase
           .from('profiles')
@@ -31,7 +32,7 @@ class ProfileRepository {
           .eq('id', supabaseId)
           .maybeSingle();
 
-      print('ProfileRepository: Supabase response = $response');
+      AppLogger.log('ProfileRepository: Supabase response = $response');
 
       if (response != null) {
         // Profile exists on Supabase, sync to Drift
@@ -57,7 +58,7 @@ class ProfileRepository {
         return (await (_db.select(_db.players)..where((t) => t.supabaseId.equals(supabaseId))).getSingle());
       }
 
-      print('ProfileRepository: Creating new profile for $supabaseId');
+      AppLogger.log('ProfileRepository: Creating new profile for $supabaseId');
       // 3. Create new profile
       final randomDigits = Random().nextInt(9000) + 1000;
       final defaultUsername = 'Guest#$randomDigits';
@@ -79,7 +80,7 @@ class ProfileRepository {
           'current_level': 1,
         });
       } catch (e) {
-        print('Error upserting profile/progression on Supabase: $e');
+        AppLogger.error('Error upserting profile/progression on Supabase', e);
       }
 
       final companion = PlayersCompanion.insert(
@@ -113,8 +114,7 @@ class ProfileRepository {
 
       return (await (_db.select(_db.players)..where((t) => t.supabaseId.equals(supabaseId))).getSingle());
     } catch (e, stack) {
-      print('ERROR in getOrCreateProfile: $e');
-      print(stack);
+      AppLogger.error('ERROR in getOrCreateProfile', e, stack);
       rethrow;
     }
   }

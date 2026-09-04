@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:fixit/core/database/app_database.dart';
 import 'package:fixit/core/services/database_service.dart';
+import 'package:fixit/core/utils/app_logger.dart';
 
 class FriendsRepository {
   final _supabase = DatabaseService().supabase;
@@ -65,7 +66,7 @@ class FriendsRepository {
         }
       });
     } catch (e) {
-      print('Error syncing friends from Supabase: $e');
+      AppLogger.error('Error syncing friends from Supabase', e);
     }
 
     return await (_db.select(_db.friends)..where((t) => t.playerId.equals(playerId))).get();
@@ -99,7 +100,7 @@ class FriendsRepository {
         }
       });
     } catch (e) {
-      print('Error syncing requests: $e');
+      AppLogger.error('Error syncing requests', e);
     }
 
     return await (_db.select(_db.friendRequests)
@@ -118,7 +119,7 @@ class FriendsRepository {
       
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Search error: $e');
+      AppLogger.error('Search error', e);
       return [];
     }
   }

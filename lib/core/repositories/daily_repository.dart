@@ -4,6 +4,7 @@ import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/core/utils/level_generator.dart';
 import 'package:fixit/core/models/grid_offset.dart';
 import 'dart:math';
+import 'package:fixit/core/utils/app_logger.dart';
 
 class DailyRepository {
   final _db = DatabaseService().db;
@@ -11,7 +12,6 @@ class DailyRepository {
 
   // Static cache to store the offset between local device time and server time
   static Duration _serverTimeOffset = Duration.zero;
-  static bool _isSynced = false;
 
   /// Fetches the official server time from Supabase and calculates the offset.
   Future<void> syncWithServerTime() async {
@@ -20,11 +20,10 @@ class DailyRepository {
       if (response != null) {
         final serverTime = DateTime.parse(response as String);
         _serverTimeOffset = serverTime.difference(DateTime.now().toUtc());
-        _isSynced = true;
-        print('Server time synced. Offset: ${_serverTimeOffset.inSeconds}s');
+        AppLogger.log('Server time synced. Offset: ${_serverTimeOffset.inSeconds}s');
       }
     } catch (e) {
-      print('Failed to sync server time: $e. Falling back to local time.');
+      AppLogger.error('Failed to sync server time. Falling back to local time.', e);
     }
   }
 
@@ -92,7 +91,7 @@ class DailyRepository {
               .getSingle();
         }
       } catch (e) {
-        print('Error fetching daily status from Supabase: $e');
+        AppLogger.error('Error fetching daily status from Supabase', e);
       }
     }
 
@@ -160,7 +159,7 @@ class DailyRepository {
         }, onConflict: 'player_id,date');
       }
     } catch (e) {
-      print('Error updating daily status to Supabase: $e');
+      AppLogger.error('Error updating daily status to Supabase', e);
     }
   }
 }

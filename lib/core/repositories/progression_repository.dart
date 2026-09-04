@@ -5,6 +5,7 @@ import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/core/models/grid_offset.dart';
 import 'package:fixit/core/utils/level_generator.dart';
 import 'package:fixit/core/models/level_win_summary.dart';
+import 'package:fixit/core/utils/app_logger.dart';
 
 class ProgressionRepository {
   final _supabase = DatabaseService().supabase;
@@ -137,7 +138,7 @@ class ProgressionRepository {
         friendsMiniLeaderboard: miniLeaderboard,
       );
     } catch (e) {
-      print('Error generating LevelWinSummary: $e');
+      AppLogger.error('Error generating LevelWinSummary', e);
       return LevelWinSummary(
         globalCompletionCount: 0,
         friendCompletionCount: 0,
@@ -184,7 +185,7 @@ class ProgressionRepository {
       }
       return rankings;
     } catch (e) {
-      print('Error fetching friends leaderboard: $e');
+      AppLogger.error('Error fetching friends leaderboard', e);
       return [];
     }
   }
@@ -222,7 +223,7 @@ class ProgressionRepository {
             .getSingle();
       }
     } catch (e) {
-      print('Error fetching global level from Supabase: $e');
+      AppLogger.error('Error fetching global level from Supabase', e);
     }
     return null;
   }
@@ -246,9 +247,9 @@ class ProgressionRepository {
         'walls_json': wallsData,
         'solution_json': solutionData,
       }, onConflict: 'world_id,level_number');
-      print('Synced global level $levelNumber to Supabase.');
+      AppLogger.log('Synced global level $levelNumber to Supabase.');
     } catch (e) {
-      print('Error saving global level to Supabase: $e');
+      AppLogger.error('Error saving global level to Supabase', e);
     }
 
     final companion = GlobalLevelsCompanion.insert(
@@ -270,7 +271,7 @@ class ProgressionRepository {
       final levelNum = currentLevel + i;
       final existing = await getGlobalLevel(worldId, levelNum);
       if (existing == null) {
-        print('Background Pre-generating level $levelNum...');
+        AppLogger.log('Background Pre-generating level $levelNum...');
         final result = LevelGenerator.generate(12);
         await saveGlobalLevel(
           worldId: worldId,
@@ -318,10 +319,10 @@ class ProgressionRepository {
           'current_level': nextLevelToSave,
           'updated_at': DateTime.now().toIso8601String(),
         }, onConflict: 'player_id');
-        print('Synced progression for Level $nextLevelToSave to Supabase.');
+        AppLogger.log('Synced progression for Level $nextLevelToSave to Supabase.');
       }
     } catch (e) {
-      print('Error saving completion to Supabase: $e');
+      AppLogger.error('Error saving completion to Supabase', e);
     }
 
     // 4. Save to local Drift completion (Using explicit conflict target)
@@ -376,7 +377,7 @@ class ProgressionRepository {
       await (_db.update(_db.players)..where((t) => t.supabaseId.equals(playerSupabaseId)))
           .write(PlayersCompanion(puzzlePieces: Value(newPuzzles)));
     } catch (e) {
-      print('Error granting Level 1 reward: $e');
+      AppLogger.error('Error granting Level 1 reward', e);
     }
   }
 
@@ -406,7 +407,7 @@ class ProgressionRepository {
         bestSeconds: best == 999999 ? 0 : best,
       );
     } catch (e) {
-      print('Error fetching statistics: $e');
+      AppLogger.error('Error fetching statistics', e);
       return (averageSeconds: 0, bestSeconds: 0);
     }
   }
