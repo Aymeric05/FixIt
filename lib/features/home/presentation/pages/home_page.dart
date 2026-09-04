@@ -139,8 +139,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ),
         BlocListener<HomeBloc, HomeState>(
           listenWhen: (previous, current) =>
-              (previous.levelsCompletedInWorld != current.levelsCompletedInWorld && current.lastAction == HomeLastAction.win) ||
-              previous.currentDate != current.currentDate,
+              (previous.levelsCompletedInWorld != current.levelsCompletedInWorld && current.lastAction == HomeLastAction.win),
           listener: (context, state) {
             _confettiController.play();
           },

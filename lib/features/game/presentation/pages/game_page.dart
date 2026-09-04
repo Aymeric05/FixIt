@@ -470,15 +470,32 @@ class _GamePageState extends State<GamePage> {
                                 final pos = GridOffset(row, col);
                                 final value = state.hints[row][col];
                                 final isHighlighted = state.highlightedCells.contains(pos);
+                                
+                                // Flash red if last number reached but grid not full
+                                int maxNumInHints = 0;
+                                for (var r in state.hints) {
+                                  for (var v in r) {
+                                    if (v != null && v > maxNumInHints) maxNumInHints = v;
+                                  }
+                                }
+                                
+                                final bool isLastNumberReached = state.currentPath.isNotEmpty && 
+                                  state.hints[state.currentPath.last.row][state.currentPath.last.col] == maxNumInHints;
+                                
+                                final bool isMissingCell = state.status == GameStatus.playing && 
+                                  isLastNumberReached && 
+                                  !state.currentPath.contains(pos);
 
                                 return Container(
                                   alignment: Alignment.center,
-                                  decoration: isHighlighted
-                                      ? BoxDecoration(
-                                          color: Colors.yellow.withValues(alpha: 0.4),
-                                          borderRadius: BorderRadius.circular(10),
-                                        )
-                                      : null,
+                                  decoration: BoxDecoration(
+                                    color: isHighlighted 
+                                        ? Colors.yellow.withValues(alpha: 0.4)
+                                        : (isMissingCell && (DateTime.now().millisecond % 500 > 250))
+                                            ? Colors.red.withValues(alpha: 0.4)
+                                            : null,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                   child: value != null
                                       ? Stack(
                                           alignment: Alignment.center,

@@ -25,7 +25,6 @@ class TutorialDialog extends StatefulWidget {
     final hasSeen = prefs.getBool(tutorialKey) ?? false;
 
     if (!hasSeen && context.mounted) {
-      // Pause timer when tutorial starts
       context.read<GameBloc>().add(PauseTimer());
 
       await showDialog(
@@ -38,7 +37,6 @@ class TutorialDialog extends StatefulWidget {
       
       await prefs.setBool(tutorialKey, true);
       
-      // Resume timer when tutorial ends
       if (context.mounted) {
         context.read<GameBloc>().add(ResumeTimer());
       }
@@ -50,16 +48,28 @@ class TutorialDialog extends StatefulWidget {
 }
 
 class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProviderStateMixin {
-  int _currentStep = 0; // 0: Follow numbers, 1: Fill all cells
+  int _currentStep = 0; // 0: Follow numbers, 1: Error Demo, 2: Success Demo
   int _animSubStep = 0;
   Timer? _timer;
   late AnimationController _flashController;
   
-  // Grid 3x3 for tutorial
-  final List<GridOffset> _step0Path = [
+  // Paths for tutorial
+  final List<GridOffset> _fullPath = [
     GridOffset(0, 0), GridOffset(0, 1), GridOffset(0, 2),
     GridOffset(1, 2), GridOffset(1, 1), GridOffset(1, 0),
     GridOffset(2, 0), GridOffset(2, 1), GridOffset(2, 2),
+  ];
+
+  // Path for error demo: reaches 3 but misses (1,1) and (2,1) etc.
+  // Actually let's just make it jump to numbers but skip intermediate cells
+  final List<GridOffset> _errorPath = [
+    GridOffset(0, 0), // 1
+    GridOffset(0, 1),
+    GridOffset(0, 2),
+    GridOffset(1, 2),
+    GridOffset(1, 1), // 2
+    GridOffset(2, 1),
+    GridOffset(2, 2), // 3
   ];
 
   final List<List<int?>> _hints = [
@@ -94,16 +104,18 @@ class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProvid
       setState(() {
         if (_currentStep == 0) {
           _handleStep0();
-        } else {
+        } else if (_currentStep == 1) {
           _handleStep1();
+        } else {
+          _handleStep2();
         }
       });
     });
   }
 
   void _handleStep0() {
-    if (_animSubStep < _step0Path.length) {
-      _currentDrawingPath.add(_step0Path[_animSubStep]);
+    if (_animSubStep < _fullPath.length) {
+      _currentDrawingPath.add(_fullPath[_animSubStep]);
       _animSubStep++;
     } else {
       _timer?.cancel();
@@ -119,28 +131,26 @@ class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProvid
   }
 
   void _handleStep1() {
-    // 1. Incomplete path
-    if (_animSubStep < 5) {
-      _currentDrawingPath.add(_step0Path[_animSubStep]);
+    if (_animSubStep < _errorPath.length) {
+      _currentDrawingPath.add(_errorPath[_animSubStep]);
       _animSubStep++;
-    } else if (_animSubStep == 5) {
+    } else {
       _showRedAlert = true;
-      _animSubStep++;
-      // Wait a bit before completing
       _timer?.cancel();
-      Future.delayed(const Duration(seconds: 1), () {
+      Future.delayed(const Duration(seconds: 3), () {
         if (mounted) {
-          _timer = Timer.periodic(const Duration(milliseconds: 400), (t) => _handleStep1());
+          setState(() {
+            _currentStep = 2;
+            _startAnimation();
+          });
         }
       });
-    } 
-    // 2. Complete path
-    else if (_animSubStep < _step0Path.length + 1) {
-      _showRedAlert = false;
-      int idx = _animSubStep - 1;
-      if (idx < _step0Path.length) {
-        _currentDrawingPath.add(_step0Path[idx]);
-      }
+    }
+  }
+
+  void _handleStep2() {
+    if (_animSubStep < _fullPath.length) {
+      _currentDrawingPath.add(_fullPath[_animSubStep]);
       _animSubStep++;
     } else {
       _showYellowSuccess = true;
@@ -165,10 +175,19 @@ class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    String titleText = _currentStep == 0 ? "FOLLOW NUMBERS" : "FILL THE GRID";
-    String description = _currentStep == 0 
-      ? "Connect all numbers in order (1, 2, 3...)"
-      : "You must fill EVERY cell to succeed!";
+    String titleText;
+    String description;
+    
+    if (_currentStep == 0) {
+      titleText = "FOLLOW NUMBERS";
+      description = "Connect all numbers in order (1, 2, 3...)";
+    } else if (_currentStep == 1) {
+      titleText = "FILL EVERYTHING!";
+      description = "Careful! Missing cells will cause failure!";
+    } else {
+      titleText = "YOU WIN!";
+      description = "Fill every single cell to solve the puzzle!";
+    }
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -191,7 +210,6 @@ class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProvid
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Demo Grid
                 Container(
                   height: 200,
                   width: 200,

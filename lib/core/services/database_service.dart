@@ -31,6 +31,7 @@ class DatabaseService {
   }
 
   Future<void> hardReset() async {
+    print('Starting Hard Reset...');
     try {
       final user = supabase.auth.currentUser;
       
@@ -38,35 +39,78 @@ class DatabaseService {
       if (user != null) {
         try {
           print('Wiping remote data for user: ${user.id}');
-          await supabase.from('level_completions').delete().eq('player_id', user.id).timeout(const Duration(seconds: 5));
-          await supabase.from('progression').delete().eq('player_id', user.id).timeout(const Duration(seconds: 5));
-          await supabase.from('daily_challenges').delete().eq('player_id', user.id).timeout(const Duration(seconds: 5));
+          // Order: child tables first to respect possible foreign keys
+          final remoteTables = [
+            'level_completions',
+            'progression',
+            'daily_challenges',
+            'friends',
+            'friend_requests',
+          ];
+
+          for (final table in remoteTables) {
+            try {
+              // Try player_id column
+              await supabase.from(table).delete().eq('player_id', user.id).timeout(const Duration(seconds: 3));
+            } catch (_) {
+              // Try sender_id / receiver_id / friend_id for social tables
+              try {
+                if (table == 'friend_requests') {
+                  await supabase.from(table).delete().eq('sender_id', user.id).timeout(const Duration(seconds: 2));
+                  await supabase.from(table).delete().eq('receiver_id', user.id).timeout(const Duration(seconds: 2));
+                } else if (table == 'friends') {
+                  await supabase.from(table).delete().eq('player_id', user.id).timeout(const Duration(seconds: 2));
+                  await supabase.from(table).delete().eq('friend_id', user.id).timeout(const Duration(seconds: 2));
+                }
+              } catch (_) {}
+            }
+          }
+          
+          // Finally the profile
           await supabase.from('profiles').delete().eq('id', user.id).timeout(const Duration(seconds: 5));
           print('Remote data wiped successfully.');
         } catch (e) {
-          print('Error wiping remote data: $e');
+          print('Warning: Remote data wipe incomplete: $e');
         }
       }
 
       // 2. Clear local Drift tables
       print('Clearing local Drift tables...');
-      await db.customStatement('DELETE FROM level_completions');
-      await db.customStatement('DELETE FROM progressions');
-      await db.customStatement('DELETE FROM daily_challenges');
-      await db.customStatement('DELETE FROM players');
-      print('Local tables cleared.');
+      final tables = [
+        'level_completions',
+        'progressions',
+        'daily_challenges',
+        'friends',
+        'friend_requests',
+        'players',
+        'global_levels'
+      ];
       
+      for (final table in tables) {
+        try {
+          await db.customStatement('DELETE FROM $table');
+          print('Cleared local table: $table');
+        } catch (e) {
+          print('Could not clear local table $table: $e');
+        }
+      }
+
       // 3. Clear SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
-      print('Local flags and tutorials cleared.');
+      print('SharedPreferences cleared.');
 
-      // 4. Sign out from Supabase
-      print('Signing out from Supabase...');
-      await supabase.auth.signOut().timeout(const Duration(seconds: 5));
-      print('Signed out.');
+      // 4. Sign out
+      try {
+        await supabase.auth.signOut().timeout(const Duration(seconds: 5));
+        print('Signed out from Supabase.');
+      } catch (e) {
+        print('Warning: Sign out failed: $e');
+      }
+
+      print('Hard Reset complete.');
     } catch (e) {
-      print('Error during hardReset: $e');
+      print('CRITICAL error during hardReset: $e');
     }
   }
 }

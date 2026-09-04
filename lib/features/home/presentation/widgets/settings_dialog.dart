@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,8 +7,15 @@ import 'package:fixit/features/home/presentation/widgets/candy_dialog.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/services/database_service.dart';
 
-class SettingsDialog extends StatelessWidget {
+class SettingsDialog extends StatefulWidget {
   const SettingsDialog({super.key});
+
+  @override
+  State<SettingsDialog> createState() => _SettingsDialogState();
+}
+
+class _SettingsDialogState extends State<SettingsDialog> {
+  bool _isResetting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -34,30 +42,57 @@ class SettingsDialog extends StatelessWidget {
               ),
               const SizedBox(height: 30),
               // Debug Reset Button
-              TextButton(
-                onPressed: () async {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: const Text('HARD RESET'),
-                      content: const Text('This will delete all local progress and logout. Are you sure?'),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL')),
-                        TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('YES, RESET')),
-                      ],
-                    ),
-                  );
-                  if (confirm == true) {
-                    await DatabaseService().hardReset();
-                    // Close the app automatically
-                    await SystemChannels.platform.invokeMethod('SystemNavigator.pop');
-                  }
-                },
-                child: const Text(
-                  'DEBUG: RESET ALL DATA',
-                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              if (_isResetting)
+                const Column(
+                  children: [
+                    CircularProgressIndicator(color: Colors.red),
+                    SizedBox(height: 10),
+                    Text('Wiping all data...', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                  ],
+                )
+              else
+                TextButton(
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('HARD RESET'),
+                        content: const Text('This will delete all local progress, social data, and logout. Are you sure?'),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL')),
+                          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('YES, RESET')),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      setState(() => _isResetting = true);
+                      try {
+                        await DatabaseService().hardReset();
+                        print('Reset complete, closing app in 1s...');
+                        await Future.delayed(const Duration(seconds: 1));
+                        
+                        // Close the app automatically
+                        await SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+                        
+                        // Fallback for some platforms/debug modes
+                        await Future.delayed(const Duration(seconds: 1));
+                        exit(0);
+                      } catch (e) {
+                        print('Error during debug reset: $e');
+                        if (mounted) {
+                          setState(() => _isResetting = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Reset failed: $e'), backgroundColor: Colors.red),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  child: const Text(
+                    'DEBUG: RESET ALL DATA',
+                    style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                  ),
                 ),
-              ),
             ],
           ),
         );
