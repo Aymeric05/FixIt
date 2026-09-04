@@ -10,7 +10,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 class MockProfileRepository extends Mock implements ProfileRepository {}
 class MockSupabaseClient extends Mock implements SupabaseClient {}
 class MockGoTrueClient extends Mock implements GoTrueClient {}
-class MockUser extends Mock implements User {}
 
 void main() {
   late ProfileRepository mockProfileRepository;
@@ -27,14 +26,10 @@ void main() {
     mockAuth = MockGoTrueClient();
     
     when(() => mockSupabase.auth).thenReturn(mockAuth);
-
-    // Re-initialize for each test to clear singleton state if possible
-    // Note: DatabaseService is a singleton, so we need to be careful.
-    // In a real app we would reset it or use a proper DI.
     await DatabaseService().initialize(supabaseClient: mockSupabase);
   });
 
-  group('AuthBloc', () {
+  group('AuthBloc Regression Tests', () {
     test('Initial state is AuthInitial', () {
       expect(AuthBloc(profileRepository: mockProfileRepository).state, equals(AuthInitial()));
     });

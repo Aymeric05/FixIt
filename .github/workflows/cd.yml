@@ -13,11 +13,11 @@ jobs:
       - name: Checkout du code
         uses: actions/checkout@v4
 
-      - name: Configuration de Java 11
+      - name: Configuration de Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '11'
+          java-version: '17'
 
       - name: Configuration de Flutter
         uses: subosito/flutter-action@v2
@@ -40,6 +40,13 @@ jobs:
 
       - name: Build de l'App Bundle (AAB) pour le Play Store
         run: flutter build appbundle --release --dart-define-from-file=env.json
+
+      - name: Vérifier les secrets
+        run: |
+          if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then echo "Erreur: KEYSTORE_BASE64 est vide"; exit 1; fi
+          if [ -z "${{ secrets.STORE_PASSWORD }}" ]; then echo "Erreur: STORE_PASSWORD est vide"; exit 1; fi
+          if [ -z "${{ secrets.KEY_ALIAS }}" ]; then echo "Erreur: KEY_ALIAS est vide"; exit 1; fi
+          if [ -z "${{ secrets.KEY_PASSWORD }}" ]; then echo "Erreur: KEY_PASSWORD est vide"; exit 1; fi
 
       - name: Signer l'application
         uses: r0adkll/sign-android-release@v1

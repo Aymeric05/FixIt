@@ -12,7 +12,13 @@ Le mini-jeu principal consiste à relier des numéros en séquence (1, 2, 3...) 
 *   **Difficulté :** La difficulté varie selon le temps imparti et le nombre d'indices (chiffres déjà placés) fournis au départ.
 *   **Obstacles :** Des "buissons" agissent comme des murs entre les cellules, bloquant certains passages.
 
-## 3. Modes de Jeu
+## 3. Expérience Utilisateur (UX) & Feedback Visuel
+*   **"Angry Snake" :** Si le joueur s'écarte de la séquence numérique correcte (ex: passe du 2 au 4 sans passer par le 3), le serpent change d'expression et sa couleur de tracé devient plus sombre pour signaler l'erreur avant la validation finale.
+*   **Vibrations & Sons :** Feedbacks haptiques lors de la connexion réussie de cellules.
+*   **Célébration :** Animation de confettis (fireworks style) lors de la victoire d'un niveau.
+*   **Tutoriel :** Un dialogue d'aide s'affiche automatiquement lors du premier lancement du niveau 1 pour expliquer la mécanique de glissement (drag).
+
+## 4. Modes de Jeu
 ### 3.1 Mode Histoire (Progression Principale)
 Une suite de niveaux de difficulté croissante organisée par "Mondes". Chaque monde introduit de nouveaux thèmes visuels.
 
