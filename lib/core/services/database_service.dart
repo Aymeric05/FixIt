@@ -12,7 +12,7 @@ class DatabaseService {
   late final SupabaseClient supabase;
   bool _initialized = false;
 
-  Future<void> initialize({AppDatabase? database}) async {
+  Future<void> initialize({AppDatabase? database, SupabaseClient? supabaseClient}) async {
     if (_initialized) return;
     try {
       AppLogger.log('Initializing DatabaseService...');
@@ -40,7 +40,7 @@ class DatabaseService {
         ).timeout(const Duration(seconds: 10));
       }
       
-      supabase = Supabase.instance.client;
+      supabase = supabaseClient ?? Supabase.instance.client;
       AppLogger.log('Supabase initialized.');
 
       // 2. Initialize Drift

@@ -19,11 +19,16 @@ import 'package:fixit/core/utils/app_logger.dart';
 
 class GameBloc extends Bloc<GameEvent, GameState> {
   Timer? _timer;
-  final _progressionRepo = ProgressionRepository();
-  final _dailyRepo = DailyRepository();
+  late final ProgressionRepository _progressionRepo;
+  late final DailyRepository _dailyRepo;
   String? _playerId;
 
-  GameBloc() : super(const GameState()) {
+  GameBloc({
+    ProgressionRepository? progressionRepo,
+    DailyRepository? dailyRepo,
+  }) : super(const GameState()) {
+    _progressionRepo = progressionRepo ?? ProgressionRepository();
+    _dailyRepo = dailyRepo ?? DailyRepository();
     on<StartGame>(_onStartGame);
     on<SelectCell>(_onSelectCell);
     on<TimerTick>(_onTimerTick);
