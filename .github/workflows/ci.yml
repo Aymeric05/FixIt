@@ -1,0 +1,58 @@
+name: CI - Pull Request Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-commits:
+    name: Vérification des Conventional Commits
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Vérifier les messages de commit
+        uses: wagoid/commitlint-github-action@v5
+
+  flutter-ci:
+    name: Flutter CI (Analyze & Test)
+    needs: validate-commits
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Configuration de Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Installation des dépendances
+        run: flutter pub get
+
+      - name: Génération de code (Drift)
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+
+      - name: Analyse statique (Lint)
+        run: flutter analyze
+
+      - name: Lancement des tests unitaires
+        run: flutter test
+
+      - name: Build de l'APK (Debug)
+        run: flutter build apk --debug
+
+      - name: Sauvegarder l'APK généré (Artefact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7

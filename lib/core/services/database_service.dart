@@ -13,10 +13,18 @@ class DatabaseService {
   Future<void> initialize() async {
     try {
       print('Initializing DatabaseService...');
+      
+      const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+      const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+
+      if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
+        print('CRITICAL: Supabase environment variables are missing!');
+      }
+
       // 1. Initialize Supabase
       await Supabase.initialize(
-        url: 'https://kvxokvqkpjxpqceceqds.supabase.co',
-        anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2eG9rdnFrcGp4cHFjZWNlcWRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NjYyMzcsImV4cCI6MjEwMzM0MjIzN30.FlpwOII-Pqf--HsSHhfiYnMTr63Qi6W4GgdhvcfcD9o',
+        url: supabaseUrl.isNotEmpty ? supabaseUrl : 'https://kvxokvqkpjxpqceceqds.supabase.co',
+        anonKey: supabaseAnonKey.isNotEmpty ? supabaseAnonKey : 'placeholder',
       ).timeout(const Duration(seconds: 10));
       supabase = Supabase.instance.client;
       print('Supabase initialized.');
