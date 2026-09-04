@@ -58,7 +58,7 @@ Lorsque je suis prêt à proposer mon code pour intégration, tu dois m'assister
 Pour que la signature de l'application fonctionne sur GitHub Actions, tu dois configurer les secrets suivants dans `Settings > Secrets and variables > Actions` :
 
 1.  **KEYSTORE_BASE64** : Ton fichier `.jks` encodé en Base64.
-    *   *Commande Windows (PowerShell) :* `[Convert]::ToBase64String([IO.File]::ReadAllBytes("ton-fichier.jks")) | Out-File -FilePath "keystore_base64.txt"`
+    *   *Commande Windows (PowerShell) :* `[Convert]::ToBase64String([IO.File]::ReadAllBytes("android/app/upload-keystore.jks")) | Set-Content -Path keystore_base64.txt`
     *   Copie le contenu de `keystore_base64.txt` **sans aucun saut de ligne**.
 2.  **KEY_ALIAS** : Le nom de l'alias de ta clé (ex: `upload`).
 3.  **STORE_PASSWORD** : Le mot de passe du keystore.
