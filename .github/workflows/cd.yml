@@ -13,11 +13,11 @@ jobs:
       - name: Checkout du code
         uses: actions/checkout@v4
 
-      - name: Configuration de Java 17
+      - name: Configuration de Java 11
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '11'
 
       - name: Configuration de Flutter
         uses: subosito/flutter-action@v2
@@ -28,11 +28,18 @@ jobs:
       - name: Installation des dépendances
         run: flutter pub get
 
+      - name: Creer env.json depuis les secrets
+        run: |
+          echo '{
+            "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
+            "SUPABASE_ANON_KEY": "${{ secrets.SUPABASE_ANON_KEY }}"
+          }' > env.json
+
       - name: Génération de code (Drift)
         run: flutter pub run build_runner build --delete-conflicting-outputs
 
       - name: Build de l'App Bundle (AAB) pour le Play Store
-        run: flutter build appbundle --release
+        run: flutter build appbundle --release --dart-define-from-file=env.json
 
       - name: Signer l'application
         uses: r0adkll/sign-android-release@v1
