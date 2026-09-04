@@ -39,4 +39,7 @@ Le projet suit une architecture modulaire découpée par fonctionnalités (`feat
     ```
 
 ## 📜 Règles de Contribution
-Veuillez vous référer au fichier [GITHUB_RULES.md](GITHUB_RULES.md) pour les conventions de nommage des branches, des commits et la gestion des Pull Requests.
+Veuillez vous référer au dossier [project_docs/](project_docs/) pour les conventions de nommage, les règles de développement et la gestion du projet.
+- [RULES.md](project_docs/RULES.md) : Les "lois" du projet pour l'IA et les dev.
+- [GITHUB_RULES.md](project_docs/GITHUB_RULES.md) : Conventions Git & GitHub.
+
