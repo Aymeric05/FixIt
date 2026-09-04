@@ -28,11 +28,25 @@ jobs:
       - name: Installation des dépendances
         run: flutter pub get
 
+      - name: Creer env.json depuis les secrets
+        run: |
+          echo '{
+            "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
+            "SUPABASE_ANON_KEY": "${{ secrets.SUPABASE_ANON_KEY }}"
+          }' > env.json
+
       - name: Génération de code (Drift)
         run: flutter pub run build_runner build --delete-conflicting-outputs
 
       - name: Build de l'App Bundle (AAB) pour le Play Store
-        run: flutter build appbundle --release
+        run: flutter build appbundle --release --dart-define-from-file=env.json
+
+      - name: Vérifier les secrets
+        run: |
+          if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then echo "Erreur: KEYSTORE_BASE64 est vide"; exit 1; fi
+          if [ -z "${{ secrets.STORE_PASSWORD }}" ]; then echo "Erreur: STORE_PASSWORD est vide"; exit 1; fi
+          if [ -z "${{ secrets.KEY_ALIAS }}" ]; then echo "Erreur: KEY_ALIAS est vide"; exit 1; fi
+          if [ -z "${{ secrets.KEY_PASSWORD }}" ]; then echo "Erreur: KEY_PASSWORD est vide"; exit 1; fi
 
       - name: Signer l'application
         uses: r0adkll/sign-android-release@v1

@@ -52,4 +52,16 @@ Lorsque je suis prêt à proposer mon code pour intégration, tu dois m'assister
 ## 5. Limites d'intervention de l'IA
 - Ne propose pas de commandes de push forcé (`git push -f`) sauf si je te demande explicitement comment corriger une erreur sur une PR distante non fusionnée.
 - Limite le scope de tes refactorings. Si je te demande de corriger un bug localisé, ne suggère pas de réécrire l'architecture globale d'un module, car cela générera des conflits massifs avec les branches en cours de l'équipe.
-- Rappelle-moi régulièrement que la validation finale d'une PR sur GitHub devra se faire de préférence via un "Squash and merge" pour garder `main` propre.
+- Rappelle-moi régulièrement que la validation finale d'une PR sur GitHub DOIT se faire via un **"Squash and merge"**. C'est une règle obligatoire pour maintenir une branche `main` propre et un historique lisible.
+
+## 6. Configuration du Déploiement Continu (CD)
+Pour que la signature de l'application fonctionne sur GitHub Actions, tu dois configurer les secrets suivants dans `Settings > Secrets and variables > Actions` :
+
+1.  **KEYSTORE_BASE64** : Ton fichier `.jks` encodé en Base64.
+    *   *Commande Windows (PowerShell) :* `[Convert]::ToBase64String([IO.File]::ReadAllBytes("ton-fichier.jks")) | Out-File -FilePath "keystore_base64.txt"`
+    *   Copie le contenu de `keystore_base64.txt` **sans aucun saut de ligne**.
+2.  **KEY_ALIAS** : Le nom de l'alias de ta clé (ex: `upload`).
+3.  **STORE_PASSWORD** : Le mot de passe du keystore.
+4.  **KEY_PASSWORD** : Le mot de passe de la clé.
+5.  **SUPABASE_URL** : L'URL de ton projet Supabase.
+6.  **SUPABASE_ANON_KEY** : La clé anonyme de ton projet Supabase.

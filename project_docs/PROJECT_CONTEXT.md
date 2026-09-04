@@ -12,7 +12,13 @@ Le mini-jeu principal consiste à relier des numéros en séquence (1, 2, 3...) 
 *   **Difficulté :** La difficulté varie selon le temps imparti et le nombre d'indices (chiffres déjà placés) fournis au départ.
 *   **Obstacles :** Des "buissons" agissent comme des murs entre les cellules, bloquant certains passages.
 
-## 3. Modes de Jeu
+## 3. Expérience Utilisateur (UX) & Feedback Visuel
+*   **"Angry Snake" :** Si le joueur s'écarte de la séquence numérique correcte (ex: passe du 2 au 4 sans passer par le 3), le serpent change d'expression et sa couleur de tracé devient plus sombre pour signaler l'erreur avant la validation finale.
+*   **Vibrations & Sons :** Feedbacks haptiques lors de la connexion réussie de cellules.
+*   **Célébration :** Animation de confettis (fireworks style) lors de la victoire d'un niveau.
+*   **Tutoriel :** Un dialogue d'aide s'affiche automatiquement lors du premier lancement du niveau 1 pour expliquer la mécanique de glissement (drag).
+
+## 4. Modes de Jeu
 ### 3.1 Mode Histoire (Progression Principale)
 Une suite de niveaux de difficulté croissante organisée par "Mondes". Chaque monde introduit de nouveaux thèmes visuels.
 
@@ -30,9 +36,20 @@ Une suite de niveaux de difficulté croissante organisée par "Mondes". Chaque m
 
 ## 5. Aspects Sociaux
 *   Le joueur peut ajouter des amis par leur pseudonyme.
+*   **Système de Requêtes** : Les demandes d'amis sont notifiées en temps réel via un badge rouge sur l'icône sociale.
 *   Classements en temps réel sur les niveaux quotidiens.
 *   Recap de victoire montrant le record mondial et le rang parmi les amis.
 
-## 6. Vision Future
+## 6. Authentification & Profil
+*   **Login Anonyme** : Chaque nouveau joueur est automatiquement connecté avec un compte anonyme Supabase au premier lancement.
+*   **Guest Profile** : Un profil Drift (local) et Supabase (distant) est créé avec un pseudo aléatoire (`Guest#1234`).
+*   **Synchronisation** : Le pseudo et l'avatar sont synchronisés entre le cache local et le serveur dès qu'une connexion internet est disponible.
+
+## 7. Monétisation
+*   **Vidéos Récompensées (Ads)** : Le joueur peut regarder une publicité pour gagner une vie supplémentaire (limité à 3 par jour) ou pour ajouter du temps (+3 min) après un Game Over.
+*   **Achat "No Ads"** : Possibilité de supprimer les publicités forcées via un achat in-app.
+*   **Boutique (Shop)** : Achat de packs de pièces de puzzle (puzzle pieces) pour débloquer des boosters.
+
+## 8. Vision Future
 *   Intégration d'un tableau de bord administrateur (Flutter Web) pour gérer les statistiques joueurs et la modération.
 *   Introduction de nouveaux types de mini-jeux dans les futurs mondes.

@@ -8,9 +8,10 @@ import 'package:fixit/core/utils/app_logger.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   SupabaseClient get _supabase => DatabaseService().supabase;
-  final _profileRepository = ProfileRepository();
+  late final ProfileRepository _profileRepository;
 
-  AuthBloc() : super(AuthInitial()) {
+  AuthBloc({ProfileRepository? profileRepository}) : super(AuthInitial()) {
+    _profileRepository = profileRepository ?? ProfileRepository();
     on<AuthCheckRequested>((event, emit) async {
       AppLogger.log('AuthBloc: Checking session...');
       final user = _supabase.auth.currentUser;
