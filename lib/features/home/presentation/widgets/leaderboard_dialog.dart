@@ -108,7 +108,7 @@ class _LeaderboardDialogState extends State<LeaderboardDialog> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: AppColors.candyBlue.withOpacity(0.2), width: 2),
+            border: Border.all(color: AppColors.candyBlue.withValues(alpha: 0.2), width: 2),
           ),
           child: Row(
             children: [

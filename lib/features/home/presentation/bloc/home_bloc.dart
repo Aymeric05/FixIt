@@ -7,6 +7,7 @@ import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/core/database/app_database.dart';
 import 'package:fixit/core/repositories/progression_repository.dart';
 import 'package:fixit/core/repositories/daily_repository.dart';
+import 'package:fixit/core/utils/app_logger.dart';
 
 part 'home_event.dart';
 part 'home_state.dart';
@@ -38,21 +39,21 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   Future<void> _onLoadHomeData(LoadHomeData event, Emitter<HomeState> emit) async {
-    print('HomeBloc: Loading data for player: ${event.playerId}');
+    AppLogger.log('HomeBloc: Loading data for player: ${event.playerId}');
     emit(state.copyWith(isLoading: true));
     try {
       await _refreshProgression(emit, event.playerId);
       _startRechargeTimer();
       _startMidnightTimer();
-      print('HomeBloc: Data loaded successfully');
+      AppLogger.log('HomeBloc: Data loaded successfully');
     } catch (e) {
-      print('HomeBloc: Error loading data: $e');
+      AppLogger.error('HomeBloc: Error loading data', e);
       emit(state.copyWith(isLoading: false));
     }
   }
 
   Future<void> _onMidnightReached(MidnightReached event, Emitter<HomeState> emit) async {
-    print('Midnight UTC reached. Refreshing home data...');
+    AppLogger.log('Midnight UTC reached. Refreshing home data...');
     final user = DatabaseService().supabase.auth.currentUser;
     await _refreshProgression(emit, user?.id);
     _startMidnightTimer(); // Schedule next midnight
@@ -61,7 +62,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   void _startMidnightTimer() {
     _midnightTimer?.cancel();
     final secondsUntilMidnight = _dailyRepo.getSecondsUntilMidnight();
-    print('Scheduling midnight refresh in $secondsUntilMidnight seconds.');
+    AppLogger.log('Scheduling midnight refresh in $secondsUntilMidnight seconds.');
     
     _midnightTimer = Timer(Duration(seconds: secondsUntilMidnight + 1), () {
       add(MidnightReached());
@@ -90,16 +91,16 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
             'last_life_lost_at': lastLifeLostAt?.toIso8601String(),
           }).eq('id', playerId);
         } catch (e) {
-          print('Error syncing lives to Supabase: $e');
+          AppLogger.error('Error syncing lives to Supabase', e);
         }
       }
     } catch (e) {
-      print('Error saving player lives: $e');
+      AppLogger.error('Error saving player lives', e);
     }
   }
 
   Future<void> _refreshProgression(Emitter<HomeState> emit, String? playerId) async {
-    print('HomeBloc: Refreshing progression...');
+    AppLogger.log('HomeBloc: Refreshing progression...');
     // 1. Fetch player data
     List<Player> players = [];
     try {
@@ -113,12 +114,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
       players = await query.get();
     } catch (e) {
-      print('HomeBloc: Error reading local players: $e');
+      AppLogger.error('HomeBloc: Error reading local players', e);
     }
     
     if (players.isNotEmpty) {
       final player = players.first;
-      print('HomeBloc: Found local player: ${player.username}');
+      AppLogger.log('HomeBloc: Found local player: ${player.username}');
       
       // 2. Fetch progression for THIS specific player
       final playerSupabaseId = player.supabaseId ?? '';
@@ -128,7 +129,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           .get();
       
       final progression = progs.isNotEmpty ? progs.first : null;
-      print('HomeBloc: Progression level: ${progression?.currentLevel ?? 1}');
+      AppLogger.log('HomeBloc: Progression level: ${progression?.currentLevel ?? 1}');
 
       // 3. Persistent Life Recovery Calculation
       int lives = player.lives;
@@ -181,7 +182,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
       unawaited(_progressionRepo.ensureNextLevelsExist('world_1', progression?.currentLevel ?? 1));
     } else {
-      print('HomeBloc: No local player found yet');
+      AppLogger.log('HomeBloc: No local player found yet');
       emit(state.copyWith(isLoading: false));
     }
   }
@@ -375,7 +376,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   Future<void> _onAppResumed(AppResumed event, Emitter<HomeState> emit) async {
-    print('HomeBloc: App resumed from background. Recalculating lives...');
+    AppLogger.log('HomeBloc: App resumed from background. Recalculating lives...');
     final user = DatabaseService().supabase.auth.currentUser;
     await _refreshProgression(emit, user?.id);
   }

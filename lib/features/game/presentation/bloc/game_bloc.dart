@@ -15,6 +15,7 @@ import 'package:fixit/features/game/presentation/bloc/game_event.dart';
 import 'package:fixit/features/game/presentation/bloc/game_state.dart';
 import 'package:fixit/core/models/daily_mode.dart';
 import 'package:fixit/core/models/level_win_summary.dart';
+import 'package:fixit/core/utils/app_logger.dart';
 
 class GameBloc extends Bloc<GameEvent, GameState> {
   Timer? _timer;
@@ -135,7 +136,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           hints: hints,
           walls: walls,
           solution: solution,
-        ).catchError((err) => print('Background save failed: $err')));
+        ).catchError((err) => AppLogger.error('Background save failed', err)));
       }
     }
 
@@ -207,7 +208,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     }
 
     if (event.mode == GameMode.story && event.level == 1 && event.playerId.isNotEmpty) {
-      unawaited(_progressionRepo.grantLevel1Reward(event.playerId).catchError((e) => print('Reward error: $e')));
+      unawaited(_progressionRepo.grantLevel1Reward(event.playerId).catchError((e) => AppLogger.error('Reward error', e)));
     }
 
     _startTimer(initialSeconds);

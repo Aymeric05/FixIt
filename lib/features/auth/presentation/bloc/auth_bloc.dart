@@ -3,6 +3,7 @@ import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/core/repositories/profile_repository.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_event.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_state.dart';
+import 'package:fixit/core/utils/app_logger.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final _supabase = DatabaseService().supabase;
@@ -10,22 +11,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   AuthBloc() : super(AuthInitial()) {
     on<AuthCheckRequested>((event, emit) async {
-      print('AuthBloc: Checking session...');
+      AppLogger.log('AuthBloc: Checking session...');
       final user = _supabase.auth.currentUser;
       if (user != null) {
-        print('AuthBloc: Existing user found: ${user.id}');
+        AppLogger.log('AuthBloc: Existing user found: ${user.id}');
         try {
           final profile = await _profileRepository.getOrCreateProfile(user.id)
               .timeout(const Duration(seconds: 10));
           emit(AuthAuthenticated(user, profile));
-          print('AuthBloc: Authenticated successfully');
+          AppLogger.log('AuthBloc: Authenticated successfully');
         } catch (e, stack) {
-          print('AuthBloc: Auth check error: $e');
-          print('AuthBloc: Stack trace:\n$stack');
+          AppLogger.error('AuthBloc: Auth check error', e, stack);
           emit(AuthFailure(e.toString()));
         }
       } else {
-        print('AuthBloc: No user session, signing in anonymously...');
+        AppLogger.log('AuthBloc: No user session, signing in anonymously...');
         add(AuthSignInAnonymous());
       }
     });
@@ -33,22 +33,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthSignInAnonymous>((event, emit) async {
       emit(AuthLoading());
       try {
-        print('AuthBloc: Signing in anonymously...');
+        AppLogger.log('AuthBloc: Signing in anonymously...');
         final authResponse = await _supabase.auth.signInAnonymously()
             .timeout(const Duration(seconds: 15));
         final user = authResponse.user;
         if (user != null) {
-          print('AuthBloc: Anonymous sign in successful: ${user.id}');
+          AppLogger.log('AuthBloc: Anonymous sign in successful: ${user.id}');
           final profile = await _profileRepository.getOrCreateProfile(user.id)
               .timeout(const Duration(seconds: 10));
           emit(AuthAuthenticated(user, profile));
-          print('AuthBloc: Profile created/fetched');
+          AppLogger.log('AuthBloc: Profile created/fetched');
         } else {
-          print('AuthBloc: Anonymous sign-in returned no user');
+          AppLogger.log('AuthBloc: Anonymous sign-in returned no user');
           emit(const AuthFailure('Failed to sign in.'));
         }
       } catch (e) {
-        print('AuthBloc: Sign-in error: $e');
+        AppLogger.error('AuthBloc: Sign-in error', e);
         emit(AuthFailure(e.toString()));
       }
     });
@@ -83,7 +83,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           final profile = await _profileRepository.getOrCreateProfile(user.id);
           emit(AuthAuthenticated(user, profile));
         } catch (e) {
-          print('Error refreshing profile: $e');
+          AppLogger.error('Error refreshing profile', e);
         }
       }
     });

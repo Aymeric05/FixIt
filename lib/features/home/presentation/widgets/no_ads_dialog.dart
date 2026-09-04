@@ -19,7 +19,7 @@ class NoAdsDialog extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.candyPink.withOpacity(0.3), width: 4),
+              border: Border.all(color: AppColors.candyPink.withValues(alpha: 0.3), width: 4),
             ),
             child: const Icon(Icons.block, size: 80, color: AppColors.candyPink),
           ),

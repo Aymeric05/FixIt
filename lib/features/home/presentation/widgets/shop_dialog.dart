@@ -4,7 +4,6 @@ import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'package:fixit/features/home/presentation/widgets/candy_dialog.dart';
-import 'dart:ui';
 
 class ShopDialog extends StatelessWidget {
   const ShopDialog({super.key});
