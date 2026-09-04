@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fixit/core/database/app_database.dart';
+import 'package:fixit/core/utils/app_logger.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -9,44 +10,58 @@ class DatabaseService {
 
   late final AppDatabase db;
   late final SupabaseClient supabase;
+  bool _initialized = false;
 
-  Future<void> initialize() async {
+  Future<void> initialize({AppDatabase? database}) async {
+    if (_initialized) return;
     try {
-      print('Initializing DatabaseService...');
+      AppLogger.log('Initializing DatabaseService...');
       
       const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
       const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
       if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
-        print('CRITICAL: Supabase environment variables are missing!');
+        AppLogger.log('CRITICAL: Supabase environment variables are missing!');
       }
 
       // 1. Initialize Supabase
-      await Supabase.initialize(
-        url: supabaseUrl.isNotEmpty ? supabaseUrl : 'https://kvxokvqkpjxpqceceqds.supabase.co',
-        anonKey: supabaseAnonKey.isNotEmpty ? supabaseAnonKey : 'placeholder',
-      ).timeout(const Duration(seconds: 10));
+      SupabaseClient? client;
+      try {
+        client = Supabase.instance.client;
+      } catch (_) {
+        // Not initialized
+      }
+
+      if (client == null) {
+        await Supabase.initialize(
+          url: supabaseUrl.isNotEmpty ? supabaseUrl : 'https://kvxokvqkpjxpqceceqds.supabase.co',
+          // ignore: deprecated_member_use
+          anonKey: supabaseAnonKey.isNotEmpty ? supabaseAnonKey : 'placeholder',
+        ).timeout(const Duration(seconds: 10));
+      }
+      
       supabase = Supabase.instance.client;
-      print('Supabase initialized.');
+      AppLogger.log('Supabase initialized.');
 
       // 2. Initialize Drift
-      db = AppDatabase();
-      print('DatabaseService: Initialization complete');
+      db = database ?? AppDatabase();
+      _initialized = true;
+      AppLogger.log('DatabaseService: Initialization complete');
     } catch (e) {
-      print('Error during DatabaseService initialization: $e');
+      AppLogger.error('Error during DatabaseService initialization', e);
       rethrow;
     }
   }
 
   Future<void> hardReset() async {
-    print('Starting Hard Reset...');
+    AppLogger.log('Starting Hard Reset...');
     try {
       final user = supabase.auth.currentUser;
       
       // 1. Wipe remote data if user exists
       if (user != null) {
         try {
-          print('Wiping remote data for user: ${user.id}');
+          AppLogger.log('Wiping remote data for user: ${user.id}');
           // Order: child tables first to respect possible foreign keys
           final remoteTables = [
             'level_completions',
@@ -76,14 +91,14 @@ class DatabaseService {
           
           // Finally the profile
           await supabase.from('profiles').delete().eq('id', user.id).timeout(const Duration(seconds: 5));
-          print('Remote data wiped successfully.');
+          AppLogger.log('Remote data wiped successfully.');
         } catch (e) {
-          print('Warning: Remote data wipe incomplete: $e');
+          AppLogger.log('Warning: Remote data wipe incomplete: $e');
         }
       }
 
       // 2. Clear local Drift tables
-      print('Clearing local Drift tables...');
+      AppLogger.log('Clearing local Drift tables...');
       final tables = [
         'level_completions',
         'progressions',
@@ -97,28 +112,28 @@ class DatabaseService {
       for (final table in tables) {
         try {
           await db.customStatement('DELETE FROM $table');
-          print('Cleared local table: $table');
+          AppLogger.log('Cleared local table: $table');
         } catch (e) {
-          print('Could not clear local table $table: $e');
+          AppLogger.log('Could not clear local table $table: $e');
         }
       }
 
       // 3. Clear SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
-      print('SharedPreferences cleared.');
+      AppLogger.log('SharedPreferences cleared.');
 
       // 4. Sign out
       try {
         await supabase.auth.signOut().timeout(const Duration(seconds: 5));
-        print('Signed out from Supabase.');
+        AppLogger.log('Signed out from Supabase.');
       } catch (e) {
-        print('Warning: Sign out failed: $e');
+        AppLogger.log('Warning: Sign out failed: $e');
       }
 
-      print('Hard Reset complete.');
+      AppLogger.log('Hard Reset complete.');
     } catch (e) {
-      print('CRITICAL error during hardReset: $e');
+      AppLogger.error('CRITICAL error during hardReset', e);
     }
   }
 }

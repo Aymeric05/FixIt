@@ -60,9 +60,13 @@ class LevelGenerator {
     final List<GridOffset> path = [];
     for (int r = 0; r < 6; r++) {
       if (r % 2 == 0) {
-        for (int c = 0; c < 6; c++) path.add(GridOffset(r, c));
+        for (int c = 0; c < 6; c++) {
+          path.add(GridOffset(r, c));
+        }
       } else {
-        for (int c = 5; c >= 0; c--) path.add(GridOffset(r, c));
+        for (int c = 5; c >= 0; c--) {
+          path.add(GridOffset(r, c));
+        }
       }
     }
     return path;

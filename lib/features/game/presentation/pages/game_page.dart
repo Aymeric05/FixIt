@@ -5,8 +5,6 @@ import 'package:fixit/features/game/presentation/bloc/game_bloc.dart';
 import 'package:fixit/features/game/presentation/bloc/game_event.dart';
 import 'package:fixit/features/game/presentation/bloc/game_state.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
-import 'package:fixit/features/lives/presentation/bloc/lives_bloc.dart';
-import 'package:fixit/features/lives/presentation/bloc/lives_event.dart';
 import 'package:fixit/core/models/grid_offset.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_state.dart';
@@ -17,7 +15,7 @@ import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:confetti/confetti.dart';
 import 'package:fixit/core/widgets/tutorial_dialog.dart';
-import 'package:fixit/core/utils/app_notifications.dart';
+import 'package:fixit/core/utils/app_logger.dart';
 import 'package:fixit/features/game/presentation/widgets/friends_leaderboard_dialog.dart';
 import 'package:fixit/core/models/level_win_summary.dart';
 import 'package:fixit/core/models/daily_mode.dart';
@@ -100,12 +98,12 @@ class _GamePageState extends State<GamePage> {
                 final authStateInner = context.read<AuthBloc>().state;
                 final playerIdInner = authStateInner is AuthAuthenticated ? authStateInner.user.id : null;
                 final currentLives = context.read<HomeBloc>().state.lives;
+                if (!context.mounted) return;
                 _showGameOverDialog(context, currentLives, playerIdInner);
               } else if (state.status == GameStatus.won) {
                 final authStateInner = context.read<AuthBloc>().state;
-                String? currentUserId;
                 if (authStateInner is AuthAuthenticated) {
-                  currentUserId = authStateInner.user.id;
+                  final currentUserId = authStateInner.user.id;
                   if (widget.mode == GameMode.story) {
                     final repo = ProgressionRepository();
                     try {
@@ -116,13 +114,13 @@ class _GamePageState extends State<GamePage> {
                         timeSeconds: state.initialSeconds - state.remainingSeconds,
                       );
                     } catch (e) {
-                      debugPrint('Error saving completion: $e');
+                      AppLogger.error('Error saving completion', e);
                     }
                   }
+                  if (!context.mounted) return;
+                  _confettiController.play();
+                  _showWinDialog(context, state, currentUserId);
                 }
-                if (!mounted) return;
-                _confettiController.play();
-                _showWinDialog(context, state, currentUserId);
               }
             },
             child: Stack(
@@ -707,7 +705,7 @@ class _GamePageState extends State<GamePage> {
 
   void _showGameOverDialog(BuildContext context, int currentLives, String? playerId) {
     Future.delayed(Duration.zero, () {
-      if (!mounted) return;
+      if (!context.mounted) return;
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -807,7 +805,7 @@ class _GamePageState extends State<GamePage> {
     }
 
     Future.delayed(Duration.zero, () {
-      if (!mounted) return;
+      if (!context.mounted) return;
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -1114,50 +1112,6 @@ class PathLinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant PathLinePainter oldDelegate) => oldDelegate.path != path || oldDelegate.cellSize != cellSize || oldDelegate.color != color || oldDelegate.isAngry != isAngry;
-}
-
-class _WallPainter extends CustomPainter {
-  final Set<String> walls;
-  final double cellSize;
-
-  _WallPainter({required this.walls, required this.cellSize});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-
-    for (var wall in walls) {
-      final parts = wall.split('-');
-      final a = parts[0].split(',');
-      final b = parts[1].split(',');
-      final r1 = int.parse(a[0]);
-      final c1 = int.parse(a[1]);
-      final r2 = int.parse(b[0]);
-      final c2 = int.parse(b[1]);
-
-      if (r1 == r2) {
-        final x = max(c1, c2) * cellSize;
-        canvas.drawLine(
-          Offset(x, r1 * cellSize),
-          Offset(x, (r1 + 1) * cellSize),
-          paint,
-        );
-      } else {
-        final y = max(r1, r2) * cellSize;
-        canvas.drawLine(
-          Offset(c1 * cellSize, y),
-          Offset((c1 + 1) * cellSize, y),
-          paint,
-        );
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _WallPainter oldDelegate) => oldDelegate.walls != walls;
 }
 
 Path drawFireworkSparkle(Size size) {

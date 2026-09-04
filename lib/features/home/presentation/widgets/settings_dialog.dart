@@ -6,6 +6,7 @@ import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'package:fixit/features/home/presentation/widgets/candy_dialog.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/services/database_service.dart';
+import 'package:fixit/core/utils/app_logger.dart';
 
 class SettingsDialog extends StatefulWidget {
   const SettingsDialog({super.key});
@@ -68,7 +69,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                       setState(() => _isResetting = true);
                       try {
                         await DatabaseService().hardReset();
-                        print('Reset complete, closing app in 1s...');
+                        AppLogger.log('Reset complete, closing app in 1s...');
                         await Future.delayed(const Duration(seconds: 1));
                         
                         // Close the app automatically
@@ -78,13 +79,12 @@ class _SettingsDialogState extends State<SettingsDialog> {
                         await Future.delayed(const Duration(seconds: 1));
                         exit(0);
                       } catch (e) {
-                        print('Error during debug reset: $e');
-                        if (mounted) {
-                          setState(() => _isResetting = false);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Reset failed: $e'), backgroundColor: Colors.red),
-                          );
-                        }
+                        AppLogger.error('Error during debug reset', e);
+                        if (!context.mounted) return;
+                        setState(() => _isResetting = false);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Reset failed: $e'), backgroundColor: Colors.red),
+                        );
                       }
                     }
                   },
@@ -112,7 +112,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.candyBlue.withOpacity(0.3), width: 3),
+        border: Border.all(color: AppColors.candyBlue.withValues(alpha: 0.3), width: 3),
         boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
       ),
       child: Row(
@@ -132,8 +132,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
           Switch(
             value: value,
             onChanged: (_) => onToggle(),
-            activeColor: AppColors.candyGreen,
-            activeTrackColor: AppColors.candyGreen.withOpacity(0.3),
+            activeTrackColor: AppColors.candyGreen.withValues(alpha: 0.3),
           ),
         ],
       ),

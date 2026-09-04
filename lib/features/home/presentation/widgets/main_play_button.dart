@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fixit/core/theme/app_colors.dart';
-import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
-import 'package:fixit/features/game/presentation/pages/game_page.dart';
 
 class MainPlayButton extends StatefulWidget {
   final int level;
@@ -82,7 +80,7 @@ class _MainPlayButtonState extends State<MainPlayButton>
                       width: 60,
                       height: 10,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.white.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(20),
                       ),
                     ),

@@ -16,6 +16,7 @@ Lorsque tu suggères la création d'une branche pour une nouvelle tâche, utilis
 - `fix/nom-du-bug` : pour toute correction de bug.
 - `refactor/composant-concerne` : pour la restructuration de code existant sans ajout de fonctionnalité.
 - `docs/sujet-de-la-doc` : pour la documentation.
+- `test/sujet-du-test` : pour l'ajout de tests.
 
 *Exemple de commande attendue de ta part :* `git checkout -b feat/ajout-authentification`
 
@@ -29,6 +30,8 @@ Lorsque je te demande de générer un message de commit pour mes modifications e
 - `refactor` : Modification du code qui ne corrige ni un bug ni n'ajoute une fonctionnalité
 - `style` : Formatage (espaces, point-virgules, etc.)
 - `chore` : Tâches de maintenance (ex: mise à jour de dépendances)
+- `test` : Ajout ou modification de tests
+- `ci` : Modifications de la configuration CI/CD
 
 **Règles pour le corps du commit :**
 - Fais des commits **atomiques**. Si tu détectes que mes modifications couvrent plusieurs sujets indépendants, propose-moi de scinder les commits (ex: `git add -p`).
@@ -42,11 +45,8 @@ Pour maintenir l'arbre propre et éviter les nœuds de fusion (merge commits) in
 ## 4. Gestion des Pull Requests (PR)
 Lorsque je suis prêt à proposer mon code pour intégration, tu dois m'assister dans la préparation de la Pull Request :
 - **Titre de la PR :** Propose toujours un titre qui respecte la convention Conventional Commits (identique au format des commits).
-- **Description :** Génère un brouillon de description structuré pour la PR comprenant :
-    - **Contexte :** Pourquoi cette modification est-elle nécessaire ?
-    - **Changements :** Résumé technique des ajouts/modifications.
-    - **Tests :** Instructions rapides pour tester la fonctionnalité ou vérifier la correction.
-- **Vérification pré-PR :** Avant l'ouverture de la PR, analyse mes fichiers modifiés pour traquer le code "mort", les imports inutilisés ou les logs de debug (ex: `Log.d`, `println`), et propose-moi de les nettoyer.
+- **Description :** Génère un brouillon de description structuré pour la PR (en utilisant le template `.github/PULL_REQUEST_TEMPLATE.md`).
+- **Vérification pré-PR :** Avant l'ouverture de la PR, analyse mes fichiers modifiés pour traquer le code "mort", les imports inutilisés ou les logs de debug (ex: `print`), et propose-moi de les nettoyer.
 - **Taille de la PR :** Si tu détectes que la PR sera massive (trop de fichiers touchés), conseille-moi de la découper en itérations plus petites pour faciliter la relecture par les autres développeurs.
 
 ## 5. Limites d'intervention de l'IA

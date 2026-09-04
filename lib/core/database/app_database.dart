@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:fixit/core/utils/app_logger.dart';
 
 part 'app_database.g.dart';
 
@@ -122,7 +123,7 @@ class WorldListConverter extends TypeConverter<List<String>, String> {
 
 @DriftDatabase(tables: [Players, Progressions, LevelCompletions, GlobalLevels, Friends, FriendRequests, DailyChallenges])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase([QueryExecutor? e]) : super(e ?? _openConnection());
 
   @override
   int get schemaVersion => 5; // Increment version
@@ -152,7 +153,7 @@ class AppDatabase extends _$AppDatabase {
             await customStatement('ALTER TABLE players ADD COLUMN item_reveal_path INTEGER DEFAULT 5;');
           }
         } catch (e) {
-          print('Error checking players table columns: $e');
+          AppLogger.error('Error checking players table columns', e);
         }
 
         // 2. Auto-heal missing columns in 'daily_challenges' table on disk
@@ -167,7 +168,7 @@ class AppDatabase extends _$AppDatabase {
             }
           }
         } catch (e) {
-          print('Error checking daily_challenges table columns: $e');
+          AppLogger.error('Error checking daily_challenges table columns', e);
         }
 
         // 3. Backfill any null values in existing SQLite rows from previous column migrations
@@ -198,7 +199,7 @@ class AppDatabase extends _$AppDatabase {
             WHERE current_level IS NULL OR unlocked_worlds IS NULL;
           ''');
         } catch (e) {
-          print('Error in beforeOpen database cleanup: $e');
+          AppLogger.error('Error in beforeOpen database cleanup', e);
         }
       },
       onUpgrade: (m, from, to) async {
@@ -219,14 +220,14 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(players, players.itemMoreNumbers);
             await m.addColumn(players, players.itemRevealPath);
           } catch (e) {
-            print('Migration: Column might already exist: $e');
+            AppLogger.error('Migration: Column might already exist', e);
           }
         }
         if (from < 5) {
           try {
             await m.addColumn(dailyChallenges, dailyChallenges.dailyLevelTime);
           } catch (e) {
-            print('Migration: Column dailyLevelTime might already exist, skipping: $e');
+            AppLogger.error('Migration: Column dailyLevelTime might already exist, skipping', e);
           }
         }
       },
@@ -236,14 +237,14 @@ class AppDatabase extends _$AppDatabase {
 
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
-    print('Opening Drift database connection...');
+    AppLogger.log('Opening Drift database connection...');
     try {
       final dbFolder = await getApplicationDocumentsDirectory();
       final file = File(p.join(dbFolder.path, 'db.sqlite'));
-      print('Database file path: ${file.path}');
+      AppLogger.log('Database file path: ${file.path}');
       return NativeDatabase.createInBackground(file);
     } catch (e) {
-      print('Error opening Drift database: $e');
+      AppLogger.error('Error opening Drift database', e);
       rethrow;
     }
   });

@@ -33,7 +33,7 @@ class FriendsLeaderboardDialog extends StatelessWidget {
 
             return ListView.separated(
               itemCount: list.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              separatorBuilder: (context, index) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 final entry = list[index];
                 final isMe = entry.playerId == playerId;
