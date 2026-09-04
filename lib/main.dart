@@ -11,13 +11,14 @@ import 'package:fixit/features/auth/presentation/bloc/auth_event.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'package:fixit/features/friends/presentation/bloc/friends_bloc.dart';
 import 'package:fixit/core/repositories/daily_repository.dart';
+import 'package:fixit/core/utils/app_logger.dart';
 
 void main() async {
   try {
     // Ensure Flutter bindings are initialized
     WidgetsFlutterBinding.ensureInitialized();
     
-    print('App starting...');
+    AppLogger.log('App starting...');
     // Initialize Databases
     final dbService = DatabaseService();
     await dbService.initialize();
@@ -25,12 +26,11 @@ void main() async {
     // Sync with server time to prevent cheating and handle midnight transitions
     await DailyRepository().syncWithServerTime();
     
-    print('Databases initialized. Launching app...');
+    AppLogger.log('Databases initialized. Launching app...');
     
     runApp(const CandyPuzzleGame());
   } catch (e, stack) {
-    print('CRITICAL ERROR DURING STARTUP: $e');
-    print(stack);
+    AppLogger.error('CRITICAL ERROR DURING STARTUP', e, stack);
     // Even if it fails, try to run something to avoid white screen
     runApp(MaterialApp(
       home: Scaffold(
