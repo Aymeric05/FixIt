@@ -45,7 +45,10 @@ Pour maintenir l'arbre propre et éviter les nœuds de fusion (merge commits) in
 ## 4. Gestion des Pull Requests (PR)
 Lorsque je suis prêt à proposer mon code pour intégration, tu dois m'assister dans la préparation de la Pull Request :
 - **Titre de la PR :** Propose toujours un titre qui respecte la convention Conventional Commits (identique au format des commits).
-- **Description :** Génère un brouillon de description structuré pour la PR (en utilisant le template `.github/PULL_REQUEST_TEMPLATE.md`).
+- **Description sans erreurs de formatage :** Pour éviter les problèmes de retour à la ligne et de caractères spéciaux dans la description sur GitHub :
+    1.  Rédige TOUJOURS la description dans un fichier temporaire local (ex: `.github/temp_pr_body.md`).
+    2.  Utilise la commande `gh pr create --body-file .github/temp_pr_body.md` (ou `gh pr edit`).
+    3.  Supprime le fichier temporaire immédiatement après la création/modification de la PR.
 - **Vérification pré-PR :** Avant l'ouverture de la PR, analyse mes fichiers modifiés pour traquer le code "mort", les imports inutilisés ou les logs de debug (ex: `print`), et propose-moi de les nettoyer.
 - **Taille de la PR :** Si tu détectes que la PR sera massive (trop de fichiers touchés), conseille-moi de la découper en itérations plus petites pour faciliter la relecture par les autres développeurs.
 

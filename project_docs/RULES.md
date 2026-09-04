@@ -15,6 +15,7 @@ Ce fichier définit les règles strictes que l'IA doit suivre lors de chaque int
 ## 3. Langues et Conventions
 *   **Application :** L'intégralité de l'UI, des commentaires de code, des assets et de la documentation technique interne doit être en **Anglais**.
 *   **Git / GitHub :** Toutes les interactions (messages de commit, titres et descriptions de Pull Requests) doivent être rédigées en **Français**.
+*   **Formatage PR :** Interdiction d'envoyer des descriptions de PR via des chaînes de caractères complexes en ligne de commande. Utilise systématiquement un fichier temporaire et l'option `--body-file` pour garantir un rendu Markdown parfait sur GitHub.
 *   **Commits :** Respecte la convention *Conventional Commits* (`type(scope): description`).
 
 ## 4. Stack Technique & Architecture
