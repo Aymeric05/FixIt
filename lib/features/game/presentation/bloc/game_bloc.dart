@@ -371,6 +371,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     for (int i = 0; i < hintOrder.length - 1; i++) {
       if (hintOrder[i].index > hintOrder[i+1].index) return false;
     }
+
+    // New requirement: The path MUST end on the last number (highest hint value)
+    if (hintOrder.isNotEmpty && hintOrder.last.index != path.length - 1) {
+      return false;
+    }
+
     return true;
   }
 
