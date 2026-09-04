@@ -1,7 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fixit/core/repositories/daily_repository.dart';
-import 'package:fixit/core/utils/level_generator.dart';
-import 'dart:math';
 
 void main() {
   late DailyRepository repository;
