@@ -5,11 +5,12 @@ import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/core/models/grid_offset.dart';
 import 'package:fixit/core/utils/level_generator.dart';
 import 'package:fixit/core/models/level_win_summary.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:fixit/core/utils/app_logger.dart';
 
 class ProgressionRepository {
-  final _supabase = DatabaseService().supabase;
-  final _db = DatabaseService().db;
+  SupabaseClient get _supabase => DatabaseService().supabase;
+  AppDatabase get _db => DatabaseService().db;
 
   Future<LevelWinSummary> getLevelWinSummary({
     required String worldId,

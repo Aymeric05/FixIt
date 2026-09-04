@@ -10,8 +10,10 @@ class DatabaseService {
 
   late final AppDatabase db;
   late final SupabaseClient supabase;
+  bool _initialized = false;
 
   Future<void> initialize() async {
+    if (_initialized) return;
     try {
       AppLogger.log('Initializing DatabaseService...');
       
@@ -23,16 +25,27 @@ class DatabaseService {
       }
 
       // 1. Initialize Supabase
-      await Supabase.initialize(
-        url: supabaseUrl.isNotEmpty ? supabaseUrl : 'https://kvxokvqkpjxpqceceqds.supabase.co',
-        // ignore: deprecated_member_use
-        anonKey: supabaseAnonKey.isNotEmpty ? supabaseAnonKey : 'placeholder',
-      ).timeout(const Duration(seconds: 10));
+      SupabaseClient? client;
+      try {
+        client = Supabase.instance.client;
+      } catch (_) {
+        // Not initialized
+      }
+
+      if (client == null) {
+        await Supabase.initialize(
+          url: supabaseUrl.isNotEmpty ? supabaseUrl : 'https://kvxokvqkpjxpqceceqds.supabase.co',
+          // ignore: deprecated_member_use
+          anonKey: supabaseAnonKey.isNotEmpty ? supabaseAnonKey : 'placeholder',
+        ).timeout(const Duration(seconds: 10));
+      }
+      
       supabase = Supabase.instance.client;
       AppLogger.log('Supabase initialized.');
 
       // 2. Initialize Drift
       db = AppDatabase();
+      _initialized = true;
       AppLogger.log('DatabaseService: Initialization complete');
     } catch (e) {
       AppLogger.error('Error during DatabaseService initialization', e);

@@ -15,6 +15,7 @@ import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:confetti/confetti.dart';
 import 'package:fixit/core/widgets/tutorial_dialog.dart';
+import 'package:fixit/core/utils/app_logger.dart';
 import 'package:fixit/features/game/presentation/widgets/friends_leaderboard_dialog.dart';
 import 'package:fixit/core/models/level_win_summary.dart';
 import 'package:fixit/core/models/daily_mode.dart';
@@ -101,9 +102,8 @@ class _GamePageState extends State<GamePage> {
                 _showGameOverDialog(context, currentLives, playerIdInner);
               } else if (state.status == GameStatus.won) {
                 final authStateInner = context.read<AuthBloc>().state;
-                String? currentUserId;
                 if (authStateInner is AuthAuthenticated) {
-                  currentUserId = authStateInner.user.id;
+                  final currentUserId = authStateInner.user.id;
                   if (widget.mode == GameMode.story) {
                     final repo = ProgressionRepository();
                     try {
@@ -114,13 +114,13 @@ class _GamePageState extends State<GamePage> {
                         timeSeconds: state.initialSeconds - state.remainingSeconds,
                       );
                     } catch (e) {
-                      debugPrint('Error saving completion: $e');
+                      AppLogger.error('Error saving completion', e);
                     }
                   }
+                  if (!context.mounted) return;
+                  _confettiController.play();
+                  _showWinDialog(context, state, currentUserId);
                 }
-                if (!context.mounted) return;
-                _confettiController.play();
-                _showWinDialog(context, state, currentUserId);
               }
             },
             child: Stack(

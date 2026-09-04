@@ -4,11 +4,12 @@ import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/core/utils/level_generator.dart';
 import 'package:fixit/core/models/grid_offset.dart';
 import 'dart:math';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:fixit/core/utils/app_logger.dart';
 
 class DailyRepository {
-  final _db = DatabaseService().db;
-  final _supabase = DatabaseService().supabase;
+  AppDatabase get _db => DatabaseService().db;
+  SupabaseClient get _supabase => DatabaseService().supabase;
 
   // Static cache to store the offset between local device time and server time
   static Duration _serverTimeOffset = Duration.zero;

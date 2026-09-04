@@ -6,8 +6,8 @@ import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/core/utils/app_logger.dart';
 
 class FriendsRepository {
-  final _supabase = DatabaseService().supabase;
-  final _db = DatabaseService().db;
+  SupabaseClient get _supabase => DatabaseService().supabase;
+  AppDatabase get _db => DatabaseService().db;
 
   RealtimeChannel subscribeToSocialChanges(String playerId, VoidCallback onUpdate) {
     final channel = _supabase.channel('social_changes_$playerId');

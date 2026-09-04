@@ -1,3 +1,4 @@
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/core/repositories/profile_repository.dart';
@@ -6,7 +7,7 @@ import 'package:fixit/features/auth/presentation/bloc/auth_state.dart';
 import 'package:fixit/core/utils/app_logger.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final _supabase = DatabaseService().supabase;
+  SupabaseClient get _supabase => DatabaseService().supabase;
   final _profileRepository = ProfileRepository();
 
   AuthBloc() : super(AuthInitial()) {

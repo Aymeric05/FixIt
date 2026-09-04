@@ -15,7 +15,7 @@ part 'home_state.dart';
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Timer? _rechargeTimer;
   Timer? _midnightTimer;
-  final _db = DatabaseService().db;
+  AppDatabase get _db => DatabaseService().db;
   final _progressionRepo = ProgressionRepository();
   final _dailyRepo = DailyRepository();
 

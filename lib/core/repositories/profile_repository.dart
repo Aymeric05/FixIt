@@ -1,12 +1,13 @@
 import 'dart:math';
 import 'package:drift/drift.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:fixit/core/database/app_database.dart';
 import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/core/utils/app_logger.dart';
 
 class ProfileRepository {
-  final _supabase = DatabaseService().supabase;
-  final _db = DatabaseService().db;
+  SupabaseClient get _supabase => DatabaseService().supabase;
+  AppDatabase get _db => DatabaseService().db;
 
   Future<Player> getOrCreateProfile(String supabaseId) async {
     try {
