@@ -296,7 +296,9 @@ class _PuzzleIndicatorState extends State<PuzzleIndicator> with SingleTickerProv
   @override
   void didUpdateWidget(PuzzleIndicator oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.state.puzzlePieces > oldWidget.state.puzzlePieces) {
+    // Pulse only on win action to avoid random pulses on data reload
+    if (widget.state.lastAction == HomeLastAction.win && 
+        widget.state.puzzlePieces > oldWidget.state.puzzlePieces) {
       Future.delayed(const Duration(milliseconds: 2200), () {
         if (mounted) _controller.forward(from: 0.0);
       });

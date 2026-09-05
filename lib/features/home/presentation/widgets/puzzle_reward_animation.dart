@@ -28,10 +28,12 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
   
   late List<bool> _showBadge;
   int _completedCount = 0;
+  late int _totalGained;
 
   @override
   void initState() {
     super.initState();
+    _totalGained = (widget.pieceCount == 10) ? 20 : 5;
     _showBadge = List.filled(widget.pieceCount, false);
     _controllers = List.generate(widget.pieceCount, (index) {
       return AnimationController(
@@ -133,21 +135,29 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
                             builder: (context, value, child) {
                               return Transform.scale(
                                 scale: value,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.candyGreen,
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color: Colors.white, width: 1.0),
-                                  ),
-                                  child: const Text(
-                                    '+1',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 9,
+                                child: Stack(
+                                  children: [
+                                    // Text with outline
+                                    Text(
+                                      '+$_totalGained',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w900,
+                                        foreground: Paint()
+                                          ..style = PaintingStyle.stroke
+                                          ..strokeWidth = 3
+                                          ..color = Colors.black,
+                                      ),
                                     ),
-                                  ),
+                                    Text(
+                                      '+$_totalGained',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               );
                             },
