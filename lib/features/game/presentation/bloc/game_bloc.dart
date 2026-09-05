@@ -45,6 +45,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<UseItemMoreNumbers>(_onUseItemMoreNumbers);
     on<UseItemRevealPath>(_onUseItemRevealPath);
     on<RecoverFromDizzy>(_onRecoverFromDizzy);
+    on<ResetAngryFace>(_onResetAngryFace);
   }
 
   Future<void> _onStartGame(StartGame event, Emitter<GameState> emit) async {
@@ -365,14 +366,28 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           }
           emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
           unawaited(_saveCurrentSession());
-        }
-      } else {
-        _triggerCollision(emit, tapped.row - last.row, tapped.col - last.col);
-      }
     } else {
       // NOT ADJACENT (Too far)
-      // Just make the snake angry as requested, no dizziness/shake
-      emit(state.copyWith(isAngry: true));
+      // Just make the snake angry as requested, for 0.5s
+      _triggerAngryFace(emit);
+    }
+  }
+
+  void _triggerAngryFace(Emitter<GameState> emit) {
+    if (state.isAngry && !state.isDizzy) return;
+    
+    emit(state.copyWith(isAngry: true));
+    
+    _dizzyTimer?.cancel();
+    _dizzyTimer = Timer(const Duration(milliseconds: 500), () {
+      add(ResetAngryFace());
+    });
+  }
+
+  void _onResetAngryFace(ResetAngryFace event, Emitter<GameState> emit) {
+    if (state.isAngry && !state.isDizzy) {
+      // Only reset if we are not actually in an error state (re-calculate)
+      emit(state.copyWith(isAngry: _checkIfAngry(state.currentPath)));
     }
   }
 

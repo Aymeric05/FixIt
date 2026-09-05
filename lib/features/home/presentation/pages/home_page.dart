@@ -15,6 +15,7 @@ import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:confetti/confetti.dart';
 import 'package:fixit/features/home/presentation/widgets/puzzle_reward_animation.dart';
+import 'package:fixit/features/home/presentation/widgets/world_unlock_overlay.dart';
 
 import 'package:fixit/features/home/presentation/widgets/daily_popup.dart';
 import 'package:fixit/features/home/presentation/widgets/no_lives_dialog.dart';
@@ -37,6 +38,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   int _puzzleRewardCount = 5;
   Offset _puzzleTargetOffset = Offset.zero;
   bool _isDailyPopupShowing = false;
+  bool _showWorldUnlock = false;
+  int _unlockingWorldIndex = 2;
 
   @override
   void initState() {
@@ -189,6 +192,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           listener: (context, state) {
             _confettiController.play();
             _triggerPuzzleAnimation(state.gainedPuzzlePieces);
+            
+            // Trigger world unlock animation if world is completed
+            if (state.levelsCompletedInWorld == 0 && state.currentLevel > 1 && state.lastAction == HomeLastAction.win) {
+              setState(() {
+                _unlockingWorldIndex = (state.currentLevel <= 11) ? 2 : 3;
+                _showWorldUnlock = true;
+              });
+            }
           },
         ),
         BlocListener<HomeBloc, HomeState>(
@@ -208,9 +219,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 buildWhen: (prev, curr) => prev.currentWorldIndex != curr.currentWorldIndex,
                 builder: (context, state) {
                   String bg = 'assets/images/monde1_background.png';
-                  // Add logic for other worlds if assets exist
+                  if (state.currentWorldIndex == 2) bg = 'assets/images/Monde_2.png';
+                  if (state.currentWorldIndex == 3) bg = 'assets/images/Monde_3.png';
+
                   return Image.asset(
                     bg,
+                    key: ValueKey(bg),
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
@@ -240,6 +254,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     Column(
                       children: [
                         TopNavBar(
+                          unlockedWorlds: state.unlockedWorlds,
                           onDailyPressed: () async {
                             final authState = context.read<AuthBloc>().state;
                             if (authState is AuthAuthenticated) {
@@ -275,6 +290,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                           children: [
                                             MainPlayButton(
                                               level: state.currentLevel,
+                                              color: state.currentWorldIndex == 2 ? AppColors.candyGreen : null,
+                                              darkColor: state.currentWorldIndex == 2 ? AppColors.candyGreenDark : null,
                                               onTap: () {
                                                 if (state.lives <= 0) {
                                                   showDialog(
@@ -377,6 +394,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 pieceCount: _puzzleRewardCount,
                 onComplete: () {
                   setState(() => _showPuzzleReward = false);
+                },
+              ),
+            if (_showWorldUnlock)
+              WorldUnlockOverlay(
+                worldIndex: _unlockingWorldIndex,
+                onTransition: () {
+                  setState(() => _showWorldUnlock = false);
+                  context.read<HomeBloc>().add(ChangeWorld(_unlockingWorldIndex, _unlockingWorldIndex == 2 ? 'desert' : 'ice'));
                 },
               ),
           ],

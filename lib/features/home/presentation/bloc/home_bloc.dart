@@ -173,6 +173,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       // Fetch Daily Status
       final dailyStatus = await _dailyRepo.getDailyStatus(playerSupabaseId);
 
+      // Determine unlocked worlds
+      final Set<String> unlocked = {'meadow'};
+      if (progression != null) {
+        if (progression.currentLevel > 10) unlocked.add('desert');
+        if (progression.currentLevel > 20) unlocked.add('ice');
+      }
+
       emit(state.copyWith(
         lives: lives,
         nextLifeTime: nextLifeTime,
@@ -181,11 +188,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         itemMoreNumbers: player.itemMoreNumbers,
         itemRevealPath: player.itemRevealPath,
         currentLevel: progression?.currentLevel ?? 1,
-        levelsCompletedInWorld: (progression?.currentLevel ?? 1) - 1,
+        levelsCompletedInWorld: (progression?.currentLevel ?? 1 - 1) % 10,
         isLoading: false,
         currentDate: _dailyRepo.getTodayWorldId(), 
         isDailyCompleted: dailyStatus?.isDailyLevelCompleted ?? false,
         isSeriesCompleted: dailyStatus?.isSeriesCompleted ?? false,
+        unlockedWorlds: unlocked,
       ));
     } else {
       AppLogger.log('HomeBloc: No local player found yet. Resetting to initial state.');

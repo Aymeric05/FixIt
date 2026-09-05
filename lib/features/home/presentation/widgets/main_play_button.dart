@@ -4,11 +4,15 @@ import 'package:fixit/core/theme/app_colors.dart';
 class MainPlayButton extends StatefulWidget {
   final int level;
   final VoidCallback onTap;
+  final Color? color;
+  final Color? darkColor;
 
   const MainPlayButton({
     super.key,
     required this.level,
     required this.onTap,
+    this.color,
+    this.darkColor,
   });
 
   @override
@@ -54,9 +58,12 @@ class _MainPlayButtonState extends State<MainPlayButton>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
               decoration: BoxDecoration(
-                gradient: const RadialGradient(
-                  colors: [AppColors.secondaryOrange, Colors.deepOrange],
-                  center: Alignment(-0.2, -0.3),
+                gradient: RadialGradient(
+                  colors: [
+                    widget.color ?? AppColors.secondaryOrange,
+                    widget.darkColor ?? Colors.deepOrange
+                  ],
+                  center: const Alignment(-0.2, -0.3),
                   radius: 1.2,
                 ),
                 borderRadius: BorderRadius.circular(40),

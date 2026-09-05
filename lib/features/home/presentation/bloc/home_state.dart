@@ -33,6 +33,7 @@ class HomeState extends Equatable {
   final DateTime? lastDailyPuzzleAt;
   final bool isDailyCompleted;
   final bool isSeriesCompleted;
+  final Set<String> unlockedWorlds; // Track unlocked world IDs
 
   const HomeState({
     this.currentLevel = 1,
@@ -60,6 +61,7 @@ class HomeState extends Equatable {
     this.lastDailyPuzzleAt,
     this.isDailyCompleted = false,
     this.isSeriesCompleted = false,
+    this.unlockedWorlds = const {'meadow'},
   });
 
   HomeState copyWith({
@@ -88,6 +90,7 @@ class HomeState extends Equatable {
     DateTime? lastDailyPuzzleAt,
     bool? isDailyCompleted,
     bool? isSeriesCompleted,
+    Set<String>? unlockedWorlds,
   }) {
     return HomeState(
       currentLevel: currentLevel ?? this.currentLevel,
@@ -115,6 +118,7 @@ class HomeState extends Equatable {
       lastDailyPuzzleAt: lastDailyPuzzleAt ?? this.lastDailyPuzzleAt,
       isDailyCompleted: isDailyCompleted ?? this.isDailyCompleted,
       isSeriesCompleted: isSeriesCompleted ?? this.isSeriesCompleted,
+      unlockedWorlds: unlockedWorlds ?? this.unlockedWorlds,
     );
   }
 
@@ -145,5 +149,7 @@ class HomeState extends Equatable {
         lastDailyPuzzleAt,
         isDailyCompleted,
         isSeriesCompleted,
+        unlockedWorlds,
       ];
+}
 }

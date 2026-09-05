@@ -24,8 +24,9 @@ import 'package:fixit/core/utils/app_notifications.dart';
 class TopNavBar extends StatelessWidget {
   static final GlobalKey puzzleKey = GlobalKey();
   final VoidCallback? onDailyPressed;
+  final Set<String> unlockedWorlds;
 
-  const TopNavBar({super.key, this.onDailyPressed});
+  const TopNavBar({super.key, this.onDailyPressed, this.unlockedWorlds = const {'meadow'}});
 
   @override
   Widget build(BuildContext context) {
@@ -64,8 +65,9 @@ class TopNavBar extends StatelessWidget {
                       onPressed: () => _showCandyDialog(
                         context,
                         MapDialog(
+                          unlockedWorldIds: unlockedWorlds,
                           onWorldSelected: (worldId) {
-                            int index = 0;
+                            int index = 1;
                             switch (worldId) {
                               case 'meadow':
                                 index = 1;
