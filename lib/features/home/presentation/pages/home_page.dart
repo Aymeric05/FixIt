@@ -294,6 +294,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                         height: 100,
                                         child: Stack(
                                           alignment: Alignment.center,
+                                          children: [
                                             MainPlayButton(
                                               level: state.currentWorldIndex == 2 
                                                   ? (state.currentLevel - 10).clamp(1, 10) 
