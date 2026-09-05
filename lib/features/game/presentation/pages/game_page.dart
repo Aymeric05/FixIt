@@ -719,16 +719,18 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                 color: AppColors.candyPurple,
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              "YOU WILL LOSE A LIFE!",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.redAccent,
+            if (widget.mode == GameMode.story) ...[
+              const SizedBox(height: 8),
+              const Text(
+                "YOU WILL LOSE A LIFE!",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.redAccent,
+                ),
               ),
-            ),
+            ],
             const SizedBox(height: 30),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,

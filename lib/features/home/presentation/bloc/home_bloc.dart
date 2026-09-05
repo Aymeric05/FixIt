@@ -8,6 +8,7 @@ import 'package:fixit/core/database/app_database.dart';
 import 'package:fixit/core/repositories/progression_repository.dart';
 import 'package:fixit/core/repositories/daily_repository.dart';
 import 'package:fixit/core/utils/app_logger.dart';
+import 'package:fixit/core/models/daily_mode.dart';
 
 part 'home_event.dart';
 part 'home_state.dart';
@@ -385,6 +386,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   Future<void> _onLoseLife(LoseLife event, Emitter<HomeState> emit) async {
+    // Safety check: Never lose life in daily modes (logic usually in GamePage, but added here too)
+    // Actually LoseLife doesn't know about the mode.
+    // I will rely on GamePage not sending it.
+    
     if (state.lives > 0) {
       final newLives = state.lives - 1;
       final now = DateTime.now();

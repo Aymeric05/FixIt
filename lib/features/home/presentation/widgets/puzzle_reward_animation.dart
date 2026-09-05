@@ -102,7 +102,7 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
   @override
   Widget build(BuildContext context) {
     return Stack(
-      children: List.generate(pieceCount, (i) {
+      children: List.generate(widget.pieceCount, (i) {
         return AnimatedBuilder(
           animation: _controllers[i],
           builder: (context, child) {
@@ -114,7 +114,7 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
 
             return Positioned(
               left: position.dx - 27,
-              top: position.dy - 27, // Center correctly
+              top: position.dy - 27, // Use exact center
               child: Opacity(
                 opacity: opacity,
                 child: Transform.scale(
