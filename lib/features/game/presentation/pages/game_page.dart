@@ -44,18 +44,24 @@ class GamePage extends StatefulWidget {
   State<GamePage> createState() => _GamePageState();
 }
 
-class _GamePageState extends State<GamePage> {
+class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
   late ConfettiController _confettiController;
+  late AnimationController _blinkController;
 
   @override
   void initState() {
     super.initState();
     _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+    _blinkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _confettiController.dispose();
+    _blinkController.dispose();
     super.dispose();
   }
 
@@ -522,12 +528,15 @@ class _GamePageState extends State<GamePage> {
                                     isLastNumberReached && 
                                     !state.currentPath.contains(pos);
 
+                                  return AnimatedBuilder(
+                                animation: _blinkController,
+                                builder: (context, child) {
                                   return Container(
                                     alignment: Alignment.center,
                                     decoration: BoxDecoration(
                                       color: isHighlighted 
                                           ? Colors.yellow.withValues(alpha: 0.4)
-                                          : (isMissingCell && (DateTime.now().millisecond % 500 > 250))
+                                          : (isMissingCell && _blinkController.value > 0.5)
                                               ? Colors.red.withValues(alpha: 0.4)
                                               : null,
                                       borderRadius: BorderRadius.circular(10),
@@ -559,6 +568,8 @@ class _GamePageState extends State<GamePage> {
                                           )
                                         : null,
                                   );
+                                },
+                              );
                                 },
                               ),
                               _buildSerpentHead(state, cellSize),

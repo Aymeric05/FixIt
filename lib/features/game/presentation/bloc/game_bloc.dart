@@ -238,9 +238,24 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     }
 
     final last = currentPath.last;
+    final existingIndex = currentPath.indexOf(tapped);
+
+    // FAST BACKTRACKING (Teleport on Tap)
+    // Only if it's a fresh tap (not a drag) and we tap somewhere in our body
+    if (!event.isDrag && existingIndex != -1) {
+      final newPath = currentPath.sublist(0, existingIndex + 1);
+      _dizzyTimer?.cancel();
+      emit(state.copyWith(
+        currentPath: newPath,
+        isAngry: _checkIfAngry(newPath),
+        isDizzy: false,
+        collisionOffset: null,
+      ));
+      return;
+    }
+
     if (last == tapped) return;
 
-    final existingIndex = currentPath.indexOf(tapped);
     final isAdjacent = (last.row - tapped.row).abs() + (last.col - tapped.col).abs() == 1;
 
     // Check if this new target is a valid move
@@ -273,7 +288,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     if (isAdjacent) {
       if (isValidMove) {
         if (isBacktrackingMove) {
-          // SAFE BACKTRACKING
+          // SAFE BACKTRACKING (One by one)
           final newPath = currentPath.sublist(0, currentPath.length - 1);
           emit(state.copyWith(
             currentPath: newPath, 
