@@ -141,6 +141,7 @@ class _ProfileModalState extends State<ProfileModal> {
 
   Widget _buildAvatarAndNickname(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         _buildAvatarSection(context),
         const SizedBox(width: 15),
@@ -206,74 +207,60 @@ class _ProfileModalState extends State<ProfileModal> {
 
         return BlocBuilder<ProfileBloc, ProfileState>(
           builder: (context, state) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Pseudo :",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.candyPurple,
-                  ),
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: _isEditing ? const EdgeInsets.fromLTRB(16, 12, 16, 10) : const EdgeInsets.fromLTRB(16, 12, 16, 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))
+                ],
+                border: Border.all(
+                  color: _isEditing ? AppColors.candyBlue : AppColors.candyBlue.withValues(alpha: 0.3), 
+                  width: _isEditing ? 3 : 2
                 ),
-                const SizedBox(height: 5),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: _isEditing ? const EdgeInsets.fromLTRB(20, 15, 20, 12) : const EdgeInsets.fromLTRB(16, 12, 16, 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))
-                    ],
-                    border: Border.all(
-                      color: _isEditing ? AppColors.candyBlue : AppColors.candyBlue.withValues(alpha: 0.3), 
-                      width: _isEditing ? 3 : 2
-                    ),
-                  ),
-                  child: _isEditing
-                      ? Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _nicknameController,
-                                autofocus: true,
-                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 20),
-                                decoration: const InputDecoration(
-                                  border: InputBorder.none,
-                                  isDense: true,
-                                ),
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                context.read<ProfileBloc>().add(
-                                      UpdateNicknameRequested(_nicknameController.text),
-                                    );
-                              },
-                              child: const Icon(Icons.check, color: Colors.green, size: 28),
-                            ),
-                            const SizedBox(width: 12),
-                            GestureDetector(
-                              onTap: () => setState(() => _isEditing = false),
-                              child: const Icon(Icons.close, color: Colors.red, size: 28),
-                            ),
-                          ],
-                        )
-                      : GestureDetector(
-                          onTap: () => setState(() => _isEditing = true),
-                          child: Text(
-                            currentUsername,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.black,
+              ),
+              child: _isEditing
+                  ? Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _nicknameController,
+                            autofocus: true,
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 18),
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              isDense: true,
                             ),
                           ),
                         ),
-                ),
-              ],
+                        GestureDetector(
+                          onTap: () {
+                            context.read<ProfileBloc>().add(
+                                  UpdateNicknameRequested(_nicknameController.text),
+                                );
+                          },
+                          child: const Icon(Icons.check, color: Colors.green, size: 18),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => setState(() => _isEditing = false),
+                          child: const Icon(Icons.close, color: Colors.red, size: 18),
+                        ),
+                      ],
+                    )
+                  : GestureDetector(
+                      onTap: () => setState(() => _isEditing = true),
+                      child: Text(
+                        currentUsername,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
             );
           },
         );

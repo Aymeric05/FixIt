@@ -137,15 +137,15 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
                                 scale: value,
                                 child: Stack(
                                   children: [
-                                    // Text with outline
+                                    // Big Text with heavy black outline
                                     Text(
                                       '+$_totalGained',
                                       style: TextStyle(
-                                        fontSize: 18,
+                                        fontSize: 22,
                                         fontWeight: FontWeight.w900,
                                         foreground: Paint()
                                           ..style = PaintingStyle.stroke
-                                          ..strokeWidth = 3
+                                          ..strokeWidth = 4
                                           ..color = Colors.black,
                                       ),
                                     ),
@@ -154,7 +154,7 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w900,
-                                        fontSize: 18,
+                                        fontSize: 22,
                                       ),
                                     ),
                                   ],

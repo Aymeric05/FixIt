@@ -183,13 +183,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         currentLevel: progression?.currentLevel ?? 1,
         levelsCompletedInWorld: (progression?.currentLevel ?? 1) - 1,
         isLoading: false,
-        currentDate: _dailyRepo.getTodayWorldId(), // Used to detect day changes
+        currentDate: _dailyRepo.getTodayWorldId(), 
         isDailyCompleted: dailyStatus?.isDailyLevelCompleted ?? false,
         isSeriesCompleted: dailyStatus?.isSeriesCompleted ?? false,
       ));
     } else {
-      AppLogger.log('HomeBloc: No local player found yet');
-      emit(state.copyWith(isLoading: false));
+      AppLogger.log('HomeBloc: No local player found yet. Resetting to initial state.');
+      emit(const HomeState());
     }
   }
 
@@ -352,32 +352,41 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   Future<void> _onCompleteLevel(CompleteLevel event, Emitter<HomeState> emit) async {
     // Increment puzzle pieces for completing a level
-    // 20 for Daily, 5 for Story
-    final int reward = (event.mode == GameMode.dailySingle || event.mode == GameMode.dailySeries) ? 20 : 5;
+    // 20 for Daily/Series End, 5 for Story
+    final bool isSeriesEnd = event.mode == GameMode.dailySeries && event.level >= 3;
+    final bool isSingleDaily = event.mode == GameMode.dailySingle;
+    final bool isStory = event.mode == GameMode.story;
+
+    final int reward = (isSingleDaily || isSeriesEnd) ? 20 : (isStory ? 5 : 0);
     
-    try {
-      final player = await (_db.select(_db.players)
-            ..where((t) => event.playerId != null && event.playerId!.isNotEmpty 
-                ? t.supabaseId.equals(event.playerId!) 
-                : t.id.isNotNull()))
-          .getSingle();
-      
-      final newPuzzles = player.puzzlePieces + reward;
-      
-      await (_db.update(_db.players)
-            ..where((t) => event.playerId != null && event.playerId!.isNotEmpty 
-                ? t.supabaseId.equals(event.playerId!) 
-                : t.id.isNotNull()))
-          .write(PlayersCompanion(puzzlePieces: drift.Value(newPuzzles)));
-          
-      if (event.playerId != null && event.playerId!.isNotEmpty) {
-        unawaited(DatabaseService().supabase.from('profiles').update({'puzzle_pieces': newPuzzles}).eq('id', event.playerId!));
+    if (reward > 0) {
+      try {
+        final player = await (_db.select(_db.players)
+              ..where((t) => event.playerId != null && event.playerId!.isNotEmpty 
+                  ? t.supabaseId.equals(event.playerId!) 
+                  : t.id.isNotNull()))
+            .getSingle();
+        
+        final newPuzzles = player.puzzlePieces + reward;
+        
+        await (_db.update(_db.players)
+              ..where((t) => event.playerId != null && event.playerId!.isNotEmpty 
+                  ? t.supabaseId.equals(event.playerId!) 
+                  : t.id.isNotNull()))
+            .write(PlayersCompanion(puzzlePieces: drift.Value(newPuzzles)));
+            
+        if (event.playerId != null && event.playerId!.isNotEmpty) {
+          unawaited(DatabaseService().supabase.from('profiles').update({'puzzle_pieces': newPuzzles}).eq('id', event.playerId!));
+        }
+      } catch (e) {
+        AppLogger.error('Error incrementing puzzles on complete level', e);
       }
-    } catch (e) {
-      AppLogger.error('Error incrementing puzzles on complete level', e);
     }
 
-    emit(state.copyWith(lastAction: HomeLastAction.win, gainedPuzzlePieces: reward));
+    emit(state.copyWith(
+      lastAction: reward > 0 ? HomeLastAction.win : HomeLastAction.none, 
+      gainedPuzzlePieces: reward,
+    ));
     // Hard refresh from DB for the specific player
     await _refreshProgression(emit, event.playerId);
     

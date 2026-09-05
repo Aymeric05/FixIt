@@ -91,7 +91,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
           final playerIdInner = authStateInner is AuthAuthenticated ? authStateInner.user.id : null;
 
           if (gameStatus == GameStatus.won) {
-            context.read<HomeBloc>().add(CompleteLevel(playerId: playerIdInner, mode: widget.mode));
+            context.read<HomeBloc>().add(CompleteLevel(playerId: playerIdInner, mode: widget.mode, level: widget.level));
             Navigator.pop(context);
           } else {
             final currentLives = context.read<HomeBloc>().state.lives;
@@ -172,7 +172,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                                 color: Colors.amber,
                                 darkColor: Colors.orange.shade900,
                       onPressed: () {
-                        context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode));
+                        context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode, level: widget.level));
                         _showWinDialog(context, state, playerId);
                       },
                       child: const Icon(Icons.emoji_events, color: Colors.white, size: 40),
@@ -295,7 +295,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                       darkColor: Colors.red.shade900,
                       onPressed: () {
                         if (state.status == GameStatus.won) {
-                          context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode));
+                          context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode, level: widget.level));
                           Navigator.pop(context);
                         } else {
                           final currentLives = context.read<HomeBloc>().state.lives;
@@ -975,7 +975,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                           CandyButton(
                             width: 130, height: 55, color: AppColors.candyPink, darkColor: AppColors.candyPinkDark,
                             onPressed: () {
-                              context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode));
+                              context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode, level: widget.level));
                               Navigator.pop(dialogContext);
                               Navigator.pop(context);
                             },
@@ -984,7 +984,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                           CandyButton(
                             width: 130, height: 55, color: AppColors.candyGreen, darkColor: AppColors.candyGreenDark,
                             onPressed: () {
-                              context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode));
+                              context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode, level: widget.level));
                               Navigator.pop(dialogContext);
                               
                               if (widget.mode == GameMode.dailySeries && widget.level < 3) {
