@@ -224,15 +224,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           onDailyPressed: () async {
                             final authState = context.read<AuthBloc>().state;
                             if (authState is AuthAuthenticated) {
+                              final homeBloc = context.read<HomeBloc>();
                               final repo = DailyRepository();
                               final status = await repo.getDailyStatus(authState.user.id);
-                              if (mounted) {
-                                _showDailyPopup(
-                                  isDailyCompleted: context.read<HomeBloc>().state.isDailyCompleted,
-                                  isSeriesCompleted: context.read<HomeBloc>().state.isSeriesCompleted,
-                                  status: status,
-                                );
-                              }
+                              if (!mounted) return;
+
+                              _showDailyPopup(
+                                isDailyCompleted: homeBloc.state.isDailyCompleted,
+                                isSeriesCompleted: homeBloc.state.isSeriesCompleted,
+                                status: status,
+                              );
                             }
                           },
                         ),
