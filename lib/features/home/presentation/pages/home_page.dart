@@ -16,7 +16,6 @@ import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:confetti/confetti.dart';
 
 import 'package:fixit/features/home/presentation/widgets/daily_popup.dart';
-import 'package:fixit/features/home/presentation/widgets/daily_challenge_button.dart';
 import 'package:fixit/core/models/daily_mode.dart';
 import 'package:fixit/core/repositories/daily_repository.dart';
 import 'package:fixit/core/database/app_database.dart';
@@ -32,6 +31,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late ConfettiController _confettiController;
+  bool _isDailyPopupShowing = false;
 
   @override
   void initState() {
@@ -59,6 +59,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _checkDailyChallenge() async {
+    if (_isDailyPopupShowing) return;
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthAuthenticated) {
       final repo = DailyRepository();
@@ -67,19 +68,30 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       bool alreadyCompleted = status != null && status.isDailyLevelCompleted && status.isSeriesCompleted;
       
       if (!alreadyCompleted && mounted) {
-        _showDailyPopup(status);
+        _showDailyPopup(
+          isDailyCompleted: status?.isDailyLevelCompleted ?? false,
+          isSeriesCompleted: status?.isSeriesCompleted ?? false,
+          status: status,
+        );
       }
     }
   }
 
-  void _showDailyPopup(DailyChallenge? status) {
+  void _showDailyPopup({
+    required bool isDailyCompleted,
+    required bool isSeriesCompleted,
+    DailyChallenge? status,
+  }) {
+    if (_isDailyPopupShowing) return;
+    _isDailyPopupShowing = true;
+
     showDialog(
       context: context,
-      builder: (context) => DailyPopup(
-        isDailyCompleted: status?.isDailyLevelCompleted ?? false,
-        isSeriesCompleted: status?.isSeriesCompleted ?? false,
+      builder: (dialogContext) => DailyPopup(
+        isDailyCompleted: isDailyCompleted,
+        isSeriesCompleted: isSeriesCompleted,
         onPlayDaily: () {
-          Navigator.pop(context);
+          Navigator.pop(dialogContext);
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -89,10 +101,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 mode: GameMode.dailySingle,
               ),
             ),
-          );
+          ).then((_) {
+            if (mounted) {
+              final authState = context.read<AuthBloc>().state;
+              if (authState is AuthAuthenticated) {
+                context.read<HomeBloc>().add(LoadHomeData(playerId: authState.user.id));
+              }
+            }
+          });
         },
         onPlaySeries: () {
-          Navigator.pop(context);
+          Navigator.pop(dialogContext);
           
           int startLevel = 1;
           if (status != null) {
@@ -112,10 +131,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 mode: GameMode.dailySeries,
               ),
             ),
-          );
+          ).then((_) {
+            if (mounted) {
+              final authState = context.read<AuthBloc>().state;
+              if (authState is AuthAuthenticated) {
+                context.read<HomeBloc>().add(LoadHomeData(playerId: authState.user.id));
+              }
+            }
+          });
         },
       ),
-    );
+    ).then((_) {
+      _isDailyPopupShowing = false;
+    });
   }
 
 
@@ -192,7 +220,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   children: [
                     Column(
                       children: [
-                        const TopNavBar(),
+                        TopNavBar(
+                          onDailyPressed: () async {
+                            final authState = context.read<AuthBloc>().state;
+                            if (authState is AuthAuthenticated) {
+                              final repo = DailyRepository();
+                              final status = await repo.getDailyStatus(authState.user.id);
+                              if (mounted) {
+                                _showDailyPopup(
+                                  isDailyCompleted: context.read<HomeBloc>().state.isDailyCompleted,
+                                  isSeriesCompleted: context.read<HomeBloc>().state.isSeriesCompleted,
+                                  status: status,
+                                );
+                              }
+                            }
+                          },
+                        ),
                         Expanded(
                           child: Stack(
                             children: [
@@ -225,19 +268,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                   ),
                                                 );
                                               },
-                                            ),
-                                            Positioned(
-                                              left: 20,
-                                              child: DailyChallengeButton(
-                                                onTap: () async {
-                                                  final authState = context.read<AuthBloc>().state;
-                                                  if (authState is AuthAuthenticated) {
-                                                    final repo = DailyRepository();
-                                                    final status = await repo.getDailyStatus(authState.user.id);
-                                                    if (mounted) _showDailyPopup(status);
-                                                  }
-                                                },
-                                              ),
                                             ),
                                             Positioned(
                                               right: 20,

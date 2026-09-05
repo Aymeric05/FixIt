@@ -19,18 +19,22 @@ class DailyPopup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isAllCompleted = isDailyCompleted && isSeriesCompleted;
+
     return CandyDialog(
       title: "DAILY CHALLENGES",
+      borderColor: AppColors.candyYellow,
+      isScintillating: !isAllCompleted,
       content: SizedBox(
         width: 320,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              "Complete today's challenges to earn rewards and compete with friends!",
+              "Daily challenges are available once per day with no time limit.",
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.bold,
                 color: AppColors.candyPurple,
               ),
@@ -38,38 +42,27 @@ class DailyPopup extends StatelessWidget {
             const SizedBox(height: 30),
             _buildChallengeOption(
               context,
-              title: "DAILY LEVEL",
-              subtitle: isDailyCompleted ? "COMPLETED!" : "One unique level, no time limit",
-              icon: Icons.calendar_today,
-              color: AppColors.candyBlue,
-              darkColor: AppColors.candyBlueDark,
+              title: "PLAY DAILY",
+              subtitle: "",
+              icon: null,
+              color: isDailyCompleted ? Colors.grey.shade500 : AppColors.candyYellow,
+              darkColor: isDailyCompleted ? Colors.grey.shade700 : AppColors.candyYellowDark,
               isCompleted: isDailyCompleted,
               onTap: onPlayDaily,
             ),
-            const SizedBox(height: 15),
-            _buildChallengeOption(
-              context,
-              title: "DAILY SERIES",
-              subtitle: isSeriesCompleted ? "COMPLETED!" : "3 levels in a row, cumulative time",
-              icon: Icons.format_list_numbered,
-              color: AppColors.candyGreen,
-              darkColor: AppColors.candyGreenDark,
-              isCompleted: isSeriesCompleted,
-              onTap: onPlaySeries,
-            ),
-            const SizedBox(height: 30),
-            CandyButton(
-              width: 180,
-              height: 50,
-              borderRadius: 25,
-              color: Colors.grey.shade400,
-              darkColor: Colors.grey.shade600,
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                "MAYBE LATER",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14),
+            if (isDailyCompleted) ...[
+              const SizedBox(height: 15),
+              _buildChallengeOption(
+                context,
+                title: "PLAY DAILY SERIES",
+                subtitle: "",
+                icon: null,
+                color: isSeriesCompleted ? Colors.grey.shade500 : AppColors.candyOrange,
+                darkColor: isSeriesCompleted ? Colors.grey.shade700 : AppColors.candyOrangeDark,
+                isCompleted: isSeriesCompleted,
+                onTap: onPlaySeries,
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -80,7 +73,7 @@ class DailyPopup extends StatelessWidget {
     BuildContext context, {
     required String title,
     required String subtitle,
-    required IconData icon,
+    IconData? icon,
     required Color color,
     required Color darkColor,
     required bool isCompleted,
@@ -89,37 +82,57 @@ class DailyPopup extends StatelessWidget {
     return CandyButton(
       width: 280,
       height: 80,
-      borderRadius: 20,
+      borderRadius: 40,
+      borderWidth: 6,
       color: color,
       darkColor: darkColor,
       onPressed: onTap,
-      child: Row(
-        children: [
-          const SizedBox(width: 15),
-          Icon(icon, color: Colors.white, size: 30),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
+      child: Opacity(
+        opacity: isCompleted ? 0.7 : 1.0,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
-                ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                if (icon != null) ...[
+                  Icon(icon, color: Colors.white, size: 30),
+                  const SizedBox(width: 15),
+                ],
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 22,
+                        letterSpacing: 1.2,
+                        shadows: [Shadow(color: Colors.black26, blurRadius: 4, offset: Offset(2, 2))],
+                      ),
+                    ),
+                    if (subtitle.isNotEmpty)
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: isCompleted ? Colors.white.withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.9),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),
-          ),
-          if (isCompleted)
-            const Padding(
-              padding: EdgeInsets.only(right: 15),
-              child: Icon(Icons.check_circle, color: Colors.white, size: 25),
-            ),
-        ],
+            if (isCompleted)
+              const Positioned(
+                right: 20,
+                child: Icon(Icons.check_circle, color: Colors.white, size: 30),
+              ),
+          ],
+        ),
       ),
     );
   }

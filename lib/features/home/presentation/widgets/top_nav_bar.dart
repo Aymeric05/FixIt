@@ -17,11 +17,14 @@ import 'package:fixit/features/home/presentation/widgets/lives_store_dialog.dart
 import 'package:fixit/features/home/presentation/widgets/leaderboard_dialog.dart';
 import 'package:fixit/features/home/presentation/widgets/map_dialog.dart';
 import 'package:fixit/features/home/presentation/widgets/shop_dialog.dart';
+import 'package:fixit/features/home/presentation/widgets/daily_challenge_button.dart';
 
 import 'package:fixit/core/utils/app_notifications.dart';
 
 class TopNavBar extends StatelessWidget {
-  const TopNavBar({super.key});
+  final VoidCallback? onDailyPressed;
+
+  const TopNavBar({super.key, this.onDailyPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -89,6 +92,13 @@ class TopNavBar extends StatelessWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    if (onDailyPressed != null)
+                      DailyChallengeButton(
+                        isDailyCompleted: state.isDailyCompleted,
+                        isSeriesCompleted: state.isSeriesCompleted,
+                        onTap: onDailyPressed!,
+                      ),
                   ],
                 ),
               ),
@@ -131,8 +141,8 @@ class TopNavBar extends StatelessWidget {
                       context,
                       icon: Icons.calendar_today,
                       label: 'Rank',
-                      color: AppColors.candyYellow,
-                      darkColor: AppColors.candyYellowDark,
+                      color: Colors.red,
+                      darkColor: Colors.red.shade900,
                       onPressed: () => _showCandyDialog(context, const LeaderboardDialog()),
                     ),
                     const SizedBox(height: 12),

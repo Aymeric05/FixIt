@@ -30,6 +30,8 @@ class HomeState extends Equatable {
   final int timerTick; 
   final bool isWorldLoading;
   final DateTime? lastDailyPuzzleAt;
+  final bool isDailyCompleted;
+  final bool isSeriesCompleted;
 
   const HomeState({
     this.currentLevel = 1,
@@ -54,6 +56,8 @@ class HomeState extends Equatable {
     this.timerTick = 0,
     this.isWorldLoading = false,
     this.lastDailyPuzzleAt,
+    this.isDailyCompleted = false,
+    this.isSeriesCompleted = false,
   });
 
   HomeState copyWith({
@@ -79,6 +83,8 @@ class HomeState extends Equatable {
     int? timerTick,
     bool? isWorldLoading,
     DateTime? lastDailyPuzzleAt,
+    bool? isDailyCompleted,
+    bool? isSeriesCompleted,
   }) {
     return HomeState(
       currentLevel: currentLevel ?? this.currentLevel,
@@ -103,6 +109,8 @@ class HomeState extends Equatable {
       timerTick: timerTick ?? this.timerTick,
       isWorldLoading: isWorldLoading ?? this.isWorldLoading,
       lastDailyPuzzleAt: lastDailyPuzzleAt ?? this.lastDailyPuzzleAt,
+      isDailyCompleted: isDailyCompleted ?? this.isDailyCompleted,
+      isSeriesCompleted: isSeriesCompleted ?? this.isSeriesCompleted,
     );
   }
 
@@ -130,5 +138,7 @@ class HomeState extends Equatable {
         timerTick,
         isWorldLoading,
         lastDailyPuzzleAt,
+        isDailyCompleted,
+        isSeriesCompleted,
       ];
 }
