@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -9,17 +10,26 @@ import 'package:fixit/core/repositories/progression_repository.dart';
 import 'package:fixit/core/repositories/daily_repository.dart';
 import 'package:fixit/core/models/grid_offset.dart';
 import 'package:fixit/core/models/daily_mode.dart';
+import 'package:fixit/core/database/app_database.dart';
+import 'package:fixit/core/repositories/game_session_repository.dart';
 
 class MockProgressionRepository extends Mock implements ProgressionRepository {}
 class MockDailyRepository extends Mock implements DailyRepository {}
+class MockGameSessionRepository extends Mock implements GameSessionRepository {}
 
 void main() {
   late ProgressionRepository mockProgressionRepo;
   late DailyRepository mockDailyRepo;
+  late GameSessionRepository mockSessionRepo;
+
+  setUpAll(() {
+    registerFallbackValue(GameMode.story);
+  });
 
   setUp(() {
     mockProgressionRepo = MockProgressionRepository();
     mockDailyRepo = MockDailyRepository();
+    mockSessionRepo = MockGameSessionRepository();
     
     when(() => mockDailyRepo.generateDailyLevel(
       worldLevel: any(named: 'worldLevel'),
@@ -31,12 +41,54 @@ void main() {
     ));
 
     when(() => mockDailyRepo.getDailyStatus(any())).thenAnswer((_) async => null);
+    when(() => mockDailyRepo.getTodayWorldId()).thenReturn('daily_today');
+    when(() => mockDailyRepo.getTodaySeriesWorldId()).thenReturn('series_today');
+
+    when(() => mockSessionRepo.loadSession(
+          playerId: any(named: 'playerId'),
+          worldId: any(named: 'worldId'),
+          levelNumber: any(named: 'levelNumber'),
+          mode: any(named: 'mode'),
+        )).thenAnswer((_) async => null);
+    
+    when(() => mockSessionRepo.saveSession(
+      playerId: any(named: 'playerId'),
+      worldId: any(named: 'worldId'),
+      levelNumber: any(named: 'levelNumber'),
+      mode: any(named: 'mode'),
+      remainingSeconds: any(named: 'remainingSeconds'),
+      currentPath: any(named: 'currentPath'),
+    )).thenAnswer((_) async => {});
+
+    when(() => mockSessionRepo.deleteSession(
+      playerId: any(named: 'playerId'),
+      worldId: any(named: 'worldId'),
+      levelNumber: any(named: 'levelNumber'),
+      mode: any(named: 'mode'),
+    )).thenAnswer((_) async => {});
+
+    // Background stubs
+    when(() => mockProgressionRepo.ensureNextLevelsExist(any(), any())).thenAnswer((_) async => {});
+    when(() => mockProgressionRepo.saveGlobalLevel(
+      worldId: any(named: 'worldId'),
+      levelNumber: any(named: 'levelNumber'),
+      hints: any(named: 'hints'),
+      walls: any(named: 'walls'),
+      solution: any(named: 'solution'),
+    )).thenAnswer((_) async => {});
+    
+    when(() => mockProgressionRepo.getGlobalLevel(any(), any())).thenAnswer((_) async => null);
+    when(() => mockProgressionRepo.grantLevel1Reward(any())).thenAnswer((_) async => {});
   });
 
   group('GameBloc Regression Tests', () {
     blocTest<GameBloc, GameState>(
       'starts game correctly and sets initial state',
-      build: () => GameBloc(progressionRepo: mockProgressionRepo, dailyRepo: mockDailyRepo),
+      build: () => GameBloc(
+        progressionRepo: mockProgressionRepo,
+        dailyRepo: mockDailyRepo,
+        sessionRepo: mockSessionRepo,
+      ),
       act: (bloc) => bloc.add(const StartGame(
         level: 1,
         difficulty: GameDifficulty.easy,
@@ -52,7 +104,11 @@ void main() {
 
     blocTest<GameBloc, GameState>(
       'cell selection: only adjacent cells can be added',
-      build: () => GameBloc(progressionRepo: mockProgressionRepo, dailyRepo: mockDailyRepo),
+      build: () => GameBloc(
+        progressionRepo: mockProgressionRepo,
+        dailyRepo: mockDailyRepo,
+        sessionRepo: mockSessionRepo,
+      ),
       seed: () {
         final hints = List.generate(6, (_) => List<int?>.filled(6, null));
         hints[0][0] = 1;
@@ -74,7 +130,11 @@ void main() {
 
     blocTest<GameBloc, GameState>(
       'walls: prevents moving through a bush',
-      build: () => GameBloc(progressionRepo: mockProgressionRepo, dailyRepo: mockDailyRepo),
+      build: () => GameBloc(
+        progressionRepo: mockProgressionRepo,
+        dailyRepo: mockDailyRepo,
+        sessionRepo: mockSessionRepo,
+      ),
       seed: () {
         final hints = List.generate(6, (_) => List<int?>.filled(6, null));
         hints[0][0] = 1;
@@ -91,7 +151,11 @@ void main() {
 
     blocTest<GameBloc, GameState>(
       'Angry Snake: becomes angry when sequence is broken',
-      build: () => GameBloc(progressionRepo: mockProgressionRepo, dailyRepo: mockDailyRepo),
+      build: () => GameBloc(
+        progressionRepo: mockProgressionRepo,
+        dailyRepo: mockDailyRepo,
+        sessionRepo: mockSessionRepo,
+      ),
       seed: () {
         final hints = List.generate(6, (_) => List<int?>.filled(6, null));
         hints[0][0] = 1;
@@ -111,7 +175,11 @@ void main() {
 
     blocTest<GameBloc, GameState>(
       'Dragging on body makes snake angry but does not reset position',
-      build: () => GameBloc(progressionRepo: mockProgressionRepo, dailyRepo: mockDailyRepo),
+      build: () => GameBloc(
+        progressionRepo: mockProgressionRepo,
+        dailyRepo: mockDailyRepo,
+        sessionRepo: mockSessionRepo,
+      ),
       seed: () {
         final hints = List.generate(6, (_) => List<int?>.filled(6, null));
         hints[0][0] = 1;
@@ -122,17 +190,21 @@ void main() {
           walls: {},
         );
       },
-      act: (bloc) => bloc.add(const SelectCell(0, 1, isDrag: true)), // Dragging back on (0,1)
+      act: (bloc) => bloc.add(const SelectCell(0, 1, isDrag: true)),
       expect: () => [
         isA<GameState>()
           .having((s) => s.isAngry, 'angry', isTrue)
-          .having((s) => s.currentPath.length, 'path length', 3), // Still length 3
+          .having((s) => s.currentPath.length, 'path length', 3),
       ],
     );
 
     blocTest<GameBloc, GameState>(
       'Tapping on body resets position',
-      build: () => GameBloc(progressionRepo: mockProgressionRepo, dailyRepo: mockDailyRepo),
+      build: () => GameBloc(
+        progressionRepo: mockProgressionRepo,
+        dailyRepo: mockDailyRepo,
+        sessionRepo: mockSessionRepo,
+      ),
       seed: () {
         final hints = List.generate(6, (_) => List<int?>.filled(6, null));
         hints[0][0] = 1;
@@ -143,11 +215,49 @@ void main() {
           walls: {},
         );
       },
-      act: (bloc) => bloc.add(const SelectCell(0, 1, isDrag: false)), // Tapping on (0,1)
+      act: (bloc) => bloc.add(const SelectCell(0, 1, isDrag: false)),
       expect: () => [
         isA<GameState>()
-          .having((s) => s.currentPath.length, 'path length', 2), // Reset to (0,1)
+          .having((s) => s.currentPath.length, 'path length', 2),
       ],
+    );
+
+    blocTest<GameBloc, GameState>(
+      'session restoration: loads saved path and time on start',
+      build: () {
+        // Specifically stub loadSession for this test
+        when(() => mockSessionRepo.loadSession(
+              playerId: any(named: 'playerId'),
+              worldId: any(named: 'worldId'),
+              levelNumber: any(named: 'levelNumber'),
+              mode: any(named: 'mode'),
+            )).thenAnswer((_) async => ActiveGameState(
+              id: 1,
+              playerSupabaseId: 'player-1',
+              worldId: 'world_1',
+              levelNumber: 1,
+              gameMode: 'story',
+              remainingSeconds: 150,
+              currentPathJson: '[{"r":0,"c":0},{"r":0,"c":1}]',
+              updatedAt: DateTime.now(),
+            ));
+        return GameBloc(
+          progressionRepo: mockProgressionRepo,
+          dailyRepo: mockDailyRepo,
+          sessionRepo: mockSessionRepo,
+        );
+      },
+      act: (bloc) => bloc.add(const StartGame(
+        level: 1,
+        difficulty: GameDifficulty.easy,
+        playerId: 'player-1',
+        mode: GameMode.story,
+      )),
+      verify: (bloc) {
+        expect(bloc.state.remainingSeconds, equals(150));
+        expect(bloc.state.currentPath, hasLength(2));
+        expect(bloc.state.currentPath.first, equals(const GridOffset(0, 0)));
+      },
     );
   });
 }

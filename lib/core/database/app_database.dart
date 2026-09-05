@@ -107,6 +107,22 @@ class DailyChallenges extends Table {
   ];
 }
 
+class ActiveGameStates extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get playerSupabaseId => text()();
+  TextColumn get worldId => text()();
+  IntColumn get levelNumber => integer()();
+  TextColumn get gameMode => text()(); // story, daily_single, daily_series
+  IntColumn get remainingSeconds => integer()();
+  TextColumn get currentPathJson => text()();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {playerSupabaseId, worldId, levelNumber, gameMode}
+  ];
+}
+
 class WorldListConverter extends TypeConverter<List<String>, String> {
   const WorldListConverter();
   @override
@@ -121,12 +137,12 @@ class WorldListConverter extends TypeConverter<List<String>, String> {
   }
 }
 
-@DriftDatabase(tables: [Players, Progressions, LevelCompletions, GlobalLevels, Friends, FriendRequests, DailyChallenges])
+@DriftDatabase(tables: [Players, Progressions, LevelCompletions, GlobalLevels, Friends, FriendRequests, DailyChallenges, ActiveGameStates])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? e]) : super(e ?? _openConnection());
 
   @override
-  int get schemaVersion => 5; // Increment version
+  int get schemaVersion => 6; // Increment version
 
   @override
   MigrationStrategy get migration {
@@ -229,6 +245,9 @@ class AppDatabase extends _$AppDatabase {
           } catch (e) {
             AppLogger.error('Migration: Column dailyLevelTime might already exist, skipping', e);
           }
+        }
+        if (from < 6) {
+          await m.createTable(activeGameStates);
         }
       },
     );

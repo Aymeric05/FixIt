@@ -17,18 +17,23 @@ import 'package:fixit/core/models/daily_mode.dart';
 import 'package:fixit/core/models/level_win_summary.dart';
 import 'package:fixit/core/utils/app_logger.dart';
 
+import 'package:fixit/core/repositories/game_session_repository.dart';
+
 class GameBloc extends Bloc<GameEvent, GameState> {
   Timer? _timer;
   late final ProgressionRepository _progressionRepo;
   late final DailyRepository _dailyRepo;
+  late final GameSessionRepository _sessionRepo;
   String? _playerId;
 
   GameBloc({
     ProgressionRepository? progressionRepo,
     DailyRepository? dailyRepo,
+    GameSessionRepository? sessionRepo,
   }) : super(const GameState()) {
     _progressionRepo = progressionRepo ?? ProgressionRepository();
     _dailyRepo = dailyRepo ?? DailyRepository();
+    _sessionRepo = sessionRepo ?? GameSessionRepository();
     on<StartGame>(_onStartGame);
     on<SelectCell>(_onSelectCell);
     on<TimerTick>(_onTimerTick);
@@ -84,6 +89,23 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     List<GridOffset> solution;
     Set<String> walls;
     Map<GridOffset, int> hintSteps = {};
+
+    final String worldId = event.mode == GameMode.story 
+        ? 'world_1' 
+        : event.mode == GameMode.dailySeries 
+            ? _dailyRepo.getTodaySeriesWorldId() 
+            : _dailyRepo.getTodayWorldId();
+
+    // Check for existing session
+    ActiveGameState? savedSession;
+    if (event.playerId.isNotEmpty) {
+      savedSession = await _sessionRepo.loadSession(
+        playerId: event.playerId,
+        worldId: worldId,
+        levelNumber: event.level,
+        mode: event.mode,
+      );
+    }
 
     if (event.mode != GameMode.story) {
       final daily = _dailyRepo.generateDailyLevel(
@@ -152,15 +174,26 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final randomColor = colors[Random().nextInt(colors.length)];
 
     // Final level data and playing state
+    List<GridOffset> restoredPath = [];
+    int finalRemainingSeconds = initialSeconds;
+
+    if (savedSession != null) {
+      AppLogger.log('Restoring saved session for level ${event.level}');
+      finalRemainingSeconds = savedSession.remainingSeconds;
+      final List<dynamic> decodedPath = jsonDecode(savedSession.currentPathJson);
+      restoredPath = decodedPath.map((e) => GridOffset(e['r'], e['c'])).toList();
+    }
+
     emit(state.copyWith(
       hints: hints,
       solutionPath: solution,
       hintSteps: hintSteps,
       walls: walls,
       status: GameStatus.playing,
-      currentPath: [],
+      currentPath: restoredPath,
+      remainingSeconds: finalRemainingSeconds,
       pathColor: randomColor,
-      isAngry: false,
+      isAngry: _checkIfAngry(restoredPath, hints),
     ));
 
     if (event.playerId.isNotEmpty) {
@@ -176,6 +209,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           
           await Future.delayed(Duration.zero);
           if (!isClosed) {
+            // Clean up session if it exists but level is already marked as completed remotely
+            await _sessionRepo.deleteSession(playerId: event.playerId, worldId: worldId, levelNumber: event.level, mode: event.mode);
+            
             emit(state.copyWith(
               status: GameStatus.won,
               winSummary: summary,
@@ -195,6 +231,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
             
             await Future.delayed(Duration.zero);
             if (!isClosed) {
+              // Clean up session
+              await _sessionRepo.deleteSession(playerId: event.playerId, worldId: worldId, levelNumber: event.level, mode: event.mode);
+
               emit(state.copyWith(
                 status: GameStatus.won,
                 winSummary: summary,
@@ -216,7 +255,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       unawaited(_progressionRepo.grantLevel1Reward(event.playerId).catchError((e) => AppLogger.error('Reward error', e)));
     }
 
-    _startTimer(initialSeconds);
+    _startTimer(finalRemainingSeconds);
     if (event.mode == GameMode.story) {
       unawaited(_progressionRepo.ensureNextLevelsExist('world_1', event.level));
     }
@@ -240,6 +279,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         // If it's a tap on the body, reset to that point
         final newPath = currentPath.sublist(0, existingIndex + 1);
         emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
+        unawaited(_saveCurrentSession());
       }
       return;
     }
@@ -324,11 +364,13 @@ class GameBloc extends Bloc<GameEvent, GameState> {
             winSummary: summary,
             wonTime: displayTime,
           ));
+          unawaited(_deleteCurrentSession());
           return;
         }
       }
       
       emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
+      unawaited(_saveCurrentSession());
     }
   }
 
@@ -352,11 +394,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     return '${list[0]}-${list[1]}';
   }
 
-  bool _checkIfAngry(List<GridOffset> path) {
+  bool _checkIfAngry(List<GridOffset> path, [List<List<int?>>? customHints]) {
+    final hintsToUse = customHints ?? state.hints;
+    if (hintsToUse.isEmpty) return false;
+
     int maxHintSeen = 0;
     int hintsCounted = 0;
     for (var pos in path) {
-      final val = state.hints[pos.row][pos.col];
+      final val = hintsToUse[pos.row][pos.col];
       if (val != null) {
         hintsCounted++;
         if (val > maxHintSeen) maxHintSeen = val;
@@ -407,13 +452,19 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   void _onTimerTick(TimerTick event, Emitter<GameState> emit) {
     if (event.remainingSeconds == 0) {
       emit(state.copyWith(remainingSeconds: 0, status: GameStatus.lost));
+      unawaited(_deleteCurrentSession());
     } else {
       emit(state.copyWith(remainingSeconds: event.remainingSeconds));
+      // Save every 5 seconds to not overload SQLite, or every second if we really want "exact"
+      if (event.remainingSeconds % 5 == 0) {
+        unawaited(_saveCurrentSession());
+      }
     }
   }
 
   void _onPauseTimer(PauseTimer event, Emitter<GameState> emit) {
     _timer?.cancel();
+    unawaited(_saveCurrentSession());
   }
 
   void _onResumeTimer(ResumeTimer event, Emitter<GameState> emit) {
@@ -533,6 +584,42 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     } else if (field == 'item_reveal_path') {
       await (db.update(db.players)..where((t) => t.id.isNotNull())).write(PlayersCompanion(itemRevealPath: drift.Value(newValue)));
     }
+  }
+
+  Future<void> _saveCurrentSession() async {
+    if (_playerId == null || _playerId!.isEmpty || state.status != GameStatus.playing) return;
+
+    final String worldId = state.mode == GameMode.story 
+        ? 'world_1' 
+        : state.mode == GameMode.dailySeries 
+            ? _dailyRepo.getTodaySeriesWorldId() 
+            : _dailyRepo.getTodayWorldId();
+
+    await _sessionRepo.saveSession(
+      playerId: _playerId!,
+      worldId: worldId,
+      levelNumber: state.levelNumber,
+      mode: state.mode,
+      remainingSeconds: state.remainingSeconds,
+      currentPath: state.currentPath,
+    );
+  }
+
+  Future<void> _deleteCurrentSession() async {
+    if (_playerId == null || _playerId!.isEmpty) return;
+
+    final String worldId = state.mode == GameMode.story 
+        ? 'world_1' 
+        : state.mode == GameMode.dailySeries 
+            ? _dailyRepo.getTodaySeriesWorldId() 
+            : _dailyRepo.getTodayWorldId();
+
+    await _sessionRepo.deleteSession(
+      playerId: _playerId!,
+      worldId: worldId,
+      levelNumber: state.levelNumber,
+      mode: state.mode,
+    );
   }
 
   @override
