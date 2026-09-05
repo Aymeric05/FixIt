@@ -119,15 +119,13 @@ class _ProfileModalState extends State<ProfileModal> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildAvatarSection(context),
-                    const SizedBox(height: 25),
-                    _buildNicknameSection(),
-                    const Divider(height: 40, color: Colors.black12, thickness: 2),
+                    _buildAvatarAndNickname(context),
+                    const Divider(height: 30, color: Colors.black12, thickness: 2),
                     const Text(
                       'SOCIAL',
                       style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.candyPurple, fontSize: 18),
                     ),
-                    const SizedBox(height: 15),
+                    const SizedBox(height: 10),
                     _buildSocialSection(context),
                   ],
                 ),
@@ -138,6 +136,16 @@ class _ProfileModalState extends State<ProfileModal> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAvatarAndNickname(BuildContext context) {
+    return Row(
+      children: [
+        _buildAvatarSection(context),
+        const SizedBox(width: 15),
+        Expanded(child: _buildNicknameSection()),
+      ],
     );
   }
 
@@ -152,12 +160,12 @@ class _ProfileModalState extends State<ProfileModal> {
             alignment: Alignment.bottomRight,
             children: [
               Container(
-                width: 110,
-                height: 110,
+                width: 80, // Reduced from 110
+                height: 80, // Reduced from 110
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.candyBlue, width: 4),
+                  border: Border.all(color: AppColors.candyBlue, width: 3),
                   boxShadow: [
                     BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, spreadRadius: 2)
                   ],
@@ -169,17 +177,17 @@ class _ProfileModalState extends State<ProfileModal> {
                           fit: BoxFit.cover,
                           key: ValueKey(avatarUrl + DateTime.now().millisecondsSinceEpoch.toString()), // Force reload
                         )
-                      : const Icon(Icons.person, size: 70, color: AppColors.candyBlue),
+                      : const Icon(Icons.person, size: 50, color: AppColors.candyBlue),
                 ),
               ),
               // Pencil edit icon
               Container(
-                padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(4),
                 decoration: const BoxDecoration(
                   color: AppColors.candyGreen,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.edit, size: 18, color: Colors.white),
+                child: const Icon(Icons.edit, size: 14, color: Colors.white),
               ),
             ],
           ),
@@ -199,78 +207,72 @@ class _ProfileModalState extends State<ProfileModal> {
         return BlocBuilder<ProfileBloc, ProfileState>(
           builder: (context, state) {
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   "Pseudo :",
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 16,
                     fontWeight: FontWeight.w900,
                     color: AppColors.candyPurple,
                   ),
                 ),
-                const SizedBox(height: 10),
-                if (_isEditing)
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.candyBlue, width: 2),
+                const SizedBox(height: 5),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: _isEditing ? const EdgeInsets.fromLTRB(20, 15, 20, 12) : const EdgeInsets.fromLTRB(16, 12, 16, 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))
+                    ],
+                    border: Border.all(
+                      color: _isEditing ? AppColors.candyBlue : AppColors.candyBlue.withValues(alpha: 0.3), 
+                      width: _isEditing ? 3 : 2
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _nicknameController,
-                            autofocus: true,
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              isDense: true,
+                  ),
+                  child: _isEditing
+                      ? Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _nicknameController,
+                                autofocus: true,
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 20),
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                ),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                context.read<ProfileBloc>().add(
+                                      UpdateNicknameRequested(_nicknameController.text),
+                                    );
+                              },
+                              child: const Icon(Icons.check, color: Colors.green, size: 28),
+                            ),
+                            const SizedBox(width: 12),
+                            GestureDetector(
+                              onTap: () => setState(() => _isEditing = false),
+                              child: const Icon(Icons.close, color: Colors.red, size: 28),
+                            ),
+                          ],
+                        )
+                      : GestureDetector(
+                          onTap: () => setState(() => _isEditing = true),
+                          child: Text(
+                            currentUsername,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.black,
                             ),
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            context.read<ProfileBloc>().add(
-                                  UpdateNicknameRequested(_nicknameController.text),
-                                );
-                          },
-                          child: const Icon(Icons.check, color: Colors.green),
-                        ),
-                        const SizedBox(width: 10),
-                        GestureDetector(
-                          onTap: () => setState(() => _isEditing = false),
-                          child: const Icon(Icons.close, color: Colors.red),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  GestureDetector(
-                    onTap: () => setState(() => _isEditing = true),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))
-                        ],
-                        border: Border.all(color: AppColors.candyBlue.withValues(alpha: 0.3), width: 2),
-                      ),
-                      child: Text(
-                        currentUsername,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                  ),
+                ),
               ],
             );
           },

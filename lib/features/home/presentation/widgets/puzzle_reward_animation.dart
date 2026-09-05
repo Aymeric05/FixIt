@@ -5,12 +5,14 @@ import 'package:fixit/features/home/presentation/widgets/shiny_puzzle_icon.dart'
 class PuzzleRewardAnimation extends StatefulWidget {
   final Offset startOffset;
   final Offset endOffset;
+  final int pieceCount;
   final VoidCallback onComplete;
 
   const PuzzleRewardAnimation({
     super.key,
     required this.startOffset,
     required this.endOffset,
+    this.pieceCount = 5,
     required this.onComplete,
   });
 
@@ -19,19 +21,19 @@ class PuzzleRewardAnimation extends StatefulWidget {
 }
 
 class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with TickerProviderStateMixin {
-  static const int pieceCount = 5;
   late List<AnimationController> _controllers;
   late List<Animation<double>> _scaleAnimations;
   late List<Animation<Offset>> _moveAnimations;
   late List<Animation<double>> _opacityAnimations;
   
-  final List<bool> _showBadge = List.filled(pieceCount, false);
+  late List<bool> _showBadge;
   int _completedCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _controllers = List.generate(pieceCount, (index) {
+    _showBadge = List.filled(widget.pieceCount, false);
+    _controllers = List.generate(widget.pieceCount, (index) {
       return AnimationController(
         vsync: this,
         duration: const Duration(milliseconds: 2500),
@@ -42,7 +44,7 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
     _moveAnimations = [];
     _opacityAnimations = [];
 
-    for (int i = 0; i < pieceCount; i++) {
+    for (int i = 0; i < widget.pieceCount; i++) {
       final double startDelay = i * 0.05; // Tight staggered launch
       
       _scaleAnimations.add(TweenSequence<double>([
@@ -73,7 +75,7 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
       _controllers[i].addStatusListener((status) {
         if (status == AnimationStatus.completed) {
           _completedCount++;
-          if (_completedCount == pieceCount) {
+          if (_completedCount == widget.pieceCount) {
             widget.onComplete();
           }
         }
@@ -112,7 +114,7 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
 
             return Positioned(
               left: position.dx - 27,
-              top: position.dy - 150, // Shifted up even more (from -100 to -150)
+              top: position.dy - 27, // Center correctly
               child: Opacity(
                 opacity: opacity,
                 child: Transform.scale(

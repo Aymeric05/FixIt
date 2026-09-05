@@ -34,6 +34,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late ConfettiController _confettiController;
   bool _showPuzzleReward = false;
+  int _puzzleRewardCount = 5;
   Offset _puzzleTargetOffset = Offset.zero;
   bool _isDailyPopupShowing = false;
 
@@ -95,18 +96,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         isDailyCompleted: isDailyCompleted,
         isSeriesCompleted: isSeriesCompleted,
         onPlayDaily: () {
-          final state = context.read<HomeBloc>().state;
-          if (state.lives <= 0) {
-            Navigator.pop(dialogContext);
-            showDialog(
-              context: context,
-              builder: (ctx) => BlocProvider.value(
-                value: BlocProvider.of<HomeBloc>(context),
-                child: const NoLivesDialog(),
-              ),
-            );
-            return;
-          }
           Navigator.pop(dialogContext);
           Navigator.push(
             context,
@@ -127,18 +116,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           });
         },
         onPlaySeries: () {
-          final state = context.read<HomeBloc>().state;
-          if (state.lives <= 0) {
-            Navigator.pop(dialogContext);
-            showDialog(
-              context: context,
-              builder: (ctx) => BlocProvider.value(
-                value: BlocProvider.of<HomeBloc>(context),
-                child: const NoLivesDialog(),
-              ),
-            );
-            return;
-          }
           Navigator.pop(dialogContext);
           
           int startLevel = 1;
@@ -174,7 +151,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
   }
 
-  void _triggerPuzzleAnimation() {
+  void _triggerPuzzleAnimation(int gainedPieces) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final key = TopNavBar.puzzleKey;
       if (key.currentContext != null) {
@@ -182,6 +159,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         final position = box.localToGlobal(Offset.zero);
         setState(() {
           _puzzleTargetOffset = Offset(position.dx + box.size.width / 2, position.dy + box.size.height / 2);
+          _puzzleRewardCount = (gainedPieces >= 20) ? 10 : 5;
           _showPuzzleReward = true;
         });
       }
@@ -206,11 +184,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           },
         ),
         BlocListener<HomeBloc, HomeState>(
-          listenWhen: (previous, current) =>
-              (previous.levelsCompletedInWorld != current.levelsCompletedInWorld && current.lastAction == HomeLastAction.win),
+          listenWhen: (previous, current) => current.gainedPuzzlePieces > 0,
           listener: (context, state) {
             _confettiController.play();
-            _triggerPuzzleAnimation();
+            _triggerPuzzleAnimation(state.gainedPuzzlePieces);
           },
         ),
         BlocListener<HomeBloc, HomeState>(
@@ -394,8 +371,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ),
             if (_showPuzzleReward)
               PuzzleRewardAnimation(
-                startOffset: Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height / 2),
+                startOffset: Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height / 2 - 150),
                 endOffset: _puzzleTargetOffset,
+                pieceCount: _puzzleRewardCount,
                 onComplete: () {
                   setState(() => _showPuzzleReward = false);
                 },

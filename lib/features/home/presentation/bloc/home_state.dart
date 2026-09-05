@@ -8,6 +8,7 @@ class HomeState extends Equatable {
   final int lives;
   final int maxLives;
   final int puzzlePieces;
+  final int gainedPuzzlePieces; // New field to track rewards for animation
   final int itemPlusTime;
   final int itemMoreNumbers;
   final int itemRevealPath;
@@ -38,6 +39,7 @@ class HomeState extends Equatable {
     this.lives = 5,
     this.maxLives = 5,
     this.puzzlePieces = 50,
+    this.gainedPuzzlePieces = 0,
     this.itemPlusTime = 5,
     this.itemMoreNumbers = 5,
     this.itemRevealPath = 5,
@@ -65,6 +67,7 @@ class HomeState extends Equatable {
     int? lives,
     int? maxLives,
     int? puzzlePieces,
+    int? gainedPuzzlePieces,
     int? itemPlusTime,
     int? itemMoreNumbers,
     int? itemRevealPath,
@@ -91,6 +94,7 @@ class HomeState extends Equatable {
       lives: lives ?? this.lives,
       maxLives: maxLives ?? this.maxLives,
       puzzlePieces: puzzlePieces ?? this.puzzlePieces,
+      gainedPuzzlePieces: gainedPuzzlePieces ?? this.gainedPuzzlePieces,
       itemPlusTime: itemPlusTime ?? this.itemPlusTime,
       itemMoreNumbers: itemMoreNumbers ?? this.itemMoreNumbers,
       itemRevealPath: itemRevealPath ?? this.itemRevealPath,
@@ -120,6 +124,7 @@ class HomeState extends Equatable {
         lives,
         maxLives,
         puzzlePieces,
+        gainedPuzzlePieces,
         itemPlusTime,
         itemMoreNumbers,
         itemRevealPath,

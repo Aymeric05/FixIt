@@ -350,7 +350,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   Future<void> _onCompleteLevel(CompleteLevel event, Emitter<HomeState> emit) async {
-    // Increment puzzle pieces by 5 for completing a level
+    // Increment puzzle pieces for completing a level
+    // 20 for Daily, 5 for Story
+    final int reward = (event.mode == GameMode.dailySingle || event.mode == GameMode.dailySeries) ? 20 : 5;
+    
     try {
       final player = await (_db.select(_db.players)
             ..where((t) => event.playerId != null && event.playerId!.isNotEmpty 
@@ -358,7 +361,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                 : t.id.isNotNull()))
           .getSingle();
       
-      final newPuzzles = player.puzzlePieces + 5;
+      final newPuzzles = player.puzzlePieces + reward;
       
       await (_db.update(_db.players)
             ..where((t) => event.playerId != null && event.playerId!.isNotEmpty 
@@ -373,9 +376,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       AppLogger.error('Error incrementing puzzles on complete level', e);
     }
 
-    emit(state.copyWith(lastAction: HomeLastAction.win));
+    emit(state.copyWith(lastAction: HomeLastAction.win, gainedPuzzlePieces: reward));
     // Hard refresh from DB for the specific player
     await _refreshProgression(emit, event.playerId);
+    
+    // Reset gained pieces so listener only triggers once
+    emit(state.copyWith(gainedPuzzlePieces: 0));
   }
 
   Future<void> _onLoseLife(LoseLife event, Emitter<HomeState> emit) async {
