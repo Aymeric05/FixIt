@@ -132,15 +132,33 @@ class _GamePageState extends State<GamePage> {
                   ),
                 ),
                 SafeArea(
-                  child: Column(
-                    children: [
-                      _buildHeader(context),
-                      const SizedBox(height: 10),
-                      _buildItemsRow(context),
-                      const Spacer(),
-                      _buildGridContainer(context),
-                      const Spacer(),
-                    ],
+                  child: BlocBuilder<GameBloc, GameState>(
+                    builder: (context, state) {
+                      return Column(
+                        children: [
+                          _buildHeader(context),
+                          const SizedBox(height: 10),
+                          _buildItemsRow(context),
+                          const Spacer(),
+                          _buildGridContainer(context),
+                          const Spacer(),
+                          // Trophée Button after win
+                          if (state.status == GameStatus.won)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 20),
+                              child: CandyButton(
+                                width: 80,
+                                height: 80,
+                                borderRadius: 40,
+                                color: Colors.amber,
+                                darkColor: Colors.orange.shade900,
+                                onPressed: () => _showWinDialog(context, state, playerId),
+                                child: const Icon(Icons.emoji_events, color: Colors.white, size: 40),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],
@@ -254,8 +272,12 @@ class _GamePageState extends State<GamePage> {
                       color: Colors.redAccent,
                       darkColor: Colors.red.shade900,
                       onPressed: () {
-                        final currentLives = context.read<HomeBloc>().state.lives;
-                        _showQuitConfirmationDialog(context, currentLives, playerId);
+                        if (state.status == GameStatus.won) {
+                          Navigator.pop(context);
+                        } else {
+                          final currentLives = context.read<HomeBloc>().state.lives;
+                          _showQuitConfirmationDialog(context, currentLives, playerId);
+                        }
                       },
                       child: const Icon(Icons.close, color: Colors.white, size: 30),
                     ),
