@@ -22,6 +22,7 @@ class DatabaseService {
 
       if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
         AppLogger.log('CRITICAL: Supabase environment variables are missing!');
+        AppLogger.log('HINT: Make sure to run with --dart-define-from-file=env.json');
       }
 
       // 1. Initialize Supabase

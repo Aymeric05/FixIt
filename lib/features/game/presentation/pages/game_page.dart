@@ -445,8 +445,8 @@ class _GamePageState extends State<GamePage> {
                     final cellSize = constraints.maxWidth / 6;
 
                     return GestureDetector(
-                      onPanStart: (details) => _handleDrag(context, details.localPosition, cellSize),
-                      onPanUpdate: (details) => _handleDrag(context, details.localPosition, cellSize),
+                      onPanStart: (details) => _handleDrag(context, details.localPosition, cellSize, isDrag: false),
+                      onPanUpdate: (details) => _handleDrag(context, details.localPosition, cellSize, isDrag: true),
                       child: Container(
                         width: constraints.maxWidth,
                         height: constraints.maxWidth,
@@ -606,12 +606,12 @@ class _GamePageState extends State<GamePage> {
     );
   }
 
-  void _handleDrag(BuildContext context, Offset localPos, double cellSize) {
+  void _handleDrag(BuildContext context, Offset localPos, double cellSize, {required bool isDrag}) {
     final row = (localPos.dy / cellSize).floor();
     final col = (localPos.dx / cellSize).floor();
 
     if (row >= 0 && row < 6 && col >= 0 && col < 6) {
-      context.read<GameBloc>().add(SelectCell(row, col));
+      context.read<GameBloc>().add(SelectCell(row, col, isDrag: isDrag));
     }
   }
 

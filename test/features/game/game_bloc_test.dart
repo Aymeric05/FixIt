@@ -108,5 +108,46 @@ void main() {
         isA<GameState>().having((s) => s.isAngry, 'angry', isTrue),
       ],
     );
+
+    blocTest<GameBloc, GameState>(
+      'Dragging on body makes snake angry but does not reset position',
+      build: () => GameBloc(progressionRepo: mockProgressionRepo, dailyRepo: mockDailyRepo),
+      seed: () {
+        final hints = List.generate(6, (_) => List<int?>.filled(6, null));
+        hints[0][0] = 1;
+        return GameState(
+          status: GameStatus.playing,
+          hints: hints,
+          currentPath: [const GridOffset(0, 0), const GridOffset(0, 1), const GridOffset(0, 2)],
+          walls: {},
+        );
+      },
+      act: (bloc) => bloc.add(const SelectCell(0, 1, isDrag: true)), // Dragging back on (0,1)
+      expect: () => [
+        isA<GameState>()
+          .having((s) => s.isAngry, 'angry', isTrue)
+          .having((s) => s.currentPath.length, 'path length', 3), // Still length 3
+      ],
+    );
+
+    blocTest<GameBloc, GameState>(
+      'Tapping on body resets position',
+      build: () => GameBloc(progressionRepo: mockProgressionRepo, dailyRepo: mockDailyRepo),
+      seed: () {
+        final hints = List.generate(6, (_) => List<int?>.filled(6, null));
+        hints[0][0] = 1;
+        return GameState(
+          status: GameStatus.playing,
+          hints: hints,
+          currentPath: [const GridOffset(0, 0), const GridOffset(0, 1), const GridOffset(0, 2)],
+          walls: {},
+        );
+      },
+      act: (bloc) => bloc.add(const SelectCell(0, 1, isDrag: false)), // Tapping on (0,1)
+      expect: () => [
+        isA<GameState>()
+          .having((s) => s.currentPath.length, 'path length', 2), // Reset to (0,1)
+      ],
+    );
   });
 }

@@ -35,11 +35,12 @@ class StartGame extends GameEvent {
 class SelectCell extends GameEvent {
   final int row;
   final int col;
+  final bool isDrag;
 
-  const SelectCell(this.row, this.col);
+  const SelectCell(this.row, this.col, {this.isDrag = false});
 
   @override
-  List<Object> get props => [row, col];
+  List<Object> get props => [row, col, isDrag];
 }
 
 class TimerTick extends GameEvent {
