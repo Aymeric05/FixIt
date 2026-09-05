@@ -747,6 +747,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                   color: AppColors.candyPink,
                   darkColor: AppColors.candyPinkDark,
                   onPressed: () {
+                    context.read<GameBloc>().add(AbandonGame());
                     if (widget.mode == GameMode.story) {
                       context.read<HomeBloc>().add(LoseLife(playerId: playerId));
                     }
@@ -819,6 +820,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                 color: AppColors.candyPink,
                 darkColor: AppColors.candyPinkDark,
                 onPressed: () {
+                  context.read<GameBloc>().add(AbandonGame());
                   if (widget.mode == GameMode.story) {
                     context.read<HomeBloc>().add(LoseLife(playerId: playerId));
                   }

@@ -45,6 +45,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<UseItemMoreNumbers>(_onUseItemMoreNumbers);
     on<UseItemRevealPath>(_onUseItemRevealPath);
     on<RecoverFromDizzy>(_onRecoverFromDizzy);
+    on<AbandonGame>(_onAbandonGame);
   }
 
   Future<void> _onStartGame(StartGame event, Emitter<GameState> emit) async {
@@ -397,6 +398,11 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         collisionOffset: null,
       ));
     }
+  }
+
+  Future<void> _onAbandonGame(AbandonGame event, Emitter<GameState> emit) async {
+    await _deleteCurrentSession();
+    emit(state.copyWith(currentPath: []));
   }
 
   Future<void> _onLoadFriendsLeaderboard(LoadFriendsLeaderboard event, Emitter<GameState> emit) async {

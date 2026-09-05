@@ -95,18 +95,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         isDailyCompleted: isDailyCompleted,
         isSeriesCompleted: isSeriesCompleted,
         onPlayDaily: () {
-          final state = context.read<HomeBloc>().state;
-          if (state.lives <= 0) {
-            Navigator.pop(dialogContext);
-            showDialog(
-              context: context,
-              builder: (ctx) => BlocProvider.value(
-                value: BlocProvider.of<HomeBloc>(context),
-                child: const NoLivesDialog(),
-              ),
-            );
-            return;
-          }
           Navigator.pop(dialogContext);
           Navigator.push(
             context,
@@ -127,18 +115,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           });
         },
         onPlaySeries: () {
-          final state = context.read<HomeBloc>().state;
-          if (state.lives <= 0) {
-            Navigator.pop(dialogContext);
-            showDialog(
-              context: context,
-              builder: (ctx) => BlocProvider.value(
-                value: BlocProvider.of<HomeBloc>(context),
-                child: const NoLivesDialog(),
-              ),
-            );
-            return;
-          }
           Navigator.pop(dialogContext);
           
           int startLevel = 1;
@@ -321,10 +297,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                 );
                                               },
                                             ),
-                                            Positioned(
-                                              right: 20,
-                                              child: _FloatingBuyButton(),
-                                            ),
                                           ],
                                         ),
                                       ),
@@ -442,78 +414,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 fontSize: 14,
                 fontWeight: FontWeight.w900,
                 shadows: [Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1, 1))],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FloatingBuyButton extends StatefulWidget {
-  @override
-  State<_FloatingBuyButton> createState() => _FloatingBuyButtonState();
-}
-
-class _FloatingBuyButtonState extends State<_FloatingBuyButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    )..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0, end: 15).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, -_animation.value),
-          child: child,
-        );
-      },
-      child: CandyButton(
-        width: 60,
-        height: 60,
-        color: AppColors.candyPink,
-        darkColor: AppColors.candyPinkDark,
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (dialogContext) => BlocProvider.value(
-              value: BlocProvider.of<HomeBloc>(context),
-              child: const LivesStoreDialog(),
-            ),
-          );
-        },
-        child: const Stack(
-          alignment: Alignment.center,
-          children: [
-            Icon(Icons.favorite, color: Colors.white, size: 30),
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: CircleAvatar(
-                radius: 10,
-                backgroundColor: AppColors.candyGreen,
-                child: Icon(Icons.add, color: Colors.white, size: 14),
               ),
             ),
           ],
