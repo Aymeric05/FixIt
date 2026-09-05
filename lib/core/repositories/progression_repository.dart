@@ -19,46 +19,80 @@ class ProgressionRepository {
     required int playerTime,
   }) async {
     try {
-      // 1. Global Completion Count (before recording this one)
+      // 0. Fetch real username from local Drift
+      String myUsername = 'Me';
+      try {
+        final localPlayer = await (_db.select(_db.players)..where((t) => t.supabaseId.equals(playerId))).getSingleOrNull();
+        if (localPlayer != null) myUsername = localPlayer.username;
+      } catch (e) {
+        AppLogger.error('Error fetching local username', e);
+      }
+
+      // 1. Global Completions
       final globalResponse = await _supabase
           .from('level_completions')
-          .select('completion_time_seconds, profiles!player_id(username)')
+          .select('player_id, completion_time_seconds, profiles!player_id(username)')
           .eq('world_id', worldId)
-          .eq('level_number', levelNumber)
-          .order('completion_time_seconds', ascending: true);
+          .eq('level_number', levelNumber);
       
-      final List<dynamic> allRecords = globalResponse as List<dynamic>;
-      final int globalCount = allRecords.length;
+      final List<dynamic> rawRecords = globalResponse as List<dynamic>;
+      
+      // 2. Integration of CURRENT attempt into global stats
+      final List<Map<String, dynamic>> processedRecords = [];
+      bool currentUserFoundInRaw = false;
+      
+      for (var record in rawRecords) {
+        final pid = record['player_id'] as String;
+        int time = record['completion_time_seconds'] as int;
+        String uname = (record['profiles'] != null && record['profiles']['username'] != null) 
+            ? record['profiles']['username'] as String 
+            : 'Unknown';
 
-      // 2. World Record + Holder (current record before saving new one)
-      int wrSeconds = 0;
-      String wrHolder = '--';
-      if (allRecords.isNotEmpty) {
-        wrSeconds = allRecords[0]['completion_time_seconds'] as int? ?? 0;
-        final profiles = allRecords[0]['profiles'];
-        wrHolder = (profiles != null && profiles['username'] != null) ? profiles['username'] as String : 'Unknown';
-      }
-
-      // 3. Global Average
-      int avgSeconds = 0;
-      if (allRecords.isNotEmpty) {
-        final total = allRecords.fold<int>(0, (sum, item) => sum + (item['completion_time_seconds'] as int));
-        avgSeconds = (total / allRecords.length).round();
-      }
-
-      // 4. Global Percentile (if we added this attempt)
-      double? percentile;
-      if (globalCount >= 1) {
-        int rank = 1;
-        for (var record in allRecords) {
-          if ((record['completion_time_seconds'] as int) < playerTime) {
-            rank++;
-          }
+        if (pid == playerId) {
+          currentUserFoundInRaw = true;
+          uname = myUsername; // Use latest username
+          if (playerTime < time) time = playerTime; // Use the best one for stats
         }
-        percentile = rank / (globalCount + 1);
+        
+        processedRecords.add({
+          'player_id': pid,
+          'time': time,
+          'username': uname,
+        });
+      }
+      
+      if (!currentUserFoundInRaw) {
+        processedRecords.add({
+          'player_id': playerId,
+          'time': playerTime,
+          'username': myUsername,
+        });
       }
 
-      // 5. Friends Data
+      // Sort by time
+      processedRecords.sort((a, b) => (a['time'] as int).compareTo(b['time'] as int));
+
+      final int globalCount = processedRecords.length;
+
+      // 3. World Record + Holder
+      int wrSeconds = processedRecords[0]['time'] as int;
+      String wrHolder = processedRecords[0]['username'] as String;
+
+      // 4. Global Average
+      final totalSeconds = processedRecords.fold<int>(0, (sum, item) => sum + (item['time'] as int));
+      final avgSeconds = (totalSeconds / globalCount).round();
+
+      // 5. Global Percentile
+      int rankInGlobal = 0;
+      for (int i = 0; i < processedRecords.length; i++) {
+        if (processedRecords[i]['player_id'] == playerId) {
+          rankInGlobal = i + 1;
+          break;
+        }
+      }
+      final double percentile = rankInGlobal / globalCount;
+
+      // 6. Friends Data
       final friendIdsResponse = await _supabase
           .from('friends')
           .select('friend_id')
@@ -66,51 +100,19 @@ class ProgressionRepository {
       final List<String> friendIds = (friendIdsResponse as List).map((e) => e['friend_id'] as String).toList();
       final List<String> relevantIds = [playerId, ...friendIds];
 
-      // Note: This includes older records of the same player if they exist, 
-      // but level_completions has a unique constraint on (player_id, world_id, level_number) 
-      // due to our upsert logic, so it's safe.
-      final socialRankingsResponse = await _supabase
-          .from('level_completions')
-          .select('player_id, completion_time_seconds, profiles!player_id(username)')
-          .eq('world_id', worldId)
-          .eq('level_number', levelNumber)
-          .inFilter('player_id', relevantIds)
-          .order('completion_time_seconds', ascending: true);
-      
-      final List<dynamic> socialData = socialRankingsResponse as List<dynamic>;
       final List<FriendRankEntry> socialRankings = [];
-      
-      // Update social data with current performance if it's better or if it doesn't exist yet
-      bool userIncluded = false;
-      for (var entry in socialData) {
-        String entryId = entry['player_id'] as String;
-        int time = entry['completion_time_seconds'] as int;
-        if (entryId == playerId) {
-          userIncluded = true;
-          if (playerTime < time) time = playerTime; // Use better time for ranking display
+      for (var record in processedRecords) {
+        if (relevantIds.contains(record['player_id'])) {
+          socialRankings.add(FriendRankEntry(
+            playerId: record['player_id'] as String,
+            username: record['username'] as String,
+            timeSeconds: record['time'] as int,
+            rank: 0, // Calculated after sorting
+          ));
         }
-        final profiles = entry['profiles'];
-        final username = (profiles != null && profiles['username'] != null) ? profiles['username'] as String : 'Unknown';
-        socialRankings.add(FriendRankEntry(
-          playerId: entryId,
-          username: username,
-          timeSeconds: time,
-          rank: 0, // Will calculate below
-        ));
-      }
-      
-      if (!userIncluded) {
-        final myProfile = await _supabase.from('profiles').select('username').eq('id', playerId).maybeSingle();
-        final username = (myProfile != null && myProfile['username'] != null) ? myProfile['username'] as String : 'Me';
-        socialRankings.add(FriendRankEntry(
-          playerId: playerId,
-          username: username,
-          timeSeconds: playerTime,
-          rank: 0,
-        ));
       }
 
-      socialRankings.sort((a, b) => a.timeSeconds.compareTo(b.timeSeconds));
+      // Ensure rankings are correct
       for (int i = 0; i < socialRankings.length; i++) {
         socialRankings[i] = FriendRankEntry(
           playerId: socialRankings[i].playerId,
@@ -120,7 +122,7 @@ class ProgressionRepository {
         );
       }
 
-      // Mini-leaderboard: Above, User, Below
+      // Mini-leaderboard
       final userRankIdx = socialRankings.indexWhere((e) => e.playerId == playerId);
       final List<FriendRankEntry> miniLeaderboard = [];
       if (userRankIdx != -1) {
@@ -157,6 +159,14 @@ class ProgressionRepository {
     required String playerId,
   }) async {
     try {
+      // 0. Get local username
+      String myUsername = 'Me';
+      try {
+        final localPlayer = await (_db.select(_db.players)..where((t) => t.supabaseId.equals(playerId))).getSingleOrNull();
+        if (localPlayer != null) myUsername = localPlayer.username;
+      } catch (_) {}
+
+      // 1. Get friend IDs
       final friendIdsResponse = await _supabase
           .from('friends')
           .select('friend_id')
@@ -164,6 +174,7 @@ class ProgressionRepository {
       final List<String> friendIds = (friendIdsResponse as List).map((e) => e['friend_id'] as String).toList();
       final List<String> relevantIds = [playerId, ...friendIds];
 
+      // 2. Fetch completions
       final response = await _supabase
           .from('level_completions')
           .select('player_id, completion_time_seconds, profiles!player_id(username)')
@@ -174,16 +185,53 @@ class ProgressionRepository {
       
       final List<dynamic> data = response as List<dynamic>;
       final List<FriendRankEntry> rankings = [];
+      bool meFound = false;
+
       for (int i = 0; i < data.length; i++) {
+        final pid = data[i]['player_id'] as String;
+        if (pid == playerId) meFound = true;
+
         final profiles = data[i]['profiles'];
-        final username = (profiles != null && profiles['username'] != null) ? profiles['username'] as String : 'Unknown';
+        String uname = (profiles != null && profiles['username'] != null) ? profiles['username'] as String : 'Unknown';
+        if (pid == playerId) uname = myUsername;
+
         rankings.add(FriendRankEntry(
-          playerId: data[i]['player_id'] as String,
-          username: username,
+          playerId: pid,
+          username: uname,
           timeSeconds: data[i]['completion_time_seconds'] as int,
-          rank: i + 1,
+          rank: 0, // Will recalculate
         ));
       }
+
+      // 3. Fallback: Add self if not in remote list yet (but we probably completed it)
+      if (!meFound) {
+        // Try to get my local completion for this level if available, 
+        // or we just skip if not found yet (unlikely if summary just called)
+        final localComp = await (_db.select(_db.levelCompletions)
+              ..where((t) => t.playerSupabaseId.equals(playerId) & t.worldId.equals(worldId) & t.levelNumber.equals(levelNumber)))
+            .getSingleOrNull();
+        
+        if (localComp != null) {
+          rankings.add(FriendRankEntry(
+            playerId: playerId,
+            username: myUsername,
+            timeSeconds: localComp.completionTimeSeconds,
+            rank: 0,
+          ));
+          rankings.sort((a, b) => a.timeSeconds.compareTo(b.timeSeconds));
+        }
+      }
+
+      // Recalculate ranks
+      for (int i = 0; i < rankings.length; i++) {
+        rankings[i] = FriendRankEntry(
+          playerId: rankings[i].playerId,
+          username: rankings[i].username,
+          timeSeconds: rankings[i].timeSeconds,
+          rank: i + 1,
+        );
+      }
+
       return rankings;
     } catch (e) {
       AppLogger.error('Error fetching friends leaderboard', e);

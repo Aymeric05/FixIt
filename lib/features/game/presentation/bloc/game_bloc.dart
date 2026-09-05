@@ -233,8 +233,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     }
     final existingIndex = currentPath.indexOf(tapped);
     if (existingIndex != -1) {
-      final newPath = currentPath.sublist(0, existingIndex + 1);
-      emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
+      if (event.isDrag) {
+        // If it's a drag on the body, just make the snake angry, don't reset
+        emit(state.copyWith(isAngry: true));
+      } else {
+        // If it's a tap on the body, reset to that point
+        final newPath = currentPath.sublist(0, existingIndex + 1);
+        emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
+      }
       return;
     }
     final last = currentPath.last;
