@@ -28,6 +28,7 @@ Lorsque je te demande de générer un message de commit pour mes modifications e
 - `feat` : Nouvelle fonctionnalité
 - `fix` : Correction de bug
 - `refactor` : Modification du code qui ne corrige ni un bug ni n'ajoute une fonctionnalité
+- `perf` : Amélioration des performances
 - `style` : Formatage (espaces, point-virgules, etc.)
 - `chore` : Tâches de maintenance (ex: mise à jour de dépendances)
 - `test` : Ajout ou modification de tests

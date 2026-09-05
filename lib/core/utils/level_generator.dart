@@ -1,13 +1,42 @@
 import 'dart:math';
 import 'package:fixit/core/models/grid_offset.dart';
+import 'package:flutter/foundation.dart';
 
 class LevelGenerator {
+  static Future<({
+    List<List<int?>> hints,
+    List<GridOffset> solution,
+    Map<GridOffset, int> hintSteps,
+    Set<String> walls
+  })> generateAsync(int hintsCount, {int? seed}) async {
+    return compute(_generateWithSeed, {'count': hintsCount, 'seed': seed});
+  }
+
+  static ({
+    List<List<int?>> hints,
+    List<GridOffset> solution,
+    Map<GridOffset, int> hintSteps,
+    Set<String> walls
+  }) _generateWithSeed(Map<String, dynamic> params) {
+    final count = params['count'] as int;
+    final seed = params['seed'] as int?;
+    return _generateInternal(count, seed != null ? Random(seed) : null);
+  }
   static ({
     List<List<int?>> hints,
     List<GridOffset> solution,
     Map<GridOffset, int> hintSteps,
     Set<String> walls
   }) generate(int hintsCount, {Random? random}) {
+    return _generateInternal(hintsCount, random);
+  }
+
+  static ({
+    List<List<int?>> hints,
+    List<GridOffset> solution,
+    Map<GridOffset, int> hintSteps,
+    Set<String> walls
+  }) _generateInternal(int hintsCount, [Random? random]) {
     final rnd = random ?? Random();
     final List<GridOffset>? solution = _generateHamiltonianPath(rnd);
     final finalSolution = solution ?? _generateSnakePath();
