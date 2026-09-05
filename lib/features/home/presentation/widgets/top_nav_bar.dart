@@ -47,18 +47,13 @@ class TopNavBar extends StatelessWidget {
                   children: [
                     _buildProfileSection(context),
                     const SizedBox(height: 12),
-                    BlocBuilder<FriendsBloc, FriendsState>(
-                      builder: (context, state) {
-                        return _buildNavButton(
-                          context,
-                          icon: Icons.people,
-                          label: 'Social',
-                          color: AppColors.candyPink,
-                          darkColor: AppColors.candyPinkDark,
-                          badgeCount: state.incomingRequests.length,
-                          onPressed: () => _showCandyDialog(context, const SocialDialog()),
-                        );
-                      },
+                    _buildNavButton(
+                      context,
+                      icon: Icons.shopping_cart,
+                      label: 'Shop',
+                      color: AppColors.candyPurple,
+                      darkColor: AppColors.candyPurpleDark,
+                      onPressed: () => _showCandyDialog(context, const ShopDialog()),
                     ),
                     const SizedBox(height: 12),
                     _buildNavButton(
@@ -147,15 +142,6 @@ class TopNavBar extends StatelessWidget {
                       darkColor: Colors.red.shade900,
                       onPressed: () => _showCandyDialog(context, const LeaderboardDialog()),
                     ),
-                    const SizedBox(height: 12),
-                    _buildNavButton(
-                      context,
-                      icon: Icons.shopping_cart,
-                      label: 'Shop',
-                      color: AppColors.candyPurple,
-                      darkColor: AppColors.candyPurpleDark,
-                      onPressed: () => _showCandyDialog(context, const ShopDialog()),
-                    ),
                   ],
                 ),
               ),
@@ -171,36 +157,41 @@ class TopNavBar extends StatelessWidget {
   }
 
   Widget _buildProfileSection(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) {
-        final bool isAuthenticated = state is AuthAuthenticated;
-        final avatarUrl = isAuthenticated ? state.profile.avatarUrl : null;
+    return BlocBuilder<FriendsBloc, FriendsState>(
+      builder: (context, friendsState) {
+        return BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            final bool isAuthenticated = state is AuthAuthenticated;
+            final avatarUrl = isAuthenticated ? state.profile.avatarUrl : null;
 
-        return _buildNavButton(
-          context,
-          icon: avatarUrl == null || !File(avatarUrl).existsSync() ? Icons.person : null,
-          customIcon: avatarUrl != null && File(avatarUrl).existsSync()
-              ? ClipOval(
-                  child: Image.file(
-                    File(avatarUrl),
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                    key: ValueKey(avatarUrl + DateTime.now().millisecondsSinceEpoch.toString()),
-                  ),
-                )
-              : null,
-          label: 'Profil',
-          color: AppColors.candyBlue,
-          darkColor: AppColors.candyBlueDark,
-          onPressed: isAuthenticated
-              ? () => showDialog(
-                    context: context,
-                    builder: (dialogContext) => ProfileModal(player: state.profile),
-                  )
-              : () {
-                  AppNotifications.show(context, 'Connecting to server...');
-                },
+            return _buildNavButton(
+              context,
+              icon: avatarUrl == null || !File(avatarUrl).existsSync() ? Icons.person : null,
+              customIcon: avatarUrl != null && File(avatarUrl).existsSync()
+                  ? ClipOval(
+                      child: Image.file(
+                        File(avatarUrl),
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        key: ValueKey(avatarUrl + DateTime.now().millisecondsSinceEpoch.toString()),
+                      ),
+                    )
+                  : null,
+              label: 'Social',
+              color: AppColors.candyBlue,
+              darkColor: AppColors.candyBlueDark,
+              badgeCount: friendsState.incomingRequests.length,
+              onPressed: isAuthenticated
+                  ? () => showDialog(
+                        context: context,
+                        builder: (dialogContext) => ProfileModal(player: state.profile),
+                      )
+                  : () {
+                      AppNotifications.show(context, 'Connecting to server...');
+                    },
+            );
+          },
         );
       },
     );
