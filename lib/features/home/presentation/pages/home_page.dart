@@ -17,6 +17,7 @@ import 'package:confetti/confetti.dart';
 
 import 'package:fixit/features/home/presentation/widgets/daily_popup.dart';
 import 'package:fixit/features/home/presentation/widgets/daily_challenge_button.dart';
+import 'package:fixit/features/home/presentation/widgets/no_lives_dialog.dart';
 import 'package:fixit/core/models/daily_mode.dart';
 import 'package:fixit/core/repositories/daily_repository.dart';
 import 'package:fixit/core/database/app_database.dart';
@@ -75,11 +76,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void _showDailyPopup(DailyChallenge? status) {
     showDialog(
       context: context,
-      builder: (context) => DailyPopup(
+      builder: (dialogContext) => DailyPopup(
         isDailyCompleted: status?.isDailyLevelCompleted ?? false,
         isSeriesCompleted: status?.isSeriesCompleted ?? false,
         onPlayDaily: () {
-          Navigator.pop(context);
+          final state = context.read<HomeBloc>().state;
+          if (state.lives <= 0) {
+            Navigator.pop(dialogContext);
+            showDialog(
+              context: context,
+              builder: (ctx) => BlocProvider.value(
+                value: BlocProvider.of<HomeBloc>(context),
+                child: const NoLivesDialog(),
+              ),
+            );
+            return;
+          }
+          Navigator.pop(dialogContext);
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -92,7 +105,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           );
         },
         onPlaySeries: () {
-          Navigator.pop(context);
+          final state = context.read<HomeBloc>().state;
+          if (state.lives <= 0) {
+            Navigator.pop(dialogContext);
+            showDialog(
+              context: context,
+              builder: (ctx) => BlocProvider.value(
+                value: BlocProvider.of<HomeBloc>(context),
+                child: const NoLivesDialog(),
+              ),
+            );
+            return;
+          }
+          Navigator.pop(dialogContext);
           
           int startLevel = 1;
           if (status != null) {
@@ -213,6 +238,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                             MainPlayButton(
                                               level: state.currentLevel,
                                               onTap: () {
+                                                if (state.lives <= 0) {
+                                                  showDialog(
+                                                    context: context,
+                                                    builder: (dialogContext) => BlocProvider.value(
+                                                      value: BlocProvider.of<HomeBloc>(context),
+                                                      child: const NoLivesDialog(),
+                                                    ),
+                                                  );
+                                                  return;
+                                                }
                                                 Navigator.of(context).push(
                                                   MaterialPageRoute(
                                                     builder: (context) => GamePage(

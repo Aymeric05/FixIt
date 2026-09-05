@@ -17,6 +17,7 @@ Le mini-jeu principal consiste à relier des numéros en séquence (1, 2, 3...) 
 *   **Vibrations & Sons :** Feedbacks haptiques lors de la connexion réussie de cellules.
 *   **Célébration :** Animation de confettis (fireworks style) lors de la victoire d'un niveau.
 *   **Tutoriel :** Un dialogue d'aide s'affiche automatiquement lors du premier lancement du niveau 1 pour expliquer la mécanique de glissement (drag).
+*   **Dialogue "Plus de Vies" :** Si le joueur tente de lancer une partie avec 0 vie, un dialogue triste avec une animation de cœur brisé s'affiche, proposant un bouton rouge stylisé pour accéder directement à la boutique de vies.
 
 ## 4. Modes de Jeu
 ### 3.1 Mode Histoire (Progression Principale)
