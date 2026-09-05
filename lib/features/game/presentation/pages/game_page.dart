@@ -78,10 +78,20 @@ class _GamePageState extends State<GamePage> {
         canPop: false,
         onPopInvokedWithResult: (didPop, result) {
           if (didPop) return;
-          final currentLives = context.read<HomeBloc>().state.lives;
+          
+          final gameStatus = context.read<GameBloc>().state.status;
           final authStateInner = context.read<AuthBloc>().state;
           final playerIdInner = authStateInner is AuthAuthenticated ? authStateInner.user.id : null;
-          _showQuitConfirmationDialog(context, currentLives, playerIdInner);
+
+          if (gameStatus == GameStatus.won) {
+            if (widget.mode == GameMode.story) {
+              context.read<HomeBloc>().add(CompleteLevel(playerId: playerIdInner));
+            }
+            Navigator.pop(context);
+          } else {
+            final currentLives = context.read<HomeBloc>().state.lives;
+            _showQuitConfirmationDialog(context, currentLives, playerIdInner);
+          }
         },
         child: Scaffold(
           body: BlocListener<GameBloc, GameState>(
@@ -273,6 +283,9 @@ class _GamePageState extends State<GamePage> {
                       darkColor: Colors.red.shade900,
                       onPressed: () {
                         if (state.status == GameStatus.won) {
+                          if (widget.mode == GameMode.story) {
+                            context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
+                          }
                           Navigator.pop(context);
                         } else {
                           final currentLives = context.read<HomeBloc>().state.lives;
