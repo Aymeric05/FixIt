@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -95,6 +94,7 @@ void main() {
         playerId: 'player-1',
         mode: GameMode.dailySingle,
       )),
+      wait: const Duration(milliseconds: 300),
       verify: (bloc) {
         expect(bloc.state.status, equals(GameStatus.playing));
         expect(bloc.state.levelNumber, equals(1));
