@@ -78,10 +78,20 @@ class _GamePageState extends State<GamePage> {
         canPop: false,
         onPopInvokedWithResult: (didPop, result) {
           if (didPop) return;
-          final currentLives = context.read<HomeBloc>().state.lives;
+          
+          final gameStatus = context.read<GameBloc>().state.status;
           final authStateInner = context.read<AuthBloc>().state;
           final playerIdInner = authStateInner is AuthAuthenticated ? authStateInner.user.id : null;
-          _showQuitConfirmationDialog(context, currentLives, playerIdInner);
+
+          if (gameStatus == GameStatus.won) {
+            if (widget.mode == GameMode.story) {
+              context.read<HomeBloc>().add(CompleteLevel(playerId: playerIdInner));
+            }
+            Navigator.pop(context);
+          } else {
+            final currentLives = context.read<HomeBloc>().state.lives;
+            _showQuitConfirmationDialog(context, currentLives, playerIdInner);
+          }
         },
         child: Scaffold(
           body: BlocListener<GameBloc, GameState>(
@@ -132,15 +142,33 @@ class _GamePageState extends State<GamePage> {
                   ),
                 ),
                 SafeArea(
-                  child: Column(
-                    children: [
-                      _buildHeader(context),
-                      const SizedBox(height: 10),
-                      _buildItemsRow(context),
-                      const Spacer(),
-                      _buildGridContainer(context),
-                      const Spacer(),
-                    ],
+                  child: BlocBuilder<GameBloc, GameState>(
+                    builder: (context, state) {
+                      return Column(
+                        children: [
+                          _buildHeader(context),
+                          const SizedBox(height: 10),
+                          _buildItemsRow(context),
+                          const Spacer(),
+                          _buildGridContainer(context),
+                          const Spacer(),
+                          // Trophée Button after win
+                          if (state.status == GameStatus.won)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 20),
+                              child: CandyButton(
+                                width: 80,
+                                height: 80,
+                                borderRadius: 40,
+                                color: Colors.amber,
+                                darkColor: Colors.orange.shade900,
+                                onPressed: () => _showWinDialog(context, state, playerId),
+                                child: const Icon(Icons.emoji_events, color: Colors.white, size: 40),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],
@@ -254,8 +282,15 @@ class _GamePageState extends State<GamePage> {
                       color: Colors.redAccent,
                       darkColor: Colors.red.shade900,
                       onPressed: () {
-                        final currentLives = context.read<HomeBloc>().state.lives;
-                        _showQuitConfirmationDialog(context, currentLives, playerId);
+                        if (state.status == GameStatus.won) {
+                          if (widget.mode == GameMode.story) {
+                            context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
+                          }
+                          Navigator.pop(context);
+                        } else {
+                          final currentLives = context.read<HomeBloc>().state.lives;
+                          _showQuitConfirmationDialog(context, currentLives, playerId);
+                        }
                       },
                       child: const Icon(Icons.close, color: Colors.white, size: 30),
                     ),
