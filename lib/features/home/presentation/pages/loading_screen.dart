@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 class LoadingScreen extends StatefulWidget {
   final VoidCallback onComplete;
   final bool isDataLoading;
+  final Duration duration;
 
   const LoadingScreen({
     super.key, 
     required this.onComplete, 
     this.isDataLoading = false,
+    this.duration = const Duration(seconds: 2),
   });
 
   @override
@@ -35,7 +37,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
 
     _progressController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: widget.duration,
     );
 
     // Pre-cache background images to avoid flicker

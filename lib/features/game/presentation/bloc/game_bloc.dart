@@ -366,6 +366,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           }
           emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
           unawaited(_saveCurrentSession());
+        }
+      } else {
+        _triggerCollision(emit, tapped.row - last.row, tapped.col - last.col);
+      }
     } else {
       // NOT ADJACENT (Too far)
       // Just make the snake angry as requested, for 0.5s
@@ -412,80 +416,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         collisionOffset: null,
       ));
     }
-  }
-
-  Future<void> _onLoadFriendsLeaderboard(LoadFriendsLeaderboard event, Emitter<GameState> emit) async {
-    final worldId = state.mode == GameMode.story 
-        ? 'world_1' 
-        : state.mode == GameMode.dailySeries 
-            ? _dailyRepo.getTodaySeriesWorldId() 
-            : _dailyRepo.getTodayWorldId();
-            
-    final list = await _progressionRepo.getFriendsLeaderboard(
-      worldId: worldId,
-      levelNumber: state.levelNumber,
-      playerId: event.playerId,
-    );
-    emit(state.copyWith(friendsLeaderboard: list));
-  }
-
-  String _getWallKey(GridOffset a, GridOffset b) {
-    final list = [a.toString(), b.toString()]..sort();
-    return '${list[0]}-${list[1]}';
-  }
-
-  bool _checkIfAngry(List<GridOffset> path, [List<List<int?>>? customHints]) {
-    final hintsToUse = customHints ?? state.hints;
-    if (hintsToUse.isEmpty) return false;
-
-    int maxHintSeen = 0;
-    int hintsCounted = 0;
-    for (var pos in path) {
-      final val = hintsToUse[pos.row][pos.col];
-      if (val != null) {
-        hintsCounted++;
-        if (val > maxHintSeen) maxHintSeen = val;
-        if (maxHintSeen > hintsCounted) return true;
-      }
-    }
-    return false;
-  }
-
-  bool _validatePath(List<GridOffset> path) {
-    final List<({int value, int index})> hintOrder = [];
-    for (int r = 0; r < 6; r++) {
-      for (int c = 0; c < 6; c++) {
-        final hintValue = state.hints[r][c];
-        if (hintValue != null) {
-          final pos = GridOffset(r, c);
-          final userIndex = path.indexOf(pos);
-          if (userIndex == -1) return false;
-          hintOrder.add((value: hintValue, index: userIndex));
-        }
-      }
-    }
-    hintOrder.sort((a, b) => a.value.compareTo(b.value));
-    for (int i = 0; i < hintOrder.length - 1; i++) {
-      if (hintOrder[i].index > hintOrder[i+1].index) return false;
-    }
-
-    if (hintOrder.isNotEmpty && hintOrder.last.index != path.length - 1) {
-      return false;
-    }
-
-    return true;
-  }
-
-  void _startTimer(int seconds) {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      final remaining = seconds - timer.tick;
-      if (remaining <= 0) {
-        _timer?.cancel();
-        add(const TimerTick(0));
-      } else {
-        add(TimerTick(remaining));
-      }
-    });
   }
 
   void _onTimerTick(TimerTick event, Emitter<GameState> emit) {
@@ -610,6 +540,80 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     }
     
     emit(state.copyWith(highlightedCells: []));
+  }
+
+  Future<void> _onLoadFriendsLeaderboard(LoadFriendsLeaderboard event, Emitter<GameState> emit) async {
+    final worldId = state.mode == GameMode.story 
+        ? 'world_1' 
+        : state.mode == GameMode.dailySeries 
+            ? _dailyRepo.getTodaySeriesWorldId() 
+            : _dailyRepo.getTodayWorldId();
+            
+    final list = await _progressionRepo.getFriendsLeaderboard(
+      worldId: worldId,
+      levelNumber: state.levelNumber,
+      playerId: event.playerId,
+    );
+    emit(state.copyWith(friendsLeaderboard: list));
+  }
+
+  String _getWallKey(GridOffset a, GridOffset b) {
+    final list = [a.toString(), b.toString()]..sort();
+    return '${list[0]}-${list[1]}';
+  }
+
+  bool _checkIfAngry(List<GridOffset> path, [List<List<int?>>? customHints]) {
+    final hintsToUse = customHints ?? state.hints;
+    if (hintsToUse.isEmpty) return false;
+
+    int maxHintSeen = 0;
+    int hintsCounted = 0;
+    for (var pos in path) {
+      final val = hintsToUse[pos.row][pos.col];
+      if (val != null) {
+        hintsCounted++;
+        if (val > maxHintSeen) maxHintSeen = val;
+        if (maxHintSeen > hintsCounted) return true;
+      }
+    }
+    return false;
+  }
+
+  bool _validatePath(List<GridOffset> path) {
+    final List<({int value, int index})> hintOrder = [];
+    for (int r = 0; r < 6; r++) {
+      for (int c = 0; c < 6; c++) {
+        final hintValue = state.hints[r][c];
+        if (hintValue != null) {
+          final pos = GridOffset(r, c);
+          final userIndex = path.indexOf(pos);
+          if (userIndex == -1) return false;
+          hintOrder.add((value: hintValue, index: userIndex));
+        }
+      }
+    }
+    hintOrder.sort((a, b) => a.value.compareTo(b.value));
+    for (int i = 0; i < hintOrder.length - 1; i++) {
+      if (hintOrder[i].index > hintOrder[i+1].index) return false;
+    }
+
+    if (hintOrder.isNotEmpty && hintOrder.last.index != path.length - 1) {
+      return false;
+    }
+
+    return true;
+  }
+
+  void _startTimer(int seconds) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      final remaining = seconds - timer.tick;
+      if (remaining <= 0) {
+        _timer?.cancel();
+        add(const TimerTick(0));
+      } else {
+        add(TimerTick(remaining));
+      }
+    });
   }
 
   Future<void> _updateLocalInventory(String field, int newValue) async {

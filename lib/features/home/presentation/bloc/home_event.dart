@@ -81,3 +81,11 @@ class MidnightReached extends HomeEvent {}
 class FinishWorldLoading extends HomeEvent {}
 
 class AppResumed extends HomeEvent {}
+
+class DebugSetLevel extends HomeEvent {
+  final int level;
+  final bool isActive;
+  const DebugSetLevel(this.level, {required this.isActive});
+  @override
+  List<Object> get props => [level, isActive];
+}

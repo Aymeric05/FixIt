@@ -16,6 +16,7 @@ import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:confetti/confetti.dart';
 import 'package:fixit/features/home/presentation/widgets/puzzle_reward_animation.dart';
 import 'package:fixit/features/home/presentation/widgets/world_unlock_overlay.dart';
+import 'package:fixit/features/home/presentation/widgets/experience_bar.dart';
 
 import 'package:fixit/features/home/presentation/widgets/daily_popup.dart';
 import 'package:fixit/features/home/presentation/widgets/no_lives_dialog.dart';
@@ -40,6 +41,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   bool _isDailyPopupShowing = false;
   bool _showWorldUnlock = false;
   int _unlockingWorldIndex = 2;
+  final GlobalKey _experienceBarKey = GlobalKey();
 
   @override
   void initState() {
@@ -194,9 +196,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             _triggerPuzzleAnimation(state.gainedPuzzlePieces);
             
             // Trigger world unlock animation if world is completed
-            if (state.levelsCompletedInWorld == 0 && state.currentLevel > 1 && state.lastAction == HomeLastAction.win) {
+            if (state.currentLevel == 11 && state.unlockedWorlds.contains('meadow') && !state.unlockedWorlds.contains('desert')) {
               setState(() {
-                _unlockingWorldIndex = (state.currentLevel <= 11) ? 2 : 3;
+                _unlockingWorldIndex = 2;
+                _showWorldUnlock = true;
+              });
+            } else if (state.currentLevel == 21 && state.unlockedWorlds.contains('desert') && !state.unlockedWorlds.contains('ice')) {
+              setState(() {
+                _unlockingWorldIndex = 3;
                 _showWorldUnlock = true;
               });
             }
@@ -287,9 +294,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                         height: 100,
                                         child: Stack(
                                           alignment: Alignment.center,
-                                          children: [
                                             MainPlayButton(
-                                              level: state.currentLevel,
+                                              level: state.currentWorldIndex == 2 
+                                                  ? (state.currentLevel - 10).clamp(1, 10) 
+                                                  : (state.currentWorldIndex == 3 
+                                                      ? (state.currentLevel - 20).clamp(1, 10) 
+                                                      : state.currentLevel),
                                               color: state.currentWorldIndex == 2 ? AppColors.candyGreen : null,
                                               darkColor: state.currentWorldIndex == 2 ? AppColors.candyGreenDark : null,
                                               onTap: () {
@@ -324,7 +334,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                         ),
                                       ),
                                       const SizedBox(height: 30),
-                                      _buildExperienceBar(state),
+                                      ExperienceBar(state: state, barKey: _experienceBarKey),
                                       const SizedBox(height: 10),
                                     ],
                                   ),
@@ -339,10 +349,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       Positioned.fill(
                         child: LoadingScreen(
                           isDataLoading: false,
+                          duration: const Duration(milliseconds: 800), // Faster transition
                           onComplete: () {
                             context.read<HomeBloc>().add(FinishWorldLoading());
                           },
                         ),
+                      ),
+                    if (_showWorldUnlock)
+                      WorldUnlockOverlay(
+                        worldIndex: _unlockingWorldIndex,
+                        barKey: _experienceBarKey,
+                        state: state,
+                        onTransition: () {
+                          setState(() => _showWorldUnlock = false);
+                          context.read<HomeBloc>().add(ChangeWorld(_unlockingWorldIndex, _unlockingWorldIndex == 2 ? 'desert' : 'ice'));
+                        },
                       ),
                   ],
                 );
@@ -396,63 +417,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   setState(() => _showPuzzleReward = false);
                 },
               ),
-            if (_showWorldUnlock)
-              WorldUnlockOverlay(
-                worldIndex: _unlockingWorldIndex,
-                onTransition: () {
-                  setState(() => _showWorldUnlock = false);
-                  context.read<HomeBloc>().add(ChangeWorld(_unlockingWorldIndex, _unlockingWorldIndex == 2 ? 'desert' : 'ice'));
-                },
-              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildExperienceBar(HomeState state) {
-    double progress = state.levelsCompletedInWorld / state.maxLevelsInWorld;
-    int levelsLeft = state.maxLevelsInWorld - state.levelsCompletedInWorld;
-    return Container(
-      width: 320,
-      height: 40,
-      decoration: BoxDecoration(
-        color: Colors.blue.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white, width: 3),
-        boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 8)],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(17),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: FractionallySizedBox(
-                widthFactor: progress.clamp(0.0, 1.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.yellow,
-                    boxShadow: [BoxShadow(color: Colors.yellow.withValues(alpha: 0.5), blurRadius: 6)],
-                  ),
-                ),
-              ),
-            ),
-            Text(
-              'NEXT WORLD IN $levelsLeft LEVELS',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-                shadows: [Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1, 1))],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Removed _buildExperienceBar as it's now in experience_bar.dart
 }
 
 class _FloatingBuyButton extends StatefulWidget {

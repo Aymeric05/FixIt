@@ -37,6 +37,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<MidnightReached>(_onMidnightReached);
     on<FinishWorldLoading>(_onFinishWorldLoading);
     on<AppResumed>(_onAppResumed);
+    on<DebugSetLevel>(_onDebugSetLevel);
   }
 
   Future<void> _onLoadHomeData(LoadHomeData event, Emitter<HomeState> emit) async {
@@ -180,6 +181,22 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         if (progression.currentLevel > 20) unlocked.add('ice');
       }
 
+      // Progression calculation logic:
+      // World 1 (Meadow): Levels 1-10
+      // World 2 (Desert): Levels 1-10 (offset from global 11)
+      // We use currentWorldIndex to filter logic in the UI
+      
+      int levelsInWorld = 0;
+      if (progression != null) {
+        if (state.currentWorldIndex == 1) {
+          levelsInWorld = min(10, progression.currentLevel - 1);
+        } else if (state.currentWorldIndex == 2) {
+          levelsInWorld = progression.currentLevel > 10 ? (progression.currentLevel - 11) : 0;
+        } else if (state.currentWorldIndex == 3) {
+          levelsInWorld = progression.currentLevel > 20 ? (progression.currentLevel - 21) : 0;
+        }
+      }
+
       emit(state.copyWith(
         lives: lives,
         nextLifeTime: nextLifeTime,
@@ -188,7 +205,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         itemMoreNumbers: player.itemMoreNumbers,
         itemRevealPath: player.itemRevealPath,
         currentLevel: progression?.currentLevel ?? 1,
-        levelsCompletedInWorld: (progression?.currentLevel ?? 1 - 1) % 10,
+        levelsCompletedInWorld: levelsInWorld,
         isLoading: false,
         currentDate: _dailyRepo.getTodayWorldId(), 
         isDailyCompleted: dailyStatus?.isDailyLevelCompleted ?? false,
@@ -391,15 +408,21 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       }
     }
 
+    // IMPORTANT: World logic
+    // If you are in World 1 and you finish level 10, the NEXT refresh will see currentLevel 11.
+    // The UI listener will trigger the WorldUnlockOverlay.
+    
+    // Emit win state with specific gained pieces for celebration
     emit(state.copyWith(
       lastAction: reward > 0 ? HomeLastAction.win : HomeLastAction.none, 
       gainedPuzzlePieces: reward,
     ));
+
     // Hard refresh from DB for the specific player
     await _refreshProgression(emit, event.playerId);
     
-    // Reset gained pieces so listener only triggers once
-    emit(state.copyWith(gainedPuzzlePieces: 0));
+    // IMPORTANT: Reset gained pieces so listener only triggers once
+    emit(state.copyWith(gainedPuzzlePieces: 0, lastAction: HomeLastAction.none));
   }
 
   Future<void> _onLoseLife(LoseLife event, Emitter<HomeState> emit) async {
@@ -446,6 +469,28 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   void _onFinishWorldLoading(FinishWorldLoading event, Emitter<HomeState> emit) {
     emit(state.copyWith(isWorldLoading: false));
+  }
+
+  Future<void> _onDebugSetLevel(DebugSetLevel event, Emitter<HomeState> emit) async {
+    final user = DatabaseService().supabase.auth.currentUser;
+    if (user != null) {
+      if (event.isActive) {
+        // Force update the DB locally so the refresh sees it
+        await _progressionRepo.markLevelAsCompleted(
+          playerSupabaseId: user.id,
+          worldId: 'world_1',
+          levelNumber: event.level - 1,
+          timeSeconds: 0,
+        );
+      } else {
+        // When deactivating, we just reload the real data from DB
+      }
+      
+      emit(state.copyWith(isDebugLevelActive: event.isActive));
+      
+      // Crucial: await the refresh so the state is updated before the dialog closes
+      await _refreshProgression(emit, user.id);
+    }
   }
 
   void _startRechargeTimer() {
