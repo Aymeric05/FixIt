@@ -45,7 +45,13 @@ Une suite de niveaux de difficulté croissante organisée par "Mondes". Chaque m
 *   Classements en temps réel sur les niveaux quotidiens.
 *   Recap de victoire montrant le record mondial et le rang parmi les amis.
 
-## 6. Authentification & Profil
+## 6. Persistance et Reprise de Partie (Session Save)
+*   **Mémoire de Jeu** : Si un joueur quitte une partie en cours (fermeture de l'application ou retour au menu), son avancement est automatiquement sauvegardé localement.
+*   **Données sauvegardées** : Le temps restant et le tracé actuel du serpent sont conservés.
+*   **Reprise** : Au prochain lancement du même niveau, la session est restaurée instantanément.
+*   **Nettoyage** : La sauvegarde est effacée dès que le niveau est terminé (victoire ou temps écoulé) pour garantir une nouvelle partie propre par la suite.
+
+## 7. Authentification & Profil
 *   **Login Anonyme** : Chaque nouveau joueur est automatiquement connecté avec un compte anonyme Supabase au premier lancement.
 *   **Guest Profile** : Un profil Drift (local) et Supabase (distant) est créé avec un pseudo aléatoire (`Guest#1234`).
 *   **Synchronisation** : Le pseudo et l'avatar sont synchronisés entre le cache local et le serveur dès qu'une connexion internet est disponible.

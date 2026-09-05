@@ -11,7 +11,6 @@ import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:fixit/core/widgets/candy_icons.dart';
 import 'package:fixit/features/home/presentation/widgets/settings_dialog.dart';
-import 'package:fixit/features/home/presentation/widgets/social_dialog.dart';
 import 'package:fixit/features/home/presentation/widgets/no_ads_dialog.dart';
 import 'package:fixit/features/home/presentation/widgets/lives_store_dialog.dart';
 import 'package:fixit/features/home/presentation/widgets/leaderboard_dialog.dart';
@@ -39,7 +38,7 @@ class TopNavBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Left side: Profil, Social, Map
+              // Left side: Profil, Shop, Map, Daily
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -110,7 +109,7 @@ class TopNavBar extends StatelessWidget {
                 ],
               ),
 
-              // Right side: No Ads, Settings, Rank, Shop
+              // Right side: No Ads, Settings, Rank
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -298,8 +297,6 @@ class _PuzzleIndicatorState extends State<PuzzleIndicator> with SingleTickerProv
   void didUpdateWidget(PuzzleIndicator oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.state.puzzlePieces > oldWidget.state.puzzlePieces) {
-      // Delay the pulse slightly to match the "impact" of the flying piece
-      // The flying animation takes 2.5s total now, impact starts around 2.2s (Interval 0.9 of 2.5s)
       Future.delayed(const Duration(milliseconds: 2200), () {
         if (mounted) _controller.forward(from: 0.0);
       });
@@ -423,7 +420,6 @@ class _JuicyHeartIndicatorState extends State<JuicyHeartIndicator>
                 alignment: Alignment.center,
                 clipBehavior: Clip.none,
                 children: [
-                  // Glow effect
                   if (_controller.isAnimating)
                     Transform.scale(
                       scale: _glowAnimation.value,
@@ -433,9 +429,7 @@ class _JuicyHeartIndicatorState extends State<JuicyHeartIndicator>
                         size: 100,
                       ),
                     ),
-                  // Shadow for heart
                   const Icon(Icons.favorite, color: Colors.black26, size: 94),
-                  // Main Heart
                   ShaderMask(
                     shaderCallback: (bounds) => const RadialGradient(
                       center: Alignment(-0.3, -0.3),
@@ -444,7 +438,6 @@ class _JuicyHeartIndicatorState extends State<JuicyHeartIndicator>
                     ).createShader(bounds),
                     child: const Icon(Icons.favorite, color: Colors.white, size: 90),
                   ),
-                  // Glossy highlight
                   Positioned(
                     top: 20,
                     left: 20,
@@ -457,7 +450,6 @@ class _JuicyHeartIndicatorState extends State<JuicyHeartIndicator>
                       ),
                     ),
                   ),
-                  // Lives Count
                   Text(
                     '${state.lives}',
                     style: const TextStyle(
@@ -467,7 +459,6 @@ class _JuicyHeartIndicatorState extends State<JuicyHeartIndicator>
                       shadows: [Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(2, 2))],
                     ),
                   ),
-                  // Plus Button
                   Positioned(
                     right: 5,
                     bottom: 0,

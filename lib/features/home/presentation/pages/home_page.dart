@@ -144,9 +144,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           int startLevel = 1;
           if (status != null) {
             if (status.isSeriesCompleted) {
-              startLevel = 3; // Show recap of last level
+              startLevel = 3; 
             } else if (status.seriesCurrentLevel > 0) {
-              startLevel = status.seriesCurrentLevel; // Show recap of last finished level
+              startLevel = status.seriesCurrentLevel; 
             }
           }
 

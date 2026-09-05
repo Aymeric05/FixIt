@@ -16,20 +16,24 @@ import 'package:fixit/features/game/presentation/bloc/game_state.dart';
 import 'package:fixit/core/models/daily_mode.dart';
 import 'package:fixit/core/models/level_win_summary.dart';
 import 'package:fixit/core/utils/app_logger.dart';
+import 'package:fixit/core/repositories/game_session_repository.dart';
 
 class GameBloc extends Bloc<GameEvent, GameState> {
   Timer? _timer;
   Timer? _dizzyTimer;
   late final ProgressionRepository _progressionRepo;
   late final DailyRepository _dailyRepo;
+  late final GameSessionRepository _sessionRepo;
   String? _playerId;
 
   GameBloc({
     ProgressionRepository? progressionRepo,
     DailyRepository? dailyRepo,
+    GameSessionRepository? sessionRepo,
   }) : super(const GameState()) {
     _progressionRepo = progressionRepo ?? ProgressionRepository();
     _dailyRepo = dailyRepo ?? DailyRepository();
+    _sessionRepo = sessionRepo ?? GameSessionRepository();
     on<StartGame>(_onStartGame);
     on<SelectCell>(_onSelectCell);
     on<TimerTick>(_onTimerTick);
@@ -74,7 +78,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       levelNumber: event.level,
       hints: [],
       mode: event.mode,
-      seriesAccumulatedTime: 0, // Default, will be updated below
+      seriesAccumulatedTime: 0, 
       wonTime: null,
       inventoryPlusTime: event.invPlusTime,
       inventoryMoreNumbers: event.invMoreNumbers,
@@ -86,6 +90,23 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     List<GridOffset> solution;
     Set<String> walls;
     Map<GridOffset, int> hintSteps = {};
+
+    final String worldId = event.mode == GameMode.story 
+        ? 'world_1' 
+        : event.mode == GameMode.dailySeries 
+            ? _dailyRepo.getTodaySeriesWorldId() 
+            : _dailyRepo.getTodayWorldId();
+
+    // Check for existing session
+    ActiveGameState? savedSession;
+    if (event.playerId.isNotEmpty) {
+      savedSession = await _sessionRepo.loadSession(
+        playerId: event.playerId,
+        worldId: worldId,
+        levelNumber: event.level,
+        mode: event.mode,
+      );
+    }
 
     if (event.mode != GameMode.story) {
       final daily = _dailyRepo.generateDailyLevel(
@@ -154,15 +175,26 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final randomColor = colors[Random().nextInt(colors.length)];
 
     // Final level data and playing state
+    List<GridOffset> restoredPath = [];
+    int finalRemainingSeconds = initialSeconds;
+
+    if (savedSession != null) {
+      AppLogger.log('Restoring saved session for level ${event.level}');
+      finalRemainingSeconds = savedSession.remainingSeconds;
+      final List<dynamic> decodedPath = jsonDecode(savedSession.currentPathJson);
+      restoredPath = decodedPath.map((e) => GridOffset(e['r'], e['c'])).toList();
+    }
+
     emit(state.copyWith(
       hints: hints,
       solutionPath: solution,
       hintSteps: hintSteps,
       walls: walls,
       status: GameStatus.playing,
-      currentPath: [],
+      currentPath: restoredPath,
+      remainingSeconds: finalRemainingSeconds,
       pathColor: randomColor,
-      isAngry: false,
+      isAngry: _checkIfAngry(restoredPath, hints),
     ));
 
     if (event.playerId.isNotEmpty) {
@@ -178,6 +210,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           
           await Future.delayed(Duration.zero);
           if (!isClosed) {
+            await _sessionRepo.deleteSession(playerId: event.playerId, worldId: worldId, levelNumber: event.level, mode: event.mode);
+            
             emit(state.copyWith(
               status: GameStatus.won,
               winSummary: summary,
@@ -197,6 +231,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
             
             await Future.delayed(Duration.zero);
             if (!isClosed) {
+              await _sessionRepo.deleteSession(playerId: event.playerId, worldId: worldId, levelNumber: event.level, mode: event.mode);
+
               emit(state.copyWith(
                 status: GameStatus.won,
                 winSummary: summary,
@@ -207,7 +243,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
             }
             return;
           } else {
-            // Normal play for Level N, accumulated time is the total from Level N-1
             emit(state.copyWith(seriesAccumulatedTime: status.seriesAccumulatedTime));
           }
         }
@@ -219,7 +254,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     }
 
     if (!state.isPaused) {
-      _startTimer(initialSeconds);
+      _startTimer(finalRemainingSeconds);
     }
     
     if (event.mode == GameMode.story) {
@@ -233,7 +268,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final currentPath = List<GridOffset>.from(state.currentPath);
     
     if (currentPath.isEmpty) {
-      if (state.hints[event.row][event.col] == 1) emit(state.copyWith(currentPath: [tapped]));
+      if (state.hints[event.row][event.col] == 1) {
+        emit(state.copyWith(currentPath: [tapped]));
+        unawaited(_saveCurrentSession());
+      }
       return;
     }
 
@@ -241,7 +279,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final existingIndex = currentPath.indexOf(tapped);
 
     // FAST BACKTRACKING (Teleport on Tap)
-    // Only if it's a fresh tap (not a drag) and we tap somewhere in our body
     if (!event.isDrag && existingIndex != -1) {
       final newPath = currentPath.sublist(0, existingIndex + 1);
       _dizzyTimer?.cancel();
@@ -251,6 +288,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         isDizzy: false,
         collisionOffset: null,
       ));
+      unawaited(_saveCurrentSession());
       return;
     }
 
@@ -258,7 +296,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
     final isAdjacent = (last.row - tapped.row).abs() + (last.col - tapped.col).abs() == 1;
 
-    // Check if this new target is a valid move
     bool isValidMove = false;
     bool isBacktrackingMove = false;
 
@@ -273,14 +310,11 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       }
     }
 
-    // If we are currently dizzy
     if (state.isDizzy) {
       if (isValidMove) {
-        // RECOVERY: Stop being dizzy immediately if we move to a valid direction
         _dizzyTimer?.cancel();
         emit(state.copyWith(isDizzy: false, collisionOffset: null));
       } else {
-        // Still trying to go somewhere invalid, stay dizzy
         return;
       }
     }
@@ -288,14 +322,13 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     if (isAdjacent) {
       if (isValidMove) {
         if (isBacktrackingMove) {
-          // SAFE BACKTRACKING (One by one)
           final newPath = currentPath.sublist(0, currentPath.length - 1);
           emit(state.copyWith(
             currentPath: newPath, 
             isAngry: _checkIfAngry(newPath),
           ));
+          unawaited(_saveCurrentSession());
         } else {
-          // NORMAL ADVANCE
           final newPath = [...currentPath, tapped];
           
           if (newPath.length == 36) {
@@ -326,17 +359,17 @@ class GameBloc extends Bloc<GameEvent, GameState> {
               }
 
               emit(state.copyWith(status: GameStatus.won, winSummary: summary, wonTime: displayTime));
+              unawaited(_deleteCurrentSession());
               return;
             }
           }
           emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
+          unawaited(_saveCurrentSession());
         }
       } else {
-        // ADJACENT BUT NOT VALID (Wall or Body collision)
         _triggerCollision(emit, tapped.row - last.row, tapped.col - last.col);
       }
     } else {
-      // NOT ADJACENT (Jump/Border collision)
       if (event.isDrag) {
         _triggerCollision(emit, (tapped.row - last.row).sign.toInt(), (tapped.col - last.col).sign.toInt());
       }
@@ -351,7 +384,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       collisionOffset: GridOffset(dr, dc),
     ));
 
-    // Schedule auto-recovery in 500ms
     _dizzyTimer?.cancel();
     _dizzyTimer = Timer(const Duration(milliseconds: 500), () {
       add(RecoverFromDizzy());
@@ -387,11 +419,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     return '${list[0]}-${list[1]}';
   }
 
-  bool _checkIfAngry(List<GridOffset> path) {
+  bool _checkIfAngry(List<GridOffset> path, [List<List<int?>>? customHints]) {
+    final hintsToUse = customHints ?? state.hints;
+    if (hintsToUse.isEmpty) return false;
+
     int maxHintSeen = 0;
     int hintsCounted = 0;
     for (var pos in path) {
-      final val = state.hints[pos.row][pos.col];
+      final val = hintsToUse[pos.row][pos.col];
       if (val != null) {
         hintsCounted++;
         if (val > maxHintSeen) maxHintSeen = val;
@@ -419,7 +454,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       if (hintOrder[i].index > hintOrder[i+1].index) return false;
     }
 
-    // New requirement: The path MUST end on the last number (highest hint value)
     if (hintOrder.isNotEmpty && hintOrder.last.index != path.length - 1) {
       return false;
     }
@@ -442,14 +476,19 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   void _onTimerTick(TimerTick event, Emitter<GameState> emit) {
     if (event.remainingSeconds == 0) {
       emit(state.copyWith(remainingSeconds: 0, status: GameStatus.lost));
+      unawaited(_deleteCurrentSession());
     } else {
       emit(state.copyWith(remainingSeconds: event.remainingSeconds));
+      if (event.remainingSeconds % 5 == 0) {
+        unawaited(_saveCurrentSession());
+      }
     }
   }
 
   void _onPauseTimer(PauseTimer event, Emitter<GameState> emit) {
     _timer?.cancel();
     emit(state.copyWith(isPaused: true));
+    unawaited(_saveCurrentSession());
   }
 
   void _onResumeTimer(ResumeTimer event, Emitter<GameState> emit) {
@@ -491,7 +530,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final Map<GridOffset, int> newHintSteps = {};
     final List<List<int?>> newHints = List.generate(6, (_) => List.filled(6, null));
     
-    // First tier (steps 0-11): Keep approx 1 hint every 3 steps (4 hints)
     for (int i = 0; i < 4; i++) {
       int stepIndex = (i * 3).round();
       final pos = solution[stepIndex];
@@ -499,7 +537,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       newHints[pos.row][pos.col] = i + 1;
     }
 
-    // Remaining 24 steps (12-35): Put 11 hints (Total 15)
     for (int i = 0; i < 11; i++) {
       int stepIndex = 12 + (i * (23 / 10)).round();
       final pos = solution[stepIndex];
@@ -516,6 +553,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       usedItems: {...state.usedItems, 'more_numbers'},
     ));
     _updateLocalInventory('item_more_numbers', newInv);
+    unawaited(_saveCurrentSession());
   }
 
   Future<void> _onUseItemRevealPath(UseItemRevealPath event, Emitter<GameState> emit) async {
@@ -544,7 +582,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       usedItems: {...state.usedItems, 'reveal_path'},
     ));
 
-    // Animation: Reveal each cell every 0.5s
     final revealedSoFar = <GridOffset>[];
     for (var cell in nextCells) {
       if (state.status != GameStatus.playing) break;
@@ -553,7 +590,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       await Future.delayed(const Duration(milliseconds: 500));
     }
     
-    // Hold all 4 lit for 2 seconds
     if (state.status == GameStatus.playing) {
       await Future.delayed(const Duration(seconds: 2));
     }
@@ -570,6 +606,42 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     } else if (field == 'item_reveal_path') {
       await (db.update(db.players)..where((t) => t.id.isNotNull())).write(PlayersCompanion(itemRevealPath: drift.Value(newValue)));
     }
+  }
+
+  Future<void> _saveCurrentSession() async {
+    if (_playerId == null || _playerId!.isEmpty || state.status != GameStatus.playing) return;
+
+    final String worldId = state.mode == GameMode.story 
+        ? 'world_1' 
+        : state.mode == GameMode.dailySeries 
+            ? _dailyRepo.getTodaySeriesWorldId() 
+            : _dailyRepo.getTodayWorldId();
+
+    await _sessionRepo.saveSession(
+      playerId: _playerId!,
+      worldId: worldId,
+      levelNumber: state.levelNumber,
+      mode: state.mode,
+      remainingSeconds: state.remainingSeconds,
+      currentPath: state.currentPath,
+    );
+  }
+
+  Future<void> _deleteCurrentSession() async {
+    if (_playerId == null || _playerId!.isEmpty) return;
+
+    final String worldId = state.mode == GameMode.story 
+        ? 'world_1' 
+        : state.mode == GameMode.dailySeries 
+            ? _dailyRepo.getTodaySeriesWorldId() 
+            : _dailyRepo.getTodayWorldId();
+
+    await _sessionRepo.deleteSession(
+      playerId: _playerId!,
+      worldId: worldId,
+      levelNumber: state.levelNumber,
+      mode: state.mode,
+    );
   }
 
   @override
