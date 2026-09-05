@@ -48,7 +48,7 @@ class TutorialDialog extends StatefulWidget {
 }
 
 class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProviderStateMixin {
-  int _currentStep = 0; // 0: Follow numbers, 1: Error Demo, 2: Success Demo
+  int _currentStep = 1; // 1: Error Demo, 2: Success Demo
   int _animSubStep = 0;
   Timer? _timer;
   late AnimationController _flashController;
@@ -99,12 +99,10 @@ class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProvid
     _showRedAlert = false;
     _showYellowSuccess = false;
 
-    _timer = Timer.periodic(const Duration(milliseconds: 400), (timer) {
+    _timer = Timer.periodic(const Duration(milliseconds: 200), (timer) {
       if (!mounted) return;
       setState(() {
-        if (_currentStep == 0) {
-          _handleStep0();
-        } else if (_currentStep == 1) {
+        if (_currentStep == 1) {
           _handleStep1();
         } else {
           _handleStep2();
@@ -113,22 +111,7 @@ class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProvid
     });
   }
 
-  void _handleStep0() {
-    if (_animSubStep < _fullPath.length) {
-      _currentDrawingPath.add(_fullPath[_animSubStep]);
-      _animSubStep++;
-    } else {
-      _timer?.cancel();
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          setState(() {
-            _currentStep = 1;
-            _startAnimation();
-          });
-        }
-      });
-    }
-  }
+
 
   void _handleStep1() {
     if (_animSubStep < _errorPath.length) {
@@ -158,7 +141,7 @@ class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProvid
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) {
           setState(() {
-            _currentStep = 0;
+            _currentStep = 1;
             _startAnimation();
           });
         }
@@ -177,16 +160,22 @@ class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProvid
   Widget build(BuildContext context) {
     String titleText;
     String description;
-    
-    if (_currentStep == 0) {
-      titleText = "FOLLOW NUMBERS";
-      description = "Connect all numbers in order (1, 2, 3...)";
-    } else if (_currentStep == 1) {
-      titleText = "FILL EVERYTHING!";
-      description = "Careful! Missing cells will cause failure!";
+    Color pathColor;
+    String badgeText;
+    Color badgeColor;
+
+    if (_currentStep == 1) {
+      titleText = "DON'T MISS ANY!";
+      description = "Skipping cells causes failure!";
+      pathColor = Colors.red;
+      badgeText = "WRONG";
+      badgeColor = Colors.red;
     } else {
-      titleText = "YOU WIN!";
-      description = "Fill every single cell to solve the puzzle!";
+      titleText = "FILL EVERYTHING!";
+      description = "Complete the grid to win!";
+      pathColor = AppColors.candyGreen;
+      badgeText = "CORRECT";
+      badgeColor = AppColors.candyGreen;
     }
 
     return Dialog(
@@ -266,7 +255,7 @@ class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProvid
                                 painter: PathLinePainter(
                                   path: _currentDrawingPath,
                                   cellSize: cellSize,
-                                  color: AppColors.candyGreen,
+                                  color: pathColor,
                                   isAngry: _showRedAlert,
                                 ),
                               ),
@@ -280,6 +269,29 @@ class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProvid
                                     painter: HeadPainter(isAngry: _showRedAlert, cellSize: cellSize),
                                   ),
                                 ),
+                              // BAD/GOOD Badge overlay
+                              Center(
+                                child: Transform.rotate(
+                                  angle: -0.2,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: badgeColor.withValues(alpha: 0.9),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.white, width: 2),
+                                    ),
+                                    child: Text(
+                                      badgeText,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 24,
+                                        letterSpacing: 2,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
                           );
                         },

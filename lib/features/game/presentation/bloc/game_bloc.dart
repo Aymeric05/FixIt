@@ -216,7 +216,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       unawaited(_progressionRepo.grantLevel1Reward(event.playerId).catchError((e) => AppLogger.error('Reward error', e)));
     }
 
-    _startTimer(initialSeconds);
+    if (!state.isPaused) {
+      _startTimer(initialSeconds);
+    }
+    
     if (event.mode == GameMode.story) {
       unawaited(_progressionRepo.ensureNextLevelsExist('world_1', event.level));
     }
@@ -414,10 +417,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
   void _onPauseTimer(PauseTimer event, Emitter<GameState> emit) {
     _timer?.cancel();
+    emit(state.copyWith(isPaused: true));
   }
 
   void _onResumeTimer(ResumeTimer event, Emitter<GameState> emit) {
     _timer?.cancel();
+    emit(state.copyWith(isPaused: false));
     _startTimer(state.remainingSeconds);
   }
 

@@ -9,6 +9,7 @@ class CandyButton extends StatefulWidget {
   final double height;
   final double borderRadius;
   final double depth;
+  final double borderWidth;
 
   const CandyButton({
     super.key,
@@ -20,6 +21,7 @@ class CandyButton extends StatefulWidget {
     this.height = 85,
     double? borderRadius,
     this.depth = 8,
+    this.borderWidth = 3,
   }) : borderRadius = borderRadius ?? (width / 2);
 
   @override
@@ -66,26 +68,26 @@ class _CandyButtonState extends State<CandyButton> {
                 height: widget.height,
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
-                    colors: [buttonColor.withValues(alpha: 0.8), buttonColor],
-                    center: const Alignment(-0.3, -0.3),
-                    radius: 0.8,
+                    colors: [buttonColor.withValues(alpha: 0.7), buttonColor],
+                    center: const Alignment(-0.2, -0.3),
+                    radius: 1.0,
                   ),
                   borderRadius: BorderRadius.circular(widget.borderRadius),
-                  border: Border.all(color: Colors.white, width: 3),
+                  border: Border.all(color: Colors.white, width: widget.borderWidth),
                 ),
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
                     // Gloss reflection
                     Positioned(
-                      top: widget.height * 0.1,
-                      left: widget.width * 0.2,
+                      top: 4,
+                      left: widget.width * 0.15,
                       child: Container(
-                        width: widget.width * 0.4,
-                        height: widget.height * 0.15,
+                        width: widget.width * 0.5,
+                        height: widget.height * 0.12,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(widget.borderRadius),
+                          color: Colors.white.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(20),
                         ),
                       ),
                     ),

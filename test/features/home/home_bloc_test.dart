@@ -33,6 +33,8 @@ void main() {
         final threeHoursAgo = DateTime.now().subtract(const Duration(minutes: 185));
         
         await db.delete(db.players).go();
+        await db.delete(db.dailyChallenges).go();
+        
         await db.into(db.players).insert(PlayersCompanion.insert(
           supabaseId: const Value('test-user'),
           username: 'Tester',
@@ -40,9 +42,17 @@ void main() {
           lastLifeLostAt: Value(threeHoursAgo),
         ));
 
+        // Insert dummy daily challenge to avoid Supabase call
+        final now = DateTime.now().toUtc();
+        final today = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+        await db.into(db.dailyChallenges).insert(DailyChallengesCompanion.insert(
+          playerSupabaseId: 'test-user',
+          date: today,
+        ));
+
         bloc.add(const LoadHomeData(playerId: 'test-user'));
       },
-      wait: const Duration(milliseconds: 500),
+      wait: const Duration(milliseconds: 1000),
       verify: (bloc) {
         expect(bloc.state.lives, equals(4));
         expect(bloc.state.nextLifeTime, isNotNull);
@@ -56,11 +66,21 @@ void main() {
         final tenHoursAgo = DateTime.now().subtract(const Duration(hours: 10));
         
         await db.delete(db.players).go();
+        await db.delete(db.dailyChallenges).go();
+
         await db.into(db.players).insert(PlayersCompanion.insert(
           supabaseId: const Value('test-user-2'),
           username: 'Tester2',
           lives: const Value(4),
           lastLifeLostAt: Value(tenHoursAgo),
+        ));
+
+        // Insert dummy daily challenge to avoid Supabase call
+        final now = DateTime.now().toUtc();
+        final today = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+        await db.into(db.dailyChallenges).insert(DailyChallengesCompanion.insert(
+          playerSupabaseId: 'test-user-2',
+          date: today,
         ));
 
         bloc.add(const LoadHomeData(playerId: 'test-user-2'));
@@ -77,6 +97,8 @@ void main() {
       build: () => HomeBloc(),
       act: (bloc) async {
         await db.delete(db.players).go();
+        await db.delete(db.dailyChallenges).go();
+
         await db.into(db.players).insert(PlayersCompanion.insert(
           supabaseId: const Value('test-user-3'),
           username: 'Tester3',
@@ -84,11 +106,19 @@ void main() {
           itemPlusTime: const Value(0),
         ));
 
+        // Insert dummy daily challenge to avoid Supabase call
+        final now = DateTime.now().toUtc();
+        final today = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+        await db.into(db.dailyChallenges).insert(DailyChallengesCompanion.insert(
+          playerSupabaseId: 'test-user-3',
+          date: today,
+        ));
+
         bloc.add(const LoadHomeData(playerId: 'test-user-3'));
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future.delayed(const Duration(milliseconds: 500));
         bloc.add(const BuyItem('plus_time', 10));
       },
-      wait: const Duration(milliseconds: 500),
+      wait: const Duration(milliseconds: 1000),
       verify: (bloc) {
         expect(bloc.state.puzzlePieces, equals(90));
         expect(bloc.state.itemPlusTime, equals(1));

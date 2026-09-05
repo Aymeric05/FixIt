@@ -24,8 +24,12 @@ Le mini-jeu principal consiste à relier des numéros en séquence (1, 2, 3...) 
 Une suite de niveaux de difficulté croissante organisée par "Mondes". Chaque monde introduit de nouveaux thèmes visuels.
 
 ### 3.2 Défis Quotidiens
+*   **Flux Progressif :** Un niveau unique ("Play Daily") doit être réussi pour débloquer la série du jour ("Play Daily Series").
 *   **Daily Single Level :** Un niveau unique par jour pour tous les joueurs. Permet de comparer son temps avec ses amis.
 *   **Daily Series :** Une chaîne de 3 niveaux consécutifs. Le score final est le temps cumulé. La série peut être reprise en cours de journée si elle est interrompue.
+*   **Esthétique "Rare/Or" :** Les défis journaliers utilisent une interface dorée et scintillante (effet gloss animé) pour marquer leur importance.
+*   **Visibilité :** Le bouton de défi est situé en haut à gauche de l'écran d'accueil, sous la Map. Il émet un reflet tant que les défis ne sont pas terminés.
+*   **Notification :** Un badge rouge apparaît sur le bouton tant qu'au moins un défi du jour n'a pas été complété.
 
 ## 4. Économie du Jeu
 *   **Système de Vies :** Le joueur commence avec 5 vies. Une vie est perdue en cas d'échec ou d'abandon. Les vies se rechargent automatiquement toutes les 60 minutes.

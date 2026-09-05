@@ -14,9 +14,9 @@ import 'package:fixit/features/friends/presentation/bloc/friends_event.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:confetti/confetti.dart';
+import 'package:fixit/features/home/presentation/widgets/puzzle_reward_animation.dart';
 
 import 'package:fixit/features/home/presentation/widgets/daily_popup.dart';
-import 'package:fixit/features/home/presentation/widgets/daily_challenge_button.dart';
 import 'package:fixit/features/home/presentation/widgets/no_lives_dialog.dart';
 import 'package:fixit/core/models/daily_mode.dart';
 import 'package:fixit/core/repositories/daily_repository.dart';
@@ -33,6 +33,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late ConfettiController _confettiController;
+  bool _showPuzzleReward = false;
+  Offset _puzzleTargetOffset = Offset.zero;
+  bool _isDailyPopupShowing = false;
 
   @override
   void initState() {
@@ -60,6 +63,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _checkDailyChallenge() async {
+    if (_isDailyPopupShowing) return;
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthAuthenticated) {
       final repo = DailyRepository();
@@ -68,17 +72,28 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       bool alreadyCompleted = status != null && status.isDailyLevelCompleted && status.isSeriesCompleted;
       
       if (!alreadyCompleted && mounted) {
-        _showDailyPopup(status);
+        _showDailyPopup(
+          isDailyCompleted: status?.isDailyLevelCompleted ?? false,
+          isSeriesCompleted: status?.isSeriesCompleted ?? false,
+          status: status,
+        );
       }
     }
   }
 
-  void _showDailyPopup(DailyChallenge? status) {
+  void _showDailyPopup({
+    required bool isDailyCompleted,
+    required bool isSeriesCompleted,
+    DailyChallenge? status,
+  }) {
+    if (_isDailyPopupShowing) return;
+    _isDailyPopupShowing = true;
+
     showDialog(
       context: context,
       builder: (dialogContext) => DailyPopup(
-        isDailyCompleted: status?.isDailyLevelCompleted ?? false,
-        isSeriesCompleted: status?.isSeriesCompleted ?? false,
+        isDailyCompleted: isDailyCompleted,
+        isSeriesCompleted: isSeriesCompleted,
         onPlayDaily: () {
           final state = context.read<HomeBloc>().state;
           if (state.lives <= 0) {
@@ -102,7 +117,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 mode: GameMode.dailySingle,
               ),
             ),
-          );
+          ).then((_) {
+            if (mounted) {
+              final authState = context.read<AuthBloc>().state;
+              if (authState is AuthAuthenticated) {
+                context.read<HomeBloc>().add(LoadHomeData(playerId: authState.user.id));
+              }
+            }
+          });
         },
         onPlaySeries: () {
           final state = context.read<HomeBloc>().state;
@@ -137,13 +159,34 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 mode: GameMode.dailySeries,
               ),
             ),
-          );
+          ).then((_) {
+            if (mounted) {
+              final authState = context.read<AuthBloc>().state;
+              if (authState is AuthAuthenticated) {
+                context.read<HomeBloc>().add(LoadHomeData(playerId: authState.user.id));
+              }
+            }
+          });
         },
       ),
-    );
+    ).then((_) {
+      _isDailyPopupShowing = false;
+    });
   }
 
-
+  void _triggerPuzzleAnimation() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final key = TopNavBar.puzzleKey;
+      if (key.currentContext != null) {
+        final box = key.currentContext!.findRenderObject() as RenderBox;
+        final position = box.localToGlobal(Offset.zero);
+        setState(() {
+          _puzzleTargetOffset = Offset(position.dx + box.size.width / 2, position.dy + box.size.height / 2);
+          _showPuzzleReward = true;
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -167,6 +210,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               (previous.levelsCompletedInWorld != current.levelsCompletedInWorld && current.lastAction == HomeLastAction.win),
           listener: (context, state) {
             _confettiController.play();
+            _triggerPuzzleAnimation();
           },
         ),
         BlocListener<HomeBloc, HomeState>(
@@ -217,7 +261,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   children: [
                     Column(
                       children: [
-                        const TopNavBar(),
+                        TopNavBar(
+                          onDailyPressed: () async {
+                            final authState = context.read<AuthBloc>().state;
+                            if (authState is AuthAuthenticated) {
+                              final homeBloc = context.read<HomeBloc>();
+                              final repo = DailyRepository();
+                              final status = await repo.getDailyStatus(authState.user.id);
+                              if (!mounted) return;
+
+                              _showDailyPopup(
+                                isDailyCompleted: homeBloc.state.isDailyCompleted,
+                                isSeriesCompleted: homeBloc.state.isSeriesCompleted,
+                                status: status,
+                              );
+                            }
+                          },
+                        ),
                         Expanded(
                           child: Stack(
                             children: [
@@ -260,19 +320,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                   ),
                                                 );
                                               },
-                                            ),
-                                            Positioned(
-                                              left: 20,
-                                              child: DailyChallengeButton(
-                                                onTap: () async {
-                                                  final authState = context.read<AuthBloc>().state;
-                                                  if (authState is AuthAuthenticated) {
-                                                    final repo = DailyRepository();
-                                                    final status = await repo.getDailyStatus(authState.user.id);
-                                                    if (mounted) _showDailyPopup(status);
-                                                  }
-                                                },
-                                              ),
                                             ),
                                             Positioned(
                                               right: 20,
@@ -345,6 +392,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 gravity: 0.1,
               ),
             ),
+            if (_showPuzzleReward)
+              PuzzleRewardAnimation(
+                startOffset: Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height / 2),
+                endOffset: _puzzleTargetOffset,
+                onComplete: () {
+                  setState(() => _showPuzzleReward = false);
+                },
+              ),
           ],
         ),
       ),

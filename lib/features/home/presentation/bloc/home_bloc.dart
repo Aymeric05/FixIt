@@ -167,6 +167,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         nextLifeTime = null;
       }
 
+      unawaited(_progressionRepo.ensureNextLevelsExist('world_1', progression?.currentLevel ?? 1));
+
+      // Fetch Daily Status
+      final dailyStatus = await _dailyRepo.getDailyStatus(playerSupabaseId);
+
       emit(state.copyWith(
         lives: lives,
         nextLifeTime: nextLifeTime,
@@ -178,9 +183,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         levelsCompletedInWorld: (progression?.currentLevel ?? 1) - 1,
         isLoading: false,
         currentDate: _dailyRepo.getTodayWorldId(), // Used to detect day changes
+        isDailyCompleted: dailyStatus?.isDailyLevelCompleted ?? false,
+        isSeriesCompleted: dailyStatus?.isSeriesCompleted ?? false,
       ));
-
-      unawaited(_progressionRepo.ensureNextLevelsExist('world_1', progression?.currentLevel ?? 1));
     } else {
       AppLogger.log('HomeBloc: No local player found yet');
       emit(state.copyWith(isLoading: false));
@@ -345,6 +350,29 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   Future<void> _onCompleteLevel(CompleteLevel event, Emitter<HomeState> emit) async {
+    // Increment puzzle pieces by 5 for completing a level
+    try {
+      final player = await (_db.select(_db.players)
+            ..where((t) => event.playerId != null && event.playerId!.isNotEmpty 
+                ? t.supabaseId.equals(event.playerId!) 
+                : t.id.isNotNull()))
+          .getSingle();
+      
+      final newPuzzles = player.puzzlePieces + 5;
+      
+      await (_db.update(_db.players)
+            ..where((t) => event.playerId != null && event.playerId!.isNotEmpty 
+                ? t.supabaseId.equals(event.playerId!) 
+                : t.id.isNotNull()))
+          .write(PlayersCompanion(puzzlePieces: drift.Value(newPuzzles)));
+          
+      if (event.playerId != null && event.playerId!.isNotEmpty) {
+        unawaited(DatabaseService().supabase.from('profiles').update({'puzzle_pieces': newPuzzles}).eq('id', event.playerId!));
+      }
+    } catch (e) {
+      AppLogger.error('Error incrementing puzzles on complete level', e);
+    }
+
     emit(state.copyWith(lastAction: HomeLastAction.win));
     // Hard refresh from DB for the specific player
     await _refreshProgression(emit, event.playerId);
