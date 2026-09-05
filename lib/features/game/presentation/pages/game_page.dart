@@ -137,7 +137,7 @@ class _GamePageState extends State<GamePage> {
               children: [
                 Positioned.fill(
                   child: Image.asset(
-                    'monde1_background.png',
+                    'assets/images/monde1_background.png',
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -468,7 +468,7 @@ class _GamePageState extends State<GamePage> {
                 child: Transform.scale(
                   scale: 1.08,
                   child: Image.asset(
-                    'jeu_serpent_contour_pas_ouf.png',
+                    'assets/images/jeu_serpent_contour_pas_ouf.png',
                     fit: BoxFit.fill,
                   ),
                 ),
@@ -599,7 +599,7 @@ class _GamePageState extends State<GamePage> {
             child: RotatedBox(
               quarterTurns: 1,
               child: Image.asset(
-                'buisson.png',
+                'assets/images/buisson.png',
                 fit: BoxFit.fill,
               ),
             ),
@@ -614,7 +614,7 @@ class _GamePageState extends State<GamePage> {
             width: length,
             height: thickness,
             child: Image.asset(
-              'buisson.png',
+              'assets/images/buisson.png',
               fit: BoxFit.fill,
             ),
           ),
