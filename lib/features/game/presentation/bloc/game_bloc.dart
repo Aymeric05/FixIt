@@ -226,7 +226,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   }
 
   Future<void> _onSelectCell(SelectCell event, Emitter<GameState> emit) async {
-    if (state.status != GameStatus.playing) return;
+    if (state.status != GameStatus.playing || state.isDizzy) return;
     final tapped = GridOffset(event.row, event.col);
     final currentPath = List<GridOffset>.from(state.currentPath);
     if (currentPath.isNotEmpty && currentPath.last == tapped) return;
@@ -234,22 +234,33 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       if (state.hints[event.row][event.col] == 1) emit(state.copyWith(currentPath: [tapped]));
       return;
     }
+    
     final existingIndex = currentPath.indexOf(tapped);
+    
+    // Backtracking Logic
     if (existingIndex != -1) {
-      if (event.isDrag) {
-        // If it's a drag on the body, just make the snake angry, don't reset
-        emit(state.copyWith(isAngry: true));
-      } else {
-        // If it's a tap on the body, reset to that point
+      if (existingIndex < currentPath.length - 1) {
+        // We are moving back into our own path
         final newPath = currentPath.sublist(0, existingIndex + 1);
-        emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
+        emit(state.copyWith(
+          currentPath: newPath, 
+          isAngry: _checkIfAngry(newPath),
+          isDizzy: false,
+        ));
+      } else if (event.isDrag) {
+        // Dragging on the head itself (already handled by 'last == tapped' check above, but for safety)
       }
       return;
     }
+
     final last = currentPath.last;
     final isAdjacent = (last.row - event.row).abs() + (last.col - event.col).abs() == 1;
+    
     if (isAdjacent) {
-      if (state.walls.contains(_getWallKey(last, tapped))) return;
+      if (state.walls.contains(_getWallKey(last, tapped))) {
+        _triggerCollision(emit, tapped.row - last.row, tapped.col - last.col);
+        return;
+      }
       final newPath = [...currentPath, tapped];
       
       if (newPath.length == 36) {
@@ -332,6 +343,30 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       }
       
       emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
+    } else {
+      // Not adjacent -> potential collision with far-away cell or map border (if event is far)
+      if (event.isDrag) {
+        _triggerCollision(emit, (event.row - last.row).sign.toInt(), (event.col - last.col).sign.toInt());
+      }
+    }
+  }
+
+  void _triggerCollision(Emitter<GameState> emit, int dr, int dc) async {
+    if (state.isDizzy) return;
+    
+    emit(state.copyWith(
+      isDizzy: true, 
+      collisionOffset: GridOffset(dr, dc),
+    ));
+
+    // Wait for the animation/shake to play
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    if (!isClosed) {
+      emit(state.copyWith(
+        isDizzy: false, 
+        collisionOffset: null,
+      ));
     }
   }
 
