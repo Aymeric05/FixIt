@@ -12,6 +12,12 @@ import 'package:fixit/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:fixit/features/profile/presentation/bloc/profile_event.dart';
 import 'package:fixit/features/profile/presentation/bloc/profile_state.dart';
 import 'package:fixit/core/utils/app_notifications.dart';
+import 'package:fixit/features/friends/presentation/bloc/friends_bloc.dart';
+import 'package:fixit/features/friends/presentation/bloc/friends_event.dart';
+import 'package:fixit/features/friends/presentation/bloc/friends_state.dart';
+import 'package:fixit/features/friends/presentation/widgets/add_friend_dialog.dart';
+import 'package:fixit/features/friends/presentation/widgets/friend_requests_dialog.dart';
+import 'package:fixit/features/home/presentation/widgets/candy_dialog.dart';
 
 class ProfileModal extends StatefulWidget {
   final Player player;
@@ -114,9 +120,15 @@ class _ProfileModalState extends State<ProfileModal> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _buildAvatarSection(context),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 25),
                     _buildNicknameSection(),
-                    const SizedBox(height: 20),
+                    const Divider(height: 40, color: Colors.black12, thickness: 2),
+                    const Text(
+                      'SOCIAL',
+                      style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.candyPurple, fontSize: 18),
+                    ),
+                    const SizedBox(height: 15),
+                    _buildSocialSection(context),
                   ],
                 ),
               ),
@@ -295,7 +307,7 @@ class _ProfileModalState extends State<ProfileModal> {
             ),
             alignment: Alignment.center,
             child: const Text(
-              'PROFIL',
+              'SOCIAL',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
@@ -307,6 +319,217 @@ class _ProfileModalState extends State<ProfileModal> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSocialSection(BuildContext context) {
+    final authState = context.read<AuthBloc>().state;
+    final String playerId = authState is AuthAuthenticated ? authState.user.id : '';
+
+    if (playerId.isEmpty) {
+      return const Center(child: Text('Please log in to see friends.'));
+    }
+
+    // Refresh friends list
+    context.read<FriendsBloc>().add(LoadFriends(playerId));
+
+    return BlocBuilder<FriendsBloc, FriendsState>(
+      builder: (context, state) {
+        return SizedBox(
+          height: 300,
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildActionButton(
+                    context,
+                    icon: Icons.person_add,
+                    label: 'Add',
+                    color: AppColors.candyGreen,
+                    darkColor: AppColors.candyGreenDark,
+                    onTap: () => _openAddFriend(context, playerId),
+                  ),
+                  _buildActionButton(
+                    context,
+                    icon: Icons.mail,
+                    label: 'Requests',
+                    color: AppColors.candyOrange,
+                    darkColor: AppColors.candyOrangeDark,
+                    badgeCount: state.incomingRequests.length,
+                    onTap: () => _openRequests(context, playerId),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 15),
+              Expanded(
+                child: state.isLoading 
+                  ? const Center(child: CircularProgressIndicator())
+                  : state.friends.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.separated(
+                        padding: EdgeInsets.zero,
+                        itemCount: state.friends.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final friend = state.friends[index];
+                          return _buildFriendRow(context, friend, playerId);
+                        },
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildActionButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required Color darkColor,
+    required VoidCallback onTap,
+    int badgeCount = 0,
+  }) {
+    return Column(
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            CandyButton(
+              width: 55,
+              height: 55,
+              borderRadius: 27,
+              color: color,
+              darkColor: darkColor,
+              onPressed: onTap,
+              child: Icon(icon, color: Colors.white, size: 28),
+            ),
+            if (badgeCount > 0)
+              Positioned(
+                right: -5,
+                top: -5,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(color: AppColors.candyPurple, shape: BoxShape.circle),
+                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                  child: Text(
+                    '$badgeCount',
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+      ],
+    );
+  }
+
+  Widget _buildFriendRow(BuildContext context, dynamic friend, String playerId) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.black12),
+      ),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            radius: 18,
+            backgroundColor: AppColors.candyBlue, 
+            child: Icon(Icons.person, color: Colors.white, size: 20)
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              friend.friendUsername,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.redAccent, size: 20),
+            onPressed: () => _confirmRemove(context, friend, playerId),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.sentiment_dissatisfied, size: 40, color: Colors.black26),
+          SizedBox(height: 5),
+          Text('No friends yet.', style: TextStyle(color: Colors.black45, fontWeight: FontWeight.bold, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  void _openAddFriend(BuildContext context, String playerId) {
+    showDialog(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => BlocProvider.value(
+        value: context.read<FriendsBloc>(),
+        child: AddFriendDialog(currentUserId: playerId),
+      ),
+    );
+  }
+
+  void _openRequests(BuildContext context, String playerId) {
+    showDialog(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => BlocProvider.value(
+        value: context.read<FriendsBloc>(),
+        child: FriendRequestsDialog(playerId: playerId),
+      ),
+    );
+  }
+
+  void _confirmRemove(BuildContext context, dynamic friend, String playerId) {
+    showDialog(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => CandyDialog(
+        title: 'REMOVE?',
+        content: Text(
+          'Remove ${friend.friendUsername}?',
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        actions: [
+          CandyButton(
+            width: 100,
+            height: 45,
+            color: Colors.grey,
+            darkColor: Colors.grey.shade700,
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('CANCEL', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 15),
+          CandyButton(
+            width: 100,
+            height: 45,
+            color: Colors.redAccent,
+            darkColor: Colors.red.shade900,
+            onPressed: () {
+              context.read<FriendsBloc>().add(RemoveFriend(playerId: playerId, friendId: friend.friendId));
+              Navigator.pop(ctx);
+            },
+            child: const Text('REMOVE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 

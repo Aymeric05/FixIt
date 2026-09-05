@@ -20,6 +20,7 @@ import 'package:fixit/features/game/presentation/widgets/friends_leaderboard_dia
 import 'package:fixit/core/models/level_win_summary.dart';
 import 'package:fixit/core/models/daily_mode.dart';
 import 'package:fixit/core/widgets/breaking_heart_animation.dart';
+import 'package:flutter/services.dart';
 
 class GamePage extends StatefulWidget {
   final int level;
@@ -43,18 +44,24 @@ class GamePage extends StatefulWidget {
   State<GamePage> createState() => _GamePageState();
 }
 
-class _GamePageState extends State<GamePage> {
+class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
   late ConfettiController _confettiController;
+  late AnimationController _blinkController;
 
   @override
   void initState() {
     super.initState();
     _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+    _blinkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _confettiController.dispose();
+    _blinkController.dispose();
     super.dispose();
   }
 
@@ -93,8 +100,12 @@ class _GamePageState extends State<GamePage> {
         },
         child: Scaffold(
           body: BlocListener<GameBloc, GameState>(
-            listenWhen: (previous, current) => previous.status != current.status,
+            listenWhen: (previous, current) => previous.status != current.status || (current.isDizzy && !previous.isDizzy),
             listener: (context, state) async {
+              if (state.isDizzy) {
+                HapticFeedback.vibrate();
+              }
+              
               if (state.status == GameStatus.playing && widget.level == 1) {
                 TutorialDialog.showIfFirstTime(
                   context,
@@ -135,7 +146,7 @@ class _GamePageState extends State<GamePage> {
               children: [
                 Positioned.fill(
                   child: Image.asset(
-                    'monde1_background.png',
+                    'assets/images/monde1_background.png',
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -464,7 +475,7 @@ class _GamePageState extends State<GamePage> {
                 child: Transform.scale(
                   scale: 1.08,
                   child: Image.asset(
-                    'jeu_serpent_contour_pas_ouf.png',
+                    'assets/images/jeu_serpent_contour_pas_ouf.png',
                     fit: BoxFit.fill,
                   ),
                 ),
@@ -478,84 +489,92 @@ class _GamePageState extends State<GamePage> {
                     return GestureDetector(
                       onPanStart: (details) => _handleDrag(context, details.localPosition, cellSize, isDrag: false),
                       onPanUpdate: (details) => _handleDrag(context, details.localPosition, cellSize, isDrag: true),
-                      child: Container(
-                        width: constraints.maxWidth,
-                        height: constraints.maxWidth,
-                        color: Colors.transparent,
-                        child: Stack(
-                          children: [
-                            _buildGridLines(state, cellSize),
-                            ..._buildWalls(state, cellSize),
-                            GridView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 6,
-                              ),
-                              itemCount: 36,
-                              itemBuilder: (context, index) {
-                                final row = index ~/ 6;
-                                final col = index % 6;
-                                final pos = GridOffset(row, col);
-                                final value = state.hints[row][col];
-                                final isHighlighted = state.highlightedCells.contains(pos);
-                                
-                                // Flash red if last number reached but grid not full
-                                int maxNumInHints = 0;
-                                for (var r in state.hints) {
-                                  for (var v in r) {
-                                    if (v != null && v > maxNumInHints) maxNumInHints = v;
+                      child: _ShakeWrapper(
+                        isShaking: state.isDizzy,
+                        child: Container(
+                          width: constraints.maxWidth,
+                          height: constraints.maxWidth,
+                          color: Colors.transparent,
+                          child: Stack(
+                            children: [
+                              _buildGridLines(state, cellSize),
+                              ..._buildWalls(state, cellSize),
+                              GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 6,
+                                ),
+                                itemCount: 36,
+                                itemBuilder: (context, index) {
+                                  final row = index ~/ 6;
+                                  final col = index % 6;
+                                  final pos = GridOffset(row, col);
+                                  final value = state.hints[row][col];
+                                  final isHighlighted = state.highlightedCells.contains(pos);
+                                  
+                                  // Flash red if last number reached but grid not full
+                                  int maxNumInHints = 0;
+                                  for (var r in state.hints) {
+                                    for (var v in r) {
+                                      if (v != null && v > maxNumInHints) maxNumInHints = v;
+                                    }
                                   }
-                                }
-                                
-                                final bool isLastNumberReached = state.currentPath.isNotEmpty && 
-                                  state.hints[state.currentPath.last.row][state.currentPath.last.col] == maxNumInHints;
-                                
-                                final bool isMissingCell = state.status == GameStatus.playing && 
-                                  isLastNumberReached && 
-                                  !state.currentPath.contains(pos);
+                                  
+                                  final bool isLastNumberReached = state.currentPath.isNotEmpty && 
+                                    state.hints[state.currentPath.last.row][state.currentPath.last.col] == maxNumInHints;
+                                  
+                                  final bool isMissingCell = state.status == GameStatus.playing && 
+                                    isLastNumberReached && 
+                                    !state.currentPath.contains(pos);
 
-                                return Container(
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: isHighlighted 
-                                        ? Colors.yellow.withValues(alpha: 0.4)
-                                        : (isMissingCell && (DateTime.now().millisecond % 500 > 250))
-                                            ? Colors.red.withValues(alpha: 0.4)
-                                            : null,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: value != null
-                                      ? Stack(
-                                          alignment: Alignment.center,
-                                          children: [
-                                            Text(
-                                              '$value',
-                                              style: TextStyle(
-                                                fontSize: 24,
-                                                fontWeight: FontWeight.w900,
-                                                foreground: Paint()
-                                                  ..style = PaintingStyle.stroke
-                                                  ..strokeWidth = 3
-                                                  ..color = Colors.white,
+                                  return AnimatedBuilder(
+                                animation: _blinkController,
+                                builder: (context, child) {
+                                  return Container(
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: isHighlighted 
+                                          ? Colors.yellow.withValues(alpha: 0.4)
+                                          : (isMissingCell && _blinkController.value > 0.5)
+                                              ? Colors.red.withValues(alpha: 0.4)
+                                              : null,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: value != null
+                                        ? Stack(
+                                            alignment: Alignment.center,
+                                            children: [
+                                              Text(
+                                                '$value',
+                                                style: TextStyle(
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.w900,
+                                                  foreground: Paint()
+                                                    ..style = PaintingStyle.stroke
+                                                    ..strokeWidth = 3
+                                                    ..color = Colors.white,
+                                                ),
                                               ),
-                                            ),
-                                            Text(
-                                              '$value',
-                                              style: TextStyle(
-                                                fontSize: 24,
-                                                fontWeight: FontWeight.w900,
-                                                color: value == 1 ? Colors.red.shade700 : const Color(0xFF3E2723),
+                                              Text(
+                                                '$value',
+                                                style: TextStyle(
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: value == 1 ? Colors.red.shade700 : const Color(0xFF3E2723),
+                                                ),
                                               ),
-                                            ),
-                                          ],
-                                        )
-                                      : null,
-                                );
-                              },
-                            ),
-                            _buildSerpentHead(state, cellSize),
-                          ],
+                                            ],
+                                          )
+                                        : null,
+                                  );
+                                },
+                              );
+                                },
+                              ),
+                              _buildSerpentHead(state, cellSize),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -595,7 +614,7 @@ class _GamePageState extends State<GamePage> {
             child: RotatedBox(
               quarterTurns: 1,
               child: Image.asset(
-                'buisson.png',
+                'assets/images/buisson.png',
                 fit: BoxFit.fill,
               ),
             ),
@@ -610,7 +629,7 @@ class _GamePageState extends State<GamePage> {
             width: length,
             height: thickness,
             child: Image.asset(
-              'buisson.png',
+              'assets/images/buisson.png',
               fit: BoxFit.fill,
             ),
           ),
@@ -624,14 +643,27 @@ class _GamePageState extends State<GamePage> {
     if (state.currentPath.isEmpty) return const SizedBox.shrink();
 
     final headPos = state.currentPath.last;
+    double offsetX = 0;
+    double offsetY = 0;
+
+    if (state.isDizzy && state.collisionOffset != null) {
+      // Small visual bump
+      offsetX = state.collisionOffset!.col * (cellSize * 0.2);
+      offsetY = state.collisionOffset!.row * (cellSize * 0.2);
+    }
+
     return Positioned(
-      left: headPos.col * cellSize,
-      top: headPos.row * cellSize,
+      left: headPos.col * cellSize + offsetX,
+      top: headPos.row * cellSize + offsetY,
       width: cellSize,
       height: cellSize,
       child: IgnorePointer(
         child: CustomPaint(
-          painter: _HeadPainter(isAngry: state.isAngry, cellSize: cellSize),
+          painter: _HeadPainter(
+            isAngry: state.isAngry, 
+            isDizzy: state.isDizzy,
+            cellSize: cellSize,
+          ),
         ),
       ),
     );
@@ -1051,31 +1083,67 @@ class _GamePageState extends State<GamePage> {
 
 class _HeadPainter extends CustomPainter {
   final bool isAngry;
+  final bool isDizzy;
   final double cellSize;
 
-  _HeadPainter({required this.isAngry, required this.cellSize});
+  _HeadPainter({required this.isAngry, required this.isDizzy, required this.cellSize});
 
   @override
   void paint(Canvas canvas, Size size) {
-    _paintHead(canvas, size, isAngry, cellSize);
+    _paintHead(canvas, size, isAngry, isDizzy, cellSize);
   }
 
   @override
-  bool shouldRepaint(covariant _HeadPainter oldDelegate) => oldDelegate.isAngry != isAngry || oldDelegate.cellSize != cellSize;
+  bool shouldRepaint(covariant _HeadPainter oldDelegate) => 
+    oldDelegate.isAngry != isAngry || oldDelegate.isDizzy != isDizzy || oldDelegate.cellSize != cellSize;
 }
 
-void _paintHead(Canvas canvas, Size size, bool isAngry, double cellSize) {
+void _paintHead(Canvas canvas, Size size, bool isAngry, bool isDizzy, double cellSize) {
   final center = Offset(size.width / 2, size.height / 2);
   final eyePaint = Paint()..color = Colors.white;
-  final pupilPaint = Paint()..color = Colors.black;
+  final pupilPaint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 1.5;
   final eyeSize = cellSize * 0.15;
 
   canvas.drawCircle(center + Offset(-eyeSize, -eyeSize / 2), eyeSize, eyePaint);
   canvas.drawCircle(center + Offset(eyeSize, -eyeSize / 2), eyeSize, eyePaint);
-  canvas.drawCircle(center + Offset(-eyeSize, -eyeSize / 2), eyeSize / 2, pupilPaint);
-  canvas.drawCircle(center + Offset(eyeSize, -eyeSize / 2), eyeSize / 2, pupilPaint);
 
-  if (isAngry) {
+  if (isDizzy) {
+    // Spiral eyes
+    final spiralPaint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    
+    for (var eyeOffset in [Offset(-eyeSize, -eyeSize / 2), Offset(eyeSize, -eyeSize / 2)]) {
+      final eyeCenter = center + eyeOffset;
+      final path = Path();
+      // Draw a dizzy spiral
+      for (double angle = 0; angle < 3 * pi; angle += 0.2) {
+        double r = (angle / (3 * pi)) * eyeSize;
+        double x = eyeCenter.dx + r * cos(angle);
+        double y = eyeCenter.dy + r * sin(angle);
+        if (angle == 0) path.moveTo(x, y);
+        else path.lineTo(x, y);
+      }
+      canvas.drawPath(path, spiralPaint);
+    }
+  } else {
+    canvas.drawCircle(center + Offset(-eyeSize, -eyeSize / 2), eyeSize / 2, Paint()..color = Colors.black);
+    canvas.drawCircle(center + Offset(eyeSize, -eyeSize / 2), eyeSize / 2, Paint()..color = Colors.black);
+  }
+
+  if (isDizzy) {
+    final mouthPaint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    // Wavy mouth for dizzy
+    final mouthPath = Path();
+    mouthPath.moveTo(center.dx - eyeSize, center.dy + eyeSize);
+    mouthPath.quadraticBezierTo(center.dx - eyeSize/2, center.dy + eyeSize*1.5, center.dx, center.dy + eyeSize);
+    mouthPath.quadraticBezierTo(center.dx + eyeSize/2, center.dy + eyeSize/2, center.dx + eyeSize, center.dy + eyeSize);
+    canvas.drawPath(mouthPath, mouthPaint);
+  } else if (isAngry) {
     final angryPaint = Paint()
       ..color = Colors.black
       ..strokeWidth = 3
@@ -1155,4 +1223,62 @@ Path drawFireworkSparkle(Size size) {
   path.lineTo(halfWidth - size.width * 0.05, halfHeight - size.height * 0.05);
   path.close();
   return path;
+}
+
+class _ShakeWrapper extends StatefulWidget {
+  final Widget child;
+  final bool isShaking;
+
+  const _ShakeWrapper({required this.child, required this.isShaking});
+
+  @override
+  State<_ShakeWrapper> createState() => _ShakeWrapperState();
+}
+
+class _ShakeWrapperState extends State<_ShakeWrapper> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 50),
+    );
+  }
+
+  @override
+  void didUpdateWidget(_ShakeWrapper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isShaking && !oldWidget.isShaking) {
+      _controller.repeat(reverse: true);
+    } else if (!widget.isShaking && oldWidget.isShaking) {
+      _controller.stop();
+      _controller.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        if (!widget.isShaking) return widget.child;
+        final random = Random();
+        return Transform.translate(
+          offset: Offset(
+            (random.nextDouble() * 8 - 4),
+            (random.nextDouble() * 8 - 4),
+          ),
+          child: widget.child,
+        );
+      },
+    );
+  }
 }

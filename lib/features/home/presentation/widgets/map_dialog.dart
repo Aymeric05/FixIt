@@ -18,11 +18,11 @@ class MapDialog extends StatefulWidget {
 
 class _MapDialogState extends State<MapDialog> {
   final List<WorldData> worlds = [
-    WorldData(id: 'meadow', name: 'Meadow', asset: 'world1.png', color: Colors.green),
-    WorldData(id: 'desert', name: 'Desert', asset: 'world2.png', color: Colors.orange),
-    WorldData(id: 'ice', name: 'Ice', asset: 'world3.png', color: Colors.blueAccent),
-    WorldData(id: 'volcano', name: 'Volcano', asset: 'world4.png', color: Colors.red),
-    WorldData(id: 'city', name: 'City', asset: 'world5.png', color: Colors.purple),
+    WorldData(id: 'meadow', name: 'Meadow', asset: 'assets/images/world1.png', color: Colors.green),
+    WorldData(id: 'desert', name: 'Desert', asset: 'assets/images/world2.png', color: Colors.orange),
+    WorldData(id: 'ice', name: 'Ice', asset: 'assets/images/world3.png', color: Colors.blueAccent),
+    WorldData(id: 'volcano', name: 'Volcano', asset: 'assets/images/world4.png', color: Colors.red),
+    WorldData(id: 'city', name: 'City', asset: 'assets/images/world5.png', color: Colors.purple),
   ];
 
   late final PageController _rollController;
@@ -77,7 +77,7 @@ class _MapDialogState extends State<MapDialog> {
                   // Background
                   Positioned.fill(
                     child: Image.asset(
-                      'ciel.png',
+                      'assets/images/ciel.png',
                       fit: BoxFit.cover,
                       alignment: Alignment.center,
                       errorBuilder: (context, error, stackTrace) => Container(

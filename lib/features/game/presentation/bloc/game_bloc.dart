@@ -16,11 +16,11 @@ import 'package:fixit/features/game/presentation/bloc/game_state.dart';
 import 'package:fixit/core/models/daily_mode.dart';
 import 'package:fixit/core/models/level_win_summary.dart';
 import 'package:fixit/core/utils/app_logger.dart';
-
 import 'package:fixit/core/repositories/game_session_repository.dart';
 
 class GameBloc extends Bloc<GameEvent, GameState> {
   Timer? _timer;
+  Timer? _dizzyTimer;
   late final ProgressionRepository _progressionRepo;
   late final DailyRepository _dailyRepo;
   late final GameSessionRepository _sessionRepo;
@@ -44,6 +44,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<UseItemPlusTime>(_onUseItemPlusTime);
     on<UseItemMoreNumbers>(_onUseItemMoreNumbers);
     on<UseItemRevealPath>(_onUseItemRevealPath);
+    on<RecoverFromDizzy>(_onRecoverFromDizzy);
   }
 
   Future<void> _onStartGame(StartGame event, Emitter<GameState> emit) async {
@@ -77,7 +78,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       levelNumber: event.level,
       hints: [],
       mode: event.mode,
-      seriesAccumulatedTime: 0, // Default, will be updated below
+      seriesAccumulatedTime: 0, 
       wonTime: null,
       inventoryPlusTime: event.invPlusTime,
       inventoryMoreNumbers: event.invMoreNumbers,
@@ -209,7 +210,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           
           await Future.delayed(Duration.zero);
           if (!isClosed) {
-            // Clean up session if it exists but level is already marked as completed remotely
             await _sessionRepo.deleteSession(playerId: event.playerId, worldId: worldId, levelNumber: event.level, mode: event.mode);
             
             emit(state.copyWith(
@@ -231,7 +231,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
             
             await Future.delayed(Duration.zero);
             if (!isClosed) {
-              // Clean up session
               await _sessionRepo.deleteSession(playerId: event.playerId, worldId: worldId, levelNumber: event.level, mode: event.mode);
 
               emit(state.copyWith(
@@ -244,7 +243,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
             }
             return;
           } else {
-            // Normal play for Level N, accumulated time is the total from Level N-1
             emit(state.copyWith(seriesAccumulatedTime: status.seriesAccumulatedTime));
           }
         }
@@ -255,7 +253,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       unawaited(_progressionRepo.grantLevel1Reward(event.playerId).catchError((e) => AppLogger.error('Reward error', e)));
     }
 
-    _startTimer(finalRemainingSeconds);
+    if (!state.isPaused) {
+      _startTimer(finalRemainingSeconds);
+    }
+    
     if (event.mode == GameMode.story) {
       unawaited(_progressionRepo.ensureNextLevelsExist('world_1', event.level));
     }
@@ -265,112 +266,136 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     if (state.status != GameStatus.playing) return;
     final tapped = GridOffset(event.row, event.col);
     final currentPath = List<GridOffset>.from(state.currentPath);
-    if (currentPath.isNotEmpty && currentPath.last == tapped) return;
+    
     if (currentPath.isEmpty) {
-      if (state.hints[event.row][event.col] == 1) emit(state.copyWith(currentPath: [tapped]));
-      return;
-    }
-    final existingIndex = currentPath.indexOf(tapped);
-    if (existingIndex != -1) {
-      if (event.isDrag) {
-        // If it's a drag on the body, just make the snake angry, don't reset
-        emit(state.copyWith(isAngry: true));
-      } else {
-        // If it's a tap on the body, reset to that point
-        final newPath = currentPath.sublist(0, existingIndex + 1);
-        emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
+      if (state.hints[event.row][event.col] == 1) {
+        emit(state.copyWith(currentPath: [tapped]));
         unawaited(_saveCurrentSession());
       }
       return;
     }
+
     final last = currentPath.last;
-    final isAdjacent = (last.row - event.row).abs() + (last.col - event.col).abs() == 1;
-    if (isAdjacent) {
-      if (state.walls.contains(_getWallKey(last, tapped))) return;
-      final newPath = [...currentPath, tapped];
-      
-      if (newPath.length == 36) {
-        if (_validatePath(newPath)) {
-          _timer?.cancel();
-          
-          // Emit intermediate state so UI knows it's won
-          emit(state.copyWith(currentPath: newPath, isAngry: false));
+    final existingIndex = currentPath.indexOf(tapped);
 
-          final timeTaken = state.initialSeconds - state.remainingSeconds;
-          final worldId = state.mode == GameMode.story ? 'world_1' : _dailyRepo.getTodayWorldId();
-
-          // Record and prepare summary
-          int displayTime = timeTaken;
-          if (state.mode == GameMode.dailySingle && _playerId != null) {
-            await _dailyRepo.updateDailyStatus(
-              playerId: _playerId!, 
-              isDailyLevelCompleted: true,
-              dailyLevelTime: timeTaken,
-            );
-            await _progressionRepo.markLevelAsCompleted(
-              playerSupabaseId: _playerId!,
-              worldId: worldId,
-              levelNumber: state.levelNumber,
-              timeSeconds: timeTaken,
-              updateProgression: false,
-            );
-          } else if (state.mode == GameMode.dailySeries && _playerId != null) {
-            displayTime = state.seriesAccumulatedTime + timeTaken;
-            final isFinished = state.levelNumber >= 3;
-            
-            await _dailyRepo.updateDailyStatus(
-              playerId: _playerId!,
-              seriesCurrentLevel: state.levelNumber,
-              seriesAccumulatedTime: displayTime,
-              isSeriesCompleted: isFinished,
-            );
-
-            await _progressionRepo.markLevelAsCompleted(
-              playerSupabaseId: _playerId!,
-              worldId: _dailyRepo.getTodaySeriesWorldId(),
-              levelNumber: state.levelNumber,
-              timeSeconds: displayTime,
-              updateProgression: false,
-            );
-          }
-
-          // Fetch Rich Win Summary
-          LevelWinSummary? summary;
-          if (state.mode == GameMode.story) {
-             summary = await _progressionRepo.getLevelWinSummary(
-              worldId: 'world_1',
-              levelNumber: state.levelNumber,
-              playerId: _playerId ?? '',
-              playerTime: timeTaken,
-            );
-          } else if (state.mode == GameMode.dailySingle) {
-             summary = await _progressionRepo.getLevelWinSummary(
-              worldId: _dailyRepo.getTodayWorldId(),
-              levelNumber: state.levelNumber,
-              playerId: _playerId ?? '',
-              playerTime: timeTaken,
-            );
-          } else if (state.mode == GameMode.dailySeries) {
-             summary = await _progressionRepo.getLevelWinSummary(
-              worldId: _dailyRepo.getTodaySeriesWorldId(),
-              levelNumber: state.levelNumber,
-              playerId: _playerId ?? '',
-              playerTime: displayTime,
-            );
-          }
-
-          emit(state.copyWith(
-            status: GameStatus.won,
-            winSummary: summary,
-            wonTime: displayTime,
-          ));
-          unawaited(_deleteCurrentSession());
-          return;
-        }
-      }
-      
-      emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
+    // FAST BACKTRACKING (Teleport on Tap)
+    if (!event.isDrag && existingIndex != -1) {
+      final newPath = currentPath.sublist(0, existingIndex + 1);
+      _dizzyTimer?.cancel();
+      emit(state.copyWith(
+        currentPath: newPath,
+        isAngry: _checkIfAngry(newPath),
+        isDizzy: false,
+        collisionOffset: null,
+      ));
       unawaited(_saveCurrentSession());
+      return;
+    }
+
+    if (last == tapped) return;
+
+    final isAdjacent = (last.row - tapped.row).abs() + (last.col - tapped.col).abs() == 1;
+
+    bool isValidMove = false;
+    bool isBacktrackingMove = false;
+
+    if (isAdjacent) {
+      if (existingIndex != -1) {
+        if (existingIndex == currentPath.length - 2) {
+          isValidMove = true;
+          isBacktrackingMove = true;
+        }
+      } else if (!state.walls.contains(_getWallKey(last, tapped))) {
+        isValidMove = true;
+      }
+    }
+
+    if (state.isDizzy) {
+      if (isValidMove) {
+        _dizzyTimer?.cancel();
+        emit(state.copyWith(isDizzy: false, collisionOffset: null));
+      } else {
+        return;
+      }
+    }
+
+    if (isAdjacent) {
+      if (isValidMove) {
+        if (isBacktrackingMove) {
+          final newPath = currentPath.sublist(0, currentPath.length - 1);
+          emit(state.copyWith(
+            currentPath: newPath, 
+            isAngry: _checkIfAngry(newPath),
+          ));
+          unawaited(_saveCurrentSession());
+        } else {
+          final newPath = [...currentPath, tapped];
+          
+          if (newPath.length == 36) {
+            if (_validatePath(newPath)) {
+              _timer?.cancel();
+              emit(state.copyWith(currentPath: newPath, isAngry: false));
+
+              final timeTaken = state.initialSeconds - state.remainingSeconds;
+              final worldId = state.mode == GameMode.story ? 'world_1' : _dailyRepo.getTodayWorldId();
+
+              int displayTime = timeTaken;
+              if (state.mode == GameMode.dailySingle && _playerId != null) {
+                await _dailyRepo.updateDailyStatus(playerId: _playerId!, isDailyLevelCompleted: true, dailyLevelTime: timeTaken);
+                await _progressionRepo.markLevelAsCompleted(playerSupabaseId: _playerId!, worldId: worldId, levelNumber: state.levelNumber, timeSeconds: timeTaken, updateProgression: false);
+              } else if (state.mode == GameMode.dailySeries && _playerId != null) {
+                displayTime = state.seriesAccumulatedTime + timeTaken;
+                await _dailyRepo.updateDailyStatus(playerId: _playerId!, seriesCurrentLevel: state.levelNumber, seriesAccumulatedTime: displayTime, isSeriesCompleted: state.levelNumber >= 3);
+                await _progressionRepo.markLevelAsCompleted(playerSupabaseId: _playerId!, worldId: _dailyRepo.getTodaySeriesWorldId(), levelNumber: state.levelNumber, timeSeconds: displayTime, updateProgression: false);
+              }
+
+              LevelWinSummary? summary;
+              if (state.mode == GameMode.story) {
+                 summary = await _progressionRepo.getLevelWinSummary(worldId: 'world_1', levelNumber: state.levelNumber, playerId: _playerId ?? '', playerTime: timeTaken);
+              } else if (state.mode == GameMode.dailySingle) {
+                 summary = await _progressionRepo.getLevelWinSummary(worldId: _dailyRepo.getTodayWorldId(), levelNumber: state.levelNumber, playerId: _playerId ?? '', playerTime: timeTaken);
+              } else if (state.mode == GameMode.dailySeries) {
+                 summary = await _progressionRepo.getLevelWinSummary(worldId: _dailyRepo.getTodaySeriesWorldId(), levelNumber: state.levelNumber, playerId: _playerId ?? '', playerTime: displayTime);
+              }
+
+              emit(state.copyWith(status: GameStatus.won, winSummary: summary, wonTime: displayTime));
+              unawaited(_deleteCurrentSession());
+              return;
+            }
+          }
+          emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
+          unawaited(_saveCurrentSession());
+        }
+      } else {
+        _triggerCollision(emit, tapped.row - last.row, tapped.col - last.col);
+      }
+    } else {
+      if (event.isDrag) {
+        _triggerCollision(emit, (tapped.row - last.row).sign.toInt(), (tapped.col - last.col).sign.toInt());
+      }
+    }
+  }
+
+  void _triggerCollision(Emitter<GameState> emit, int dr, int dc) {
+    if (state.isDizzy) return;
+    
+    emit(state.copyWith(
+      isDizzy: true, 
+      collisionOffset: GridOffset(dr, dc),
+    ));
+
+    _dizzyTimer?.cancel();
+    _dizzyTimer = Timer(const Duration(milliseconds: 500), () {
+      add(RecoverFromDizzy());
+    });
+  }
+
+  void _onRecoverFromDizzy(RecoverFromDizzy event, Emitter<GameState> emit) {
+    if (state.isDizzy) {
+      emit(state.copyWith(
+        isDizzy: false, 
+        collisionOffset: null,
+      ));
     }
   }
 
@@ -429,7 +454,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       if (hintOrder[i].index > hintOrder[i+1].index) return false;
     }
 
-    // New requirement: The path MUST end on the last number (highest hint value)
     if (hintOrder.isNotEmpty && hintOrder.last.index != path.length - 1) {
       return false;
     }
@@ -455,7 +479,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       unawaited(_deleteCurrentSession());
     } else {
       emit(state.copyWith(remainingSeconds: event.remainingSeconds));
-      // Save every 5 seconds to not overload SQLite, or every second if we really want "exact"
       if (event.remainingSeconds % 5 == 0) {
         unawaited(_saveCurrentSession());
       }
@@ -464,11 +487,13 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
   void _onPauseTimer(PauseTimer event, Emitter<GameState> emit) {
     _timer?.cancel();
+    emit(state.copyWith(isPaused: true));
     unawaited(_saveCurrentSession());
   }
 
   void _onResumeTimer(ResumeTimer event, Emitter<GameState> emit) {
     _timer?.cancel();
+    emit(state.copyWith(isPaused: false));
     _startTimer(state.remainingSeconds);
   }
 
@@ -505,7 +530,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final Map<GridOffset, int> newHintSteps = {};
     final List<List<int?>> newHints = List.generate(6, (_) => List.filled(6, null));
     
-    // First tier (steps 0-11): Keep approx 1 hint every 3 steps (4 hints)
     for (int i = 0; i < 4; i++) {
       int stepIndex = (i * 3).round();
       final pos = solution[stepIndex];
@@ -513,7 +537,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       newHints[pos.row][pos.col] = i + 1;
     }
 
-    // Remaining 24 steps (12-35): Put 11 hints (Total 15)
     for (int i = 0; i < 11; i++) {
       int stepIndex = 12 + (i * (23 / 10)).round();
       final pos = solution[stepIndex];
@@ -530,6 +553,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       usedItems: {...state.usedItems, 'more_numbers'},
     ));
     _updateLocalInventory('item_more_numbers', newInv);
+    unawaited(_saveCurrentSession());
   }
 
   Future<void> _onUseItemRevealPath(UseItemRevealPath event, Emitter<GameState> emit) async {
@@ -558,7 +582,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       usedItems: {...state.usedItems, 'reveal_path'},
     ));
 
-    // Animation: Reveal each cell every 0.5s
     final revealedSoFar = <GridOffset>[];
     for (var cell in nextCells) {
       if (state.status != GameStatus.playing) break;
@@ -567,7 +590,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       await Future.delayed(const Duration(milliseconds: 500));
     }
     
-    // Hold all 4 lit for 2 seconds
     if (state.status == GameStatus.playing) {
       await Future.delayed(const Duration(seconds: 2));
     }
@@ -625,6 +647,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   @override
   Future<void> close() {
     _timer?.cancel();
+    _dizzyTimer?.cancel();
     return super.close();
   }
 }

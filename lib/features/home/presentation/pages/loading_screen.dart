@@ -40,8 +40,8 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
 
     // Pre-cache background images to avoid flicker
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      precacheImage(const AssetImage('monde1_background.png'), context);
-      precacheImage(const AssetImage('loading_ecran.png'), context);
+      precacheImage(const AssetImage('assets/images/monde1_background.png'), context);
+      precacheImage(const AssetImage('assets/images/loading_ecran.png'), context);
     });
 
     _progressController.forward().then((_) {
@@ -102,7 +102,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
             // Background
             Positioned.fill(
               child: Image.asset(
-                'loading_ecran.png',
+                'assets/images/loading_ecran.png',
                 fit: BoxFit.cover,
               ),
             ),

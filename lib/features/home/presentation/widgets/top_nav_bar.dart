@@ -11,17 +11,18 @@ import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:fixit/core/widgets/candy_icons.dart';
 import 'package:fixit/features/home/presentation/widgets/settings_dialog.dart';
-import 'package:fixit/features/home/presentation/widgets/social_dialog.dart';
 import 'package:fixit/features/home/presentation/widgets/no_ads_dialog.dart';
 import 'package:fixit/features/home/presentation/widgets/lives_store_dialog.dart';
 import 'package:fixit/features/home/presentation/widgets/leaderboard_dialog.dart';
 import 'package:fixit/features/home/presentation/widgets/map_dialog.dart';
 import 'package:fixit/features/home/presentation/widgets/shop_dialog.dart';
+import 'package:fixit/features/home/presentation/widgets/shiny_puzzle_icon.dart';
 import 'package:fixit/features/home/presentation/widgets/daily_challenge_button.dart';
 
 import 'package:fixit/core/utils/app_notifications.dart';
 
 class TopNavBar extends StatelessWidget {
+  static final GlobalKey puzzleKey = GlobalKey();
   final VoidCallback? onDailyPressed;
 
   const TopNavBar({super.key, this.onDailyPressed});
@@ -37,7 +38,7 @@ class TopNavBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Left side: Profil, Social, Map
+              // Left side: Profil, Shop, Map, Daily
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -45,18 +46,13 @@ class TopNavBar extends StatelessWidget {
                   children: [
                     _buildProfileSection(context),
                     const SizedBox(height: 12),
-                    BlocBuilder<FriendsBloc, FriendsState>(
-                      builder: (context, state) {
-                        return _buildNavButton(
-                          context,
-                          icon: Icons.people,
-                          label: 'Social',
-                          color: AppColors.candyPink,
-                          darkColor: AppColors.candyPinkDark,
-                          badgeCount: state.incomingRequests.length,
-                          onPressed: () => _showCandyDialog(context, const SocialDialog()),
-                        );
-                      },
+                    _buildNavButton(
+                      context,
+                      icon: Icons.shopping_cart,
+                      label: 'Shop',
+                      color: AppColors.candyPurple,
+                      darkColor: AppColors.candyPurpleDark,
+                      onPressed: () => _showCandyDialog(context, const ShopDialog()),
                     ),
                     const SizedBox(height: 12),
                     _buildNavButton(
@@ -113,7 +109,7 @@ class TopNavBar extends StatelessWidget {
                 ],
               ),
 
-              // Right side: No Ads, Settings, Rank, Shop
+              // Right side: No Ads, Settings, Rank
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -145,15 +141,6 @@ class TopNavBar extends StatelessWidget {
                       darkColor: Colors.red.shade900,
                       onPressed: () => _showCandyDialog(context, const LeaderboardDialog()),
                     ),
-                    const SizedBox(height: 12),
-                    _buildNavButton(
-                      context,
-                      icon: Icons.shopping_cart,
-                      label: 'Shop',
-                      color: AppColors.candyPurple,
-                      darkColor: AppColors.candyPurpleDark,
-                      onPressed: () => _showCandyDialog(context, const ShopDialog()),
-                    ),
                   ],
                 ),
               ),
@@ -165,63 +152,45 @@ class TopNavBar extends StatelessWidget {
   }
 
   Widget _buildPuzzleIndicator(BuildContext context, HomeState state) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.black38,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white24, width: 2),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.extension, color: Colors.orangeAccent, size: 24),
-          const SizedBox(width: 8),
-          Text(
-            '${state.puzzlePieces}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-              fontSize: 20,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ],
-      ),
-    );
+    return PuzzleIndicator(state: state);
   }
 
   Widget _buildProfileSection(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) {
-        final bool isAuthenticated = state is AuthAuthenticated;
-        final avatarUrl = isAuthenticated ? state.profile.avatarUrl : null;
+    return BlocBuilder<FriendsBloc, FriendsState>(
+      builder: (context, friendsState) {
+        return BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            final bool isAuthenticated = state is AuthAuthenticated;
+            final avatarUrl = isAuthenticated ? state.profile.avatarUrl : null;
 
-        return _buildNavButton(
-          context,
-          icon: avatarUrl == null || !File(avatarUrl).existsSync() ? Icons.person : null,
-          customIcon: avatarUrl != null && File(avatarUrl).existsSync()
-              ? ClipOval(
-                  child: Image.file(
-                    File(avatarUrl),
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                    key: ValueKey(avatarUrl + DateTime.now().millisecondsSinceEpoch.toString()),
-                  ),
-                )
-              : null,
-          label: 'Profil',
-          color: AppColors.candyBlue,
-          darkColor: AppColors.candyBlueDark,
-          onPressed: isAuthenticated
-              ? () => showDialog(
-                    context: context,
-                    builder: (dialogContext) => ProfileModal(player: state.profile),
-                  )
-              : () {
-                  AppNotifications.show(context, 'Connecting to server...');
-                },
+            return _buildNavButton(
+              context,
+              icon: avatarUrl == null || !File(avatarUrl).existsSync() ? Icons.person : null,
+              customIcon: avatarUrl != null && File(avatarUrl).existsSync()
+                  ? ClipOval(
+                      child: Image.file(
+                        File(avatarUrl),
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        key: ValueKey(avatarUrl + DateTime.now().millisecondsSinceEpoch.toString()),
+                      ),
+                    )
+                  : null,
+              label: 'Social',
+              color: AppColors.candyBlue,
+              darkColor: AppColors.candyBlueDark,
+              badgeCount: friendsState.incomingRequests.length,
+              onPressed: isAuthenticated
+                  ? () => showDialog(
+                        context: context,
+                        builder: (dialogContext) => ProfileModal(player: state.profile),
+                      )
+                  : () {
+                      AppNotifications.show(context, 'Connecting to server...');
+                    },
+            );
+          },
         );
       },
     );
@@ -295,6 +264,83 @@ class TopNavBar extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class PuzzleIndicator extends StatefulWidget {
+  final HomeState state;
+  const PuzzleIndicator({super.key, required this.state});
+
+  @override
+  State<PuzzleIndicator> createState() => _PuzzleIndicatorState();
+}
+
+class _PuzzleIndicatorState extends State<PuzzleIndicator> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3).chain(CurveTween(curve: Curves.easeOut)), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0).chain(CurveTween(curve: Curves.easeIn)), weight: 50),
+    ]).animate(_controller);
+  }
+
+  @override
+  void didUpdateWidget(PuzzleIndicator oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.state.puzzlePieces > oldWidget.state.puzzlePieces) {
+      Future.delayed(const Duration(milliseconds: 2200), () {
+        if (mounted) _controller.forward(from: 0.0);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: Container(
+        key: TopNavBar.puzzleKey,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.black38,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white24, width: 2),
+          boxShadow: _controller.isAnimating 
+              ? [BoxShadow(color: Colors.orangeAccent.withValues(alpha: 0.5), blurRadius: 10, spreadRadius: 2)] 
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ShinyPuzzleIcon(size: 24),
+            const SizedBox(width: 8),
+            Text(
+              '${widget.state.puzzlePieces}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 20,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -374,7 +420,6 @@ class _JuicyHeartIndicatorState extends State<JuicyHeartIndicator>
                 alignment: Alignment.center,
                 clipBehavior: Clip.none,
                 children: [
-                  // Glow effect
                   if (_controller.isAnimating)
                     Transform.scale(
                       scale: _glowAnimation.value,
@@ -384,9 +429,7 @@ class _JuicyHeartIndicatorState extends State<JuicyHeartIndicator>
                         size: 100,
                       ),
                     ),
-                  // Shadow for heart
                   const Icon(Icons.favorite, color: Colors.black26, size: 94),
-                  // Main Heart
                   ShaderMask(
                     shaderCallback: (bounds) => const RadialGradient(
                       center: Alignment(-0.3, -0.3),
@@ -395,7 +438,6 @@ class _JuicyHeartIndicatorState extends State<JuicyHeartIndicator>
                     ).createShader(bounds),
                     child: const Icon(Icons.favorite, color: Colors.white, size: 90),
                   ),
-                  // Glossy highlight
                   Positioned(
                     top: 20,
                     left: 20,
@@ -408,7 +450,6 @@ class _JuicyHeartIndicatorState extends State<JuicyHeartIndicator>
                       ),
                     ),
                   ),
-                  // Lives Count
                   Text(
                     '${state.lives}',
                     style: const TextStyle(
@@ -418,7 +459,6 @@ class _JuicyHeartIndicatorState extends State<JuicyHeartIndicator>
                       shadows: [Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(2, 2))],
                     ),
                   ),
-                  // Plus Button
                   Positioned(
                     right: 5,
                     bottom: 0,

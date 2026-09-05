@@ -14,8 +14,10 @@ import 'package:fixit/features/friends/presentation/bloc/friends_event.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:confetti/confetti.dart';
+import 'package:fixit/features/home/presentation/widgets/puzzle_reward_animation.dart';
 
 import 'package:fixit/features/home/presentation/widgets/daily_popup.dart';
+import 'package:fixit/features/home/presentation/widgets/no_lives_dialog.dart';
 import 'package:fixit/core/models/daily_mode.dart';
 import 'package:fixit/core/repositories/daily_repository.dart';
 import 'package:fixit/core/database/app_database.dart';
@@ -31,6 +33,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late ConfettiController _confettiController;
+  bool _showPuzzleReward = false;
+  Offset _puzzleTargetOffset = Offset.zero;
   bool _isDailyPopupShowing = false;
 
   @override
@@ -91,6 +95,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         isDailyCompleted: isDailyCompleted,
         isSeriesCompleted: isSeriesCompleted,
         onPlayDaily: () {
+          final state = context.read<HomeBloc>().state;
+          if (state.lives <= 0) {
+            Navigator.pop(dialogContext);
+            showDialog(
+              context: context,
+              builder: (ctx) => BlocProvider.value(
+                value: BlocProvider.of<HomeBloc>(context),
+                child: const NoLivesDialog(),
+              ),
+            );
+            return;
+          }
           Navigator.pop(dialogContext);
           Navigator.push(
             context,
@@ -111,14 +127,26 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           });
         },
         onPlaySeries: () {
+          final state = context.read<HomeBloc>().state;
+          if (state.lives <= 0) {
+            Navigator.pop(dialogContext);
+            showDialog(
+              context: context,
+              builder: (ctx) => BlocProvider.value(
+                value: BlocProvider.of<HomeBloc>(context),
+                child: const NoLivesDialog(),
+              ),
+            );
+            return;
+          }
           Navigator.pop(dialogContext);
           
           int startLevel = 1;
           if (status != null) {
             if (status.isSeriesCompleted) {
-              startLevel = 3; // Show recap of last level
+              startLevel = 3; 
             } else if (status.seriesCurrentLevel > 0) {
-              startLevel = status.seriesCurrentLevel; // Show recap of last finished level
+              startLevel = status.seriesCurrentLevel; 
             }
           }
 
@@ -146,7 +174,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
   }
 
-
+  void _triggerPuzzleAnimation() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final key = TopNavBar.puzzleKey;
+      if (key.currentContext != null) {
+        final box = key.currentContext!.findRenderObject() as RenderBox;
+        final position = box.localToGlobal(Offset.zero);
+        setState(() {
+          _puzzleTargetOffset = Offset(position.dx + box.size.width / 2, position.dy + box.size.height / 2);
+          _showPuzzleReward = true;
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -170,6 +210,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               (previous.levelsCompletedInWorld != current.levelsCompletedInWorld && current.lastAction == HomeLastAction.win),
           listener: (context, state) {
             _confettiController.play();
+            _triggerPuzzleAnimation();
           },
         ),
         BlocListener<HomeBloc, HomeState>(
@@ -188,7 +229,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               child: BlocBuilder<HomeBloc, HomeState>(
                 buildWhen: (prev, curr) => prev.currentWorldIndex != curr.currentWorldIndex,
                 builder: (context, state) {
-                  String bg = 'monde1_background.png';
+                  String bg = 'assets/images/monde1_background.png';
                   // Add logic for other worlds if assets exist
                   return Image.asset(
                     bg,
@@ -257,6 +298,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                             MainPlayButton(
                                               level: state.currentLevel,
                                               onTap: () {
+                                                if (state.lives <= 0) {
+                                                  showDialog(
+                                                    context: context,
+                                                    builder: (dialogContext) => BlocProvider.value(
+                                                      value: BlocProvider.of<HomeBloc>(context),
+                                                      child: const NoLivesDialog(),
+                                                    ),
+                                                  );
+                                                  return;
+                                                }
                                                 Navigator.of(context).push(
                                                   MaterialPageRoute(
                                                     builder: (context) => GamePage(
@@ -341,6 +392,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 gravity: 0.1,
               ),
             ),
+            if (_showPuzzleReward)
+              PuzzleRewardAnimation(
+                startOffset: Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height / 2),
+                endOffset: _puzzleTargetOffset,
+                onComplete: () {
+                  setState(() => _showPuzzleReward = false);
+                },
+              ),
           ],
         ),
       ),

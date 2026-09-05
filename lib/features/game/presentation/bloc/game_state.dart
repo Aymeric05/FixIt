@@ -25,6 +25,9 @@ class GameState extends Equatable {
   final GameMode mode;
   final int seriesAccumulatedTime;
   final int? wonTime; // Explicit time when won, to avoid recalculation bugs
+  final bool isPaused;
+  final bool isDizzy; // For collision animation
+  final GridOffset? collisionOffset; // Vector of collision for visual bump
   
   // New Item Fields
   final int inventoryPlusTime;
@@ -52,6 +55,9 @@ class GameState extends Equatable {
     this.mode = GameMode.story,
     this.seriesAccumulatedTime = 0,
     this.wonTime,
+    this.isPaused = false,
+    this.isDizzy = false,
+    this.collisionOffset,
     this.inventoryPlusTime = 0,
     this.inventoryMoreNumbers = 0,
     this.inventoryRevealPath = 0,
@@ -78,6 +84,9 @@ class GameState extends Equatable {
     GameMode? mode,
     int? seriesAccumulatedTime,
     int? wonTime,
+    bool? isPaused,
+    bool? isDizzy,
+    GridOffset? collisionOffset,
     int? inventoryPlusTime,
     int? inventoryMoreNumbers,
     int? inventoryRevealPath,
@@ -103,6 +112,9 @@ class GameState extends Equatable {
       mode: mode ?? this.mode,
       seriesAccumulatedTime: seriesAccumulatedTime ?? this.seriesAccumulatedTime,
       wonTime: wonTime ?? this.wonTime,
+      isPaused: isPaused ?? this.isPaused,
+      isDizzy: isDizzy ?? this.isDizzy,
+      collisionOffset: collisionOffset ?? this.collisionOffset,
       inventoryPlusTime: inventoryPlusTime ?? this.inventoryPlusTime,
       inventoryMoreNumbers: inventoryMoreNumbers ?? this.inventoryMoreNumbers,
       inventoryRevealPath: inventoryRevealPath ?? this.inventoryRevealPath,
@@ -116,7 +128,8 @@ class GameState extends Equatable {
     hints, currentPath, remainingSeconds, initialSeconds, 
     status, solutionPath, hintSteps, walls, pathColor, isAngry,
     averageTimeSeconds, bestTimeSeconds, levelNumber, winSummary,
-    friendsLeaderboard, mode, seriesAccumulatedTime, wonTime,
+    friendsLeaderboard, mode, seriesAccumulatedTime, wonTime, isPaused,
+    isDizzy, collisionOffset,
     inventoryPlusTime, inventoryMoreNumbers, inventoryRevealPath,
     highlightedCells, usedItems,
   ];
