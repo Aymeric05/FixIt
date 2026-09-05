@@ -226,7 +226,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   }
 
   Future<void> _onSelectCell(SelectCell event, Emitter<GameState> emit) async {
-    if (state.status != GameStatus.playing || state.isDizzy) return;
+    if (state.status != GameStatus.playing) return;
     final tapped = GridOffset(event.row, event.col);
     final currentPath = List<GridOffset>.from(state.currentPath);
     
@@ -241,114 +241,84 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final existingIndex = currentPath.indexOf(tapped);
     final isAdjacent = (last.row - tapped.row).abs() + (last.col - tapped.col).abs() == 1;
 
+    // Check if this new target is a valid move
+    bool isValidMove = false;
+    bool isBacktrackingMove = false;
+
     if (isAdjacent) {
       if (existingIndex != -1) {
         if (existingIndex == currentPath.length - 2) {
-          // SAFE BACKTRACKING: Moving exactly one step back along the path
+          isValidMove = true;
+          isBacktrackingMove = true;
+        }
+      } else if (!state.walls.contains(_getWallKey(last, tapped))) {
+        isValidMove = true;
+      }
+    }
+
+    // If we are currently dizzy
+    if (state.isDizzy) {
+      if (isValidMove) {
+        // RECOVERY: Stop being dizzy immediately if we move to a valid direction
+        emit(state.copyWith(isDizzy: false, collisionOffset: null));
+      } else {
+        // Still trying to go somewhere invalid, stay dizzy
+        return;
+      }
+    }
+
+    if (isAdjacent) {
+      if (isValidMove) {
+        if (isBacktrackingMove) {
+          // SAFE BACKTRACKING
           final newPath = currentPath.sublist(0, currentPath.length - 1);
           emit(state.copyWith(
             currentPath: newPath, 
             isAngry: _checkIfAngry(newPath),
-            isDizzy: false,
           ));
         } else {
-          // COLLISION with body: It's an adjacent cell that is in the body but NOT the previous step
-          _triggerCollision(emit, tapped.row - last.row, tapped.col - last.col);
-        }
-        return;
-      }
-
-      // Check walls
-      if (state.walls.contains(_getWallKey(last, tapped))) {
-        _triggerCollision(emit, tapped.row - last.row, tapped.col - last.col);
-        return;
-      }
-
-      // NORMAL ADVANCE
-      final newPath = [...currentPath, tapped];
-      
-      if (newPath.length == 36) {
-        if (_validatePath(newPath)) {
-          _timer?.cancel();
+          // NORMAL ADVANCE
+          final newPath = [...currentPath, tapped];
           
-          // Emit intermediate state so UI knows it's won
-          emit(state.copyWith(currentPath: newPath, isAngry: false));
+          if (newPath.length == 36) {
+            if (_validatePath(newPath)) {
+              _timer?.cancel();
+              emit(state.copyWith(currentPath: newPath, isAngry: false));
 
-          final timeTaken = state.initialSeconds - state.remainingSeconds;
-          final worldId = state.mode == GameMode.story ? 'world_1' : _dailyRepo.getTodayWorldId();
+              final timeTaken = state.initialSeconds - state.remainingSeconds;
+              final worldId = state.mode == GameMode.story ? 'world_1' : _dailyRepo.getTodayWorldId();
 
-          // Record and prepare summary
-          int displayTime = timeTaken;
-          if (state.mode == GameMode.dailySingle && _playerId != null) {
-            await _dailyRepo.updateDailyStatus(
-              playerId: _playerId!, 
-              isDailyLevelCompleted: true,
-              dailyLevelTime: timeTaken,
-            );
-            await _progressionRepo.markLevelAsCompleted(
-              playerSupabaseId: _playerId!,
-              worldId: worldId,
-              levelNumber: state.levelNumber,
-              timeSeconds: timeTaken,
-              updateProgression: false,
-            );
-          } else if (state.mode == GameMode.dailySeries && _playerId != null) {
-            displayTime = state.seriesAccumulatedTime + timeTaken;
-            final isFinished = state.levelNumber >= 3;
-            
-            await _dailyRepo.updateDailyStatus(
-              playerId: _playerId!,
-              seriesCurrentLevel: state.levelNumber,
-              seriesAccumulatedTime: displayTime,
-              isSeriesCompleted: isFinished,
-            );
+              int displayTime = timeTaken;
+              if (state.mode == GameMode.dailySingle && _playerId != null) {
+                await _dailyRepo.updateDailyStatus(playerId: _playerId!, isDailyLevelCompleted: true, dailyLevelTime: timeTaken);
+                await _progressionRepo.markLevelAsCompleted(playerSupabaseId: _playerId!, worldId: worldId, levelNumber: state.levelNumber, timeSeconds: timeTaken, updateProgression: false);
+              } else if (state.mode == GameMode.dailySeries && _playerId != null) {
+                displayTime = state.seriesAccumulatedTime + timeTaken;
+                await _dailyRepo.updateDailyStatus(playerId: _playerId!, seriesCurrentLevel: state.levelNumber, seriesAccumulatedTime: displayTime, isSeriesCompleted: state.levelNumber >= 3);
+                await _progressionRepo.markLevelAsCompleted(playerSupabaseId: _playerId!, worldId: _dailyRepo.getTodaySeriesWorldId(), levelNumber: state.levelNumber, timeSeconds: displayTime, updateProgression: false);
+              }
 
-            await _progressionRepo.markLevelAsCompleted(
-              playerSupabaseId: _playerId!,
-              worldId: _dailyRepo.getTodaySeriesWorldId(),
-              levelNumber: state.levelNumber,
-              timeSeconds: displayTime,
-              updateProgression: false,
-            );
+              LevelWinSummary? summary;
+              if (state.mode == GameMode.story) {
+                 summary = await _progressionRepo.getLevelWinSummary(worldId: 'world_1', levelNumber: state.levelNumber, playerId: _playerId ?? '', playerTime: timeTaken);
+              } else if (state.mode == GameMode.dailySingle) {
+                 summary = await _progressionRepo.getLevelWinSummary(worldId: _dailyRepo.getTodayWorldId(), levelNumber: state.levelNumber, playerId: _playerId ?? '', playerTime: timeTaken);
+              } else if (state.mode == GameMode.dailySeries) {
+                 summary = await _progressionRepo.getLevelWinSummary(worldId: _dailyRepo.getTodaySeriesWorldId(), levelNumber: state.levelNumber, playerId: _playerId ?? '', playerTime: displayTime);
+              }
+
+              emit(state.copyWith(status: GameStatus.won, winSummary: summary, wonTime: displayTime));
+              return;
+            }
           }
-
-          // Fetch Rich Win Summary
-          LevelWinSummary? summary;
-          if (state.mode == GameMode.story) {
-             summary = await _progressionRepo.getLevelWinSummary(
-              worldId: 'world_1',
-              levelNumber: state.levelNumber,
-              playerId: _playerId ?? '',
-              playerTime: timeTaken,
-            );
-          } else if (state.mode == GameMode.dailySingle) {
-             summary = await _progressionRepo.getLevelWinSummary(
-              worldId: _dailyRepo.getTodayWorldId(),
-              levelNumber: state.levelNumber,
-              playerId: _playerId ?? '',
-              playerTime: timeTaken,
-            );
-          } else if (state.mode == GameMode.dailySeries) {
-             summary = await _progressionRepo.getLevelWinSummary(
-              worldId: _dailyRepo.getTodaySeriesWorldId(),
-              levelNumber: state.levelNumber,
-              playerId: _playerId ?? '',
-              playerTime: displayTime,
-            );
-          }
-
-          emit(state.copyWith(
-            status: GameStatus.won,
-            winSummary: summary,
-            wonTime: displayTime,
-          ));
-          return;
+          emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
         }
+      } else {
+        // ADJACENT BUT NOT VALID (Wall or Body collision)
+        _triggerCollision(emit, tapped.row - last.row, tapped.col - last.col);
       }
-      
-      emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
     } else {
-      // NOT ADJACENT: If dragging, any attempt to jump is a collision in that direction
+      // NOT ADJACENT (Jump/Border collision)
       if (event.isDrag) {
         _triggerCollision(emit, (tapped.row - last.row).sign.toInt(), (tapped.col - last.col).sign.toInt());
       }
@@ -363,14 +333,17 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       collisionOffset: GridOffset(dr, dc),
     ));
 
-    // Wait for the animation/shake to play
-    await Future.delayed(const Duration(milliseconds: 300));
+    // Wait for the animation/shake to play (500ms as requested)
+    await Future.delayed(const Duration(milliseconds: 500));
     
     if (!isClosed) {
-      emit(state.copyWith(
-        isDizzy: false, 
-        collisionOffset: null,
-      ));
+      // Check if we are STILL in a collision state (might have been cancelled by a valid move)
+      if (state.isDizzy) {
+        emit(state.copyWith(
+          isDizzy: false, 
+          collisionOffset: null,
+        ));
+      }
     }
   }
 
