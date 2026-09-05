@@ -111,8 +111,8 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
             if (opacity <= 0) return const SizedBox.shrink();
 
             return Positioned(
-              left: position.dx - 22,
-              top: position.dy - 100, // Shifted up even more (from -60 to -100)
+              left: position.dx - 27,
+              top: position.dy - 150, // Shifted up even more (from -100 to -150)
               child: Opacity(
                 opacity: opacity,
                 child: Transform.scale(
@@ -120,7 +120,7 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      const ShinyPuzzleIcon(size: 40), // Still smaller
+                      const ShinyPuzzleIcon(size: 55), // Increased size from 40 to 55
                       if (_showBadge[i])
                         Positioned(
                           bottom: 0,

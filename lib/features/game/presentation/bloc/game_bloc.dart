@@ -229,38 +229,42 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     if (state.status != GameStatus.playing || state.isDizzy) return;
     final tapped = GridOffset(event.row, event.col);
     final currentPath = List<GridOffset>.from(state.currentPath);
-    if (currentPath.isNotEmpty && currentPath.last == tapped) return;
+    
     if (currentPath.isEmpty) {
       if (state.hints[event.row][event.col] == 1) emit(state.copyWith(currentPath: [tapped]));
       return;
     }
-    
-    final existingIndex = currentPath.indexOf(tapped);
-    
-    // Backtracking Logic
-    if (existingIndex != -1) {
-      if (existingIndex < currentPath.length - 1) {
-        // We are moving back into our own path
-        final newPath = currentPath.sublist(0, existingIndex + 1);
-        emit(state.copyWith(
-          currentPath: newPath, 
-          isAngry: _checkIfAngry(newPath),
-          isDizzy: false,
-        ));
-      } else if (event.isDrag) {
-        // Dragging on the head itself (already handled by 'last == tapped' check above, but for safety)
-      }
-      return;
-    }
 
     final last = currentPath.last;
-    final isAdjacent = (last.row - event.row).abs() + (last.col - event.col).abs() == 1;
-    
+    if (last == tapped) return;
+
+    final existingIndex = currentPath.indexOf(tapped);
+    final isAdjacent = (last.row - tapped.row).abs() + (last.col - tapped.col).abs() == 1;
+
     if (isAdjacent) {
+      if (existingIndex != -1) {
+        if (existingIndex == currentPath.length - 2) {
+          // SAFE BACKTRACKING: Moving exactly one step back along the path
+          final newPath = currentPath.sublist(0, currentPath.length - 1);
+          emit(state.copyWith(
+            currentPath: newPath, 
+            isAngry: _checkIfAngry(newPath),
+            isDizzy: false,
+          ));
+        } else {
+          // COLLISION with body: It's an adjacent cell that is in the body but NOT the previous step
+          _triggerCollision(emit, tapped.row - last.row, tapped.col - last.col);
+        }
+        return;
+      }
+
+      // Check walls
       if (state.walls.contains(_getWallKey(last, tapped))) {
         _triggerCollision(emit, tapped.row - last.row, tapped.col - last.col);
         return;
       }
+
+      // NORMAL ADVANCE
       final newPath = [...currentPath, tapped];
       
       if (newPath.length == 36) {
@@ -344,9 +348,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       
       emit(state.copyWith(currentPath: newPath, isAngry: _checkIfAngry(newPath)));
     } else {
-      // Not adjacent -> potential collision with far-away cell or map border (if event is far)
+      // NOT ADJACENT: If dragging, any attempt to jump is a collision in that direction
       if (event.isDrag) {
-        _triggerCollision(emit, (event.row - last.row).sign.toInt(), (event.col - last.col).sign.toInt());
+        _triggerCollision(emit, (tapped.row - last.row).sign.toInt(), (tapped.col - last.col).sign.toInt());
       }
     }
   }
