@@ -12,6 +12,7 @@ import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'package:fixit/features/friends/presentation/bloc/friends_bloc.dart';
 import 'package:fixit/core/repositories/daily_repository.dart';
 import 'package:fixit/core/utils/app_logger.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   try {
@@ -71,6 +72,38 @@ class _AppStartupWrapper extends StatefulWidget {
 
 class _AppStartupWrapperState extends State<_AppStartupWrapper> {
   bool _loadingAnimationDone = false;
+  bool _assetsPrecached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_assetsPrecached) {
+      _precacheAssets();
+      _assetsPrecached = true;
+    }
+  }
+
+  Future<void> _precacheAssets() async {
+    final assets = [
+      'monde1_background.png',
+      'jeu_serpent_contour_pas_ouf.png',
+      'buisson.png',
+      'ciel.png',
+      'world1.png',
+      'world2.png',
+      'world3.png',
+      'world4.png',
+      'world5.png',
+    ];
+    
+    // Parallelize pre-caching
+    await Future.wait([
+      ...assets.map((asset) => precacheImage(AssetImage(asset), context).catchError((e) => AppLogger.error('Precache failed: $asset', e))),
+      GoogleFonts.pendingFonts([
+        GoogleFonts.luckiestGuy(),
+      ]),
+    ]);
+  }
 
   @override
   Widget build(BuildContext context) {

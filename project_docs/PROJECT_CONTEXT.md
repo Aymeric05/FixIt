@@ -11,6 +11,7 @@ Le mini-jeu principal consiste à relier des numéros en séquence (1, 2, 3...) 
 *   **Contrainte de victoire :** Le parcours doit obligatoirement se terminer sur le dernier chiffre de la séquence (implémenté dans la PR #10).
 *   **Difficulté :** La difficulté varie selon le temps imparti et le nombre d'indices (chiffres déjà placés) fournis au départ.
 *   **Obstacles :** Des "buissons" agissent comme des murs entre les cellules, bloquant certains passages.
+*   **Performance :** La génération des niveaux (Hamiltonian Path) s'effectue dans un **Isolate** séparé pour garantir une fluidité totale de l'UI pendant le chargement.
 
 ## 3. Expérience Utilisateur (UX) & Feedback Visuel
 *   **"Angry Snake" :** Si le joueur s'écarte de la séquence numérique correcte (ex: passe du 2 au 4 sans passer par le 3), le serpent change d'expression et sa couleur de tracé devient plus sombre pour signaler l'erreur avant la validation finale.

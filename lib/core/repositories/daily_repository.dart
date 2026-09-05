@@ -147,18 +147,15 @@ class DailyRepository {
 
     // Update Supabase
     try {
-      final current = await getDailyStatus(playerId);
-      if (current != null) {
-        await _supabase.from('daily_challenges').upsert({
-          'player_id': playerId,
-          'date': today,
-          'is_daily_completed': current.isDailyLevelCompleted,
-          'daily_level_time': current.dailyLevelTime,
-          'series_current_level': current.seriesCurrentLevel,
-          'series_accumulated_time': current.seriesAccumulatedTime,
-          'is_series_completed': current.isSeriesCompleted,
-        }, onConflict: 'player_id,date');
-      }
+      await _supabase.from('daily_challenges').upsert({
+        'player_id': playerId,
+        'date': today,
+        'is_daily_completed': isDailyLevelCompleted ?? false,
+        'daily_level_time': dailyLevelTime ?? 0,
+        'series_current_level': seriesCurrentLevel ?? 0,
+        'series_accumulated_time': seriesAccumulatedTime ?? 0,
+        'is_series_completed': isSeriesCompleted ?? false,
+      }, onConflict: 'player_id,date');
     } catch (e) {
       AppLogger.error('Error updating daily status to Supabase', e);
     }

@@ -4,7 +4,7 @@ import 'package:fixit/core/models/grid_offset.dart';
 import 'package:fixit/core/models/daily_mode.dart';
 import 'package:fixit/core/models/level_win_summary.dart';
 
-enum GameStatus { initial, playing, won, lost }
+enum GameStatus { initial, playing, winning, won, lost }
 
 class GameState extends Equatable {
   final List<List<int?>> hints; // The pre-filled numbers (1 to N)
