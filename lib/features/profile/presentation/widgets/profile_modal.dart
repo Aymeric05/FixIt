@@ -243,12 +243,12 @@ class _ProfileModalState extends State<ProfileModal> {
                                   UpdateNicknameRequested(_nicknameController.text),
                                 );
                           },
-                          child: const Icon(Icons.check, color: Colors.green, size: 18),
+                          child: const Icon(Icons.check, color: Colors.green, size: 14),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 6),
                         GestureDetector(
                           onTap: () => setState(() => _isEditing = false),
-                          child: const Icon(Icons.close, color: Colors.red, size: 18),
+                          child: const Icon(Icons.close, color: Colors.red, size: 14),
                         ),
                       ],
                     )
