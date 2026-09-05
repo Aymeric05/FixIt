@@ -181,6 +181,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         if (progression.currentLevel > 20) unlocked.add('ice');
       }
 
+      int? justUnlocked;
+      if (state.lastAction == HomeLastAction.win) {
+         if (progression?.currentLevel == 11 && !state.unlockedWorlds.contains('desert')) justUnlocked = 2;
+         if (progression?.currentLevel == 21 && !state.unlockedWorlds.contains('ice')) justUnlocked = 3;
+      }
+
       // Progression calculation logic:
       // World 1 (Meadow): Levels 1-10
       // World 2 (Desert): Levels 1-10 (offset from global 11)
@@ -211,7 +217,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         isDailyCompleted: dailyStatus?.isDailyLevelCompleted ?? false,
         isSeriesCompleted: dailyStatus?.isSeriesCompleted ?? false,
         unlockedWorlds: unlocked,
+        justUnlockedWorldIndex: justUnlocked,
       ));
+
+      // Reset justUnlockedWorldIndex after emitting once
+      if (justUnlocked != null) {
+        emit(state.copyWith(justUnlockedWorldIndex: null));
+      }
     } else {
       AppLogger.log('HomeBloc: No local player found yet. Resetting to initial state.');
       emit(const HomeState());

@@ -149,11 +149,11 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
                                           ..color = Colors.black,
                                       ),
                                     ),
-                                    // Black center text as requested
+                                    // White center text for maximum visibility on any background
                                     Text(
                                       '+$_totalGained',
                                       style: const TextStyle(
-                                        color: Colors.black,
+                                        color: Colors.white,
                                         fontWeight: FontWeight.w900,
                                         fontSize: 24,
                                       ),
