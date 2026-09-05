@@ -1122,8 +1122,11 @@ void _paintHead(Canvas canvas, Size size, bool isAngry, bool isDizzy, double cel
         double r = (angle / (3 * pi)) * eyeSize;
         double x = eyeCenter.dx + r * cos(angle);
         double y = eyeCenter.dy + r * sin(angle);
-        if (angle == 0) path.moveTo(x, y);
-        else path.lineTo(x, y);
+        if (angle == 0) {
+          path.moveTo(x, y);
+        } else {
+          path.lineTo(x, y);
+        }
       }
       canvas.drawPath(path, spiralPaint);
     }
