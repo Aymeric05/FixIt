@@ -19,6 +19,7 @@ import 'package:fixit/core/utils/app_logger.dart';
 
 class GameBloc extends Bloc<GameEvent, GameState> {
   Timer? _timer;
+  Timer? _dizzyTimer;
   late final ProgressionRepository _progressionRepo;
   late final DailyRepository _dailyRepo;
   String? _playerId;
@@ -39,6 +40,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<UseItemPlusTime>(_onUseItemPlusTime);
     on<UseItemMoreNumbers>(_onUseItemMoreNumbers);
     on<UseItemRevealPath>(_onUseItemRevealPath);
+    on<RecoverFromDizzy>(_onRecoverFromDizzy);
   }
 
   Future<void> _onStartGame(StartGame event, Emitter<GameState> emit) async {
@@ -260,6 +262,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     if (state.isDizzy) {
       if (isValidMove) {
         // RECOVERY: Stop being dizzy immediately if we move to a valid direction
+        _dizzyTimer?.cancel();
         emit(state.copyWith(isDizzy: false, collisionOffset: null));
       } else {
         // Still trying to go somewhere invalid, stay dizzy
@@ -325,7 +328,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     }
   }
 
-  void _triggerCollision(Emitter<GameState> emit, int dr, int dc) async {
+  void _triggerCollision(Emitter<GameState> emit, int dr, int dc) {
     if (state.isDizzy) return;
     
     emit(state.copyWith(
@@ -333,17 +336,19 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       collisionOffset: GridOffset(dr, dc),
     ));
 
-    // Wait for the animation/shake to play (500ms as requested)
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    if (!isClosed) {
-      // Check if we are STILL in a collision state (might have been cancelled by a valid move)
-      if (state.isDizzy) {
-        emit(state.copyWith(
-          isDizzy: false, 
-          collisionOffset: null,
-        ));
-      }
+    // Schedule auto-recovery in 500ms
+    _dizzyTimer?.cancel();
+    _dizzyTimer = Timer(const Duration(milliseconds: 500), () {
+      add(RecoverFromDizzy());
+    });
+  }
+
+  void _onRecoverFromDizzy(RecoverFromDizzy event, Emitter<GameState> emit) {
+    if (state.isDizzy) {
+      emit(state.copyWith(
+        isDizzy: false, 
+        collisionOffset: null,
+      ));
     }
   }
 
@@ -555,6 +560,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   @override
   Future<void> close() {
     _timer?.cancel();
+    _dizzyTimer?.cancel();
     return super.close();
   }
 }

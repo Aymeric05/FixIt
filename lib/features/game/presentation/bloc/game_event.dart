@@ -68,3 +68,5 @@ class ContinueGameWithVideo extends GameEvent {}
 class UseItemPlusTime extends GameEvent {}
 class UseItemMoreNumbers extends GameEvent {}
 class UseItemRevealPath extends GameEvent {}
+
+class RecoverFromDizzy extends GameEvent {}
