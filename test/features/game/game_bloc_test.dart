@@ -95,6 +95,7 @@ void main() {
         playerId: 'player-1',
         mode: GameMode.dailySingle,
       )),
+      wait: const Duration(milliseconds: 300),
       verify: (bloc) {
         expect(bloc.state.status, equals(GameStatus.playing));
         expect(bloc.state.levelNumber, equals(1));
