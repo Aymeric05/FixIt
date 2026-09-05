@@ -13,6 +13,7 @@ part 'home_event.dart';
 part 'home_state.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
+  static const int _rechargeDurationMinutes = 60;
   Timer? _rechargeTimer;
   Timer? _midnightTimer;
   AppDatabase get _db => DatabaseService().db;
@@ -144,7 +145,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         }
 
         final elapsedMinutes = now.difference(lastLifeLostAt).inMinutes;
-        final livesGained = elapsedMinutes ~/ 60;
+        final livesGained = elapsedMinutes ~/ _rechargeDurationMinutes;
 
         if (livesGained > 0) {
           lives = min(state.maxLives, lives + livesGained);
@@ -152,12 +153,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
             lastLifeLostAt = null;
             nextLifeTime = null;
           } else {
-            lastLifeLostAt = lastLifeLostAt.add(Duration(minutes: livesGained * 60));
-            nextLifeTime = lastLifeLostAt.add(const Duration(minutes: 60));
+            lastLifeLostAt = lastLifeLostAt.add(Duration(minutes: livesGained * _rechargeDurationMinutes));
+            nextLifeTime = lastLifeLostAt.add(const Duration(minutes: _rechargeDurationMinutes));
           }
           await _savePlayerLives(lives, lastLifeLostAt, player.supabaseId);
         } else {
-          nextLifeTime = lastLifeLostAt.add(const Duration(minutes: 60));
+          nextLifeTime = lastLifeLostAt.add(const Duration(minutes: _rechargeDurationMinutes));
         }
       } else {
         if (lastLifeLostAt != null) {
@@ -211,8 +212,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         final players = await (_db.select(_db.players)..limit(1)).get();
         final currentLastAt = players.isNotEmpty ? players.first.lastLifeLostAt : null;
         if (currentLastAt != null) {
-          newLastLifeLostAt = currentLastAt.add(const Duration(minutes: 60));
-          nextTime = newLastLifeLostAt.add(const Duration(minutes: 60));
+          newLastLifeLostAt = currentLastAt.add(const Duration(minutes: _rechargeDurationMinutes));
+          nextTime = newLastLifeLostAt.add(const Duration(minutes: _rechargeDurationMinutes));
         }
       }
 
@@ -237,8 +238,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       final players = await (_db.select(_db.players)..limit(1)).get();
       final currentLastAt = players.isNotEmpty ? players.first.lastLifeLostAt : null;
       if (currentLastAt != null) {
-        newLastLifeLostAt = currentLastAt.add(Duration(minutes: event.count * 60));
-        nextTime = newLastLifeLostAt.add(const Duration(minutes: 60));
+        newLastLifeLostAt = currentLastAt.add(Duration(minutes: event.count * _rechargeDurationMinutes));
+        nextTime = newLastLifeLostAt.add(const Duration(minutes: _rechargeDurationMinutes));
       }
     }
 
@@ -312,14 +313,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       final now = DateTime.now();
       if (state.nextLifeTime == null) {
         final lastAt = now;
-        final nextTime = now.add(const Duration(minutes: 60));
+        final nextTime = now.add(const Duration(minutes: _rechargeDurationMinutes));
         final user = DatabaseService().supabase.auth.currentUser;
         await _savePlayerLives(state.lives, lastAt, user?.id);
         emit(state.copyWith(nextLifeTime: nextTime, timerTick: state.timerTick + 1));
       } else if (now.isAfter(state.nextLifeTime!)) {
-        final currentLastAt = state.nextLifeTime!.subtract(const Duration(minutes: 60));
+        final currentLastAt = state.nextLifeTime!.subtract(const Duration(minutes: _rechargeDurationMinutes));
         final elapsedMinutes = now.difference(currentLastAt).inMinutes;
-        final livesGained = max(1, elapsedMinutes ~/ 60);
+        final livesGained = max(1, elapsedMinutes ~/ _rechargeDurationMinutes);
         final newLives = min(state.maxLives, state.lives + livesGained);
 
         final user = DatabaseService().supabase.auth.currentUser;
@@ -327,8 +328,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         DateTime? newNextLifeTime;
 
         if (newLives < state.maxLives) {
-          newLastLifeLostAt = currentLastAt.add(Duration(minutes: livesGained * 60));
-          newNextLifeTime = newLastLifeLostAt.add(const Duration(minutes: 60));
+          newLastLifeLostAt = currentLastAt.add(Duration(minutes: livesGained * _rechargeDurationMinutes));
+          newNextLifeTime = newLastLifeLostAt.add(const Duration(minutes: _rechargeDurationMinutes));
         }
 
         await _savePlayerLives(newLives, newLastLifeLostAt, user?.id);
@@ -387,11 +388,15 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       if (state.lives == state.maxLives) {
         newLastLifeLostAt = now;
       } else {
-        final players = await (_db.select(_db.players)..limit(1)).get();
-        newLastLifeLostAt = (players.isNotEmpty ? players.first.lastLifeLostAt : null) ?? now;
+        // Use existing timer start if available, otherwise fallback to now
+        if (state.nextLifeTime != null) {
+          newLastLifeLostAt = state.nextLifeTime!.subtract(const Duration(minutes: _rechargeDurationMinutes));
+        } else {
+          newLastLifeLostAt = now;
+        }
       }
 
-      final nextTime = newLastLifeLostAt.add(const Duration(minutes: 60));
+      final nextTime = newLastLifeLostAt.add(const Duration(minutes: _rechargeDurationMinutes));
 
       await _savePlayerLives(newLives, newLastLifeLostAt, event.playerId);
 

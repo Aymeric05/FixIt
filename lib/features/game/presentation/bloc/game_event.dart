@@ -70,3 +70,5 @@ class UseItemMoreNumbers extends GameEvent {}
 class UseItemRevealPath extends GameEvent {}
 
 class RecoverFromDizzy extends GameEvent {}
+
+class AbandonGame extends GameEvent {}
