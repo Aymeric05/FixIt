@@ -84,9 +84,7 @@ class _GamePageState extends State<GamePage> {
           final playerIdInner = authStateInner is AuthAuthenticated ? authStateInner.user.id : null;
 
           if (gameStatus == GameStatus.won) {
-            if (widget.mode == GameMode.story) {
-              context.read<HomeBloc>().add(CompleteLevel(playerId: playerIdInner));
-            }
+            context.read<HomeBloc>().add(CompleteLevel(playerId: playerIdInner));
             Navigator.pop(context);
           } else {
             final currentLives = context.read<HomeBloc>().state.lives;
@@ -283,9 +281,7 @@ class _GamePageState extends State<GamePage> {
                       darkColor: Colors.red.shade900,
                       onPressed: () {
                         if (state.status == GameStatus.won) {
-                          if (widget.mode == GameMode.story) {
-                            context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
-                          }
+                          context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
                           Navigator.pop(context);
                         } else {
                           final currentLives = context.read<HomeBloc>().state.lives;
@@ -942,9 +938,7 @@ class _GamePageState extends State<GamePage> {
                           CandyButton(
                             width: 130, height: 55, color: AppColors.candyPink, darkColor: AppColors.candyPinkDark,
                             onPressed: () {
-                              if (widget.mode == GameMode.story) {
-                                context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
-                              }
+                              context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
                               Navigator.pop(dialogContext);
                               Navigator.pop(context);
                             },
@@ -953,9 +947,7 @@ class _GamePageState extends State<GamePage> {
                           CandyButton(
                             width: 130, height: 55, color: AppColors.candyGreen, darkColor: AppColors.candyGreenDark,
                             onPressed: () {
-                              if (widget.mode == GameMode.story) {
-                                context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
-                              }
+                              context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
                               Navigator.pop(dialogContext);
                               
                               if (widget.mode == GameMode.dailySeries && widget.level < 3) {

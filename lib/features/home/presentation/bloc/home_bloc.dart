@@ -167,6 +167,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         nextLifeTime = null;
       }
 
+      unawaited(_progressionRepo.ensureNextLevelsExist('world_1', progression?.currentLevel ?? 1));
+
+      // Fetch Daily Status
+      final dailyStatus = await _dailyRepo.getDailyStatus(playerSupabaseId);
+
       emit(state.copyWith(
         lives: lives,
         nextLifeTime: nextLifeTime,
@@ -178,9 +183,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         levelsCompletedInWorld: (progression?.currentLevel ?? 1) - 1,
         isLoading: false,
         currentDate: _dailyRepo.getTodayWorldId(), // Used to detect day changes
+        isDailyCompleted: dailyStatus?.isDailyLevelCompleted ?? false,
+        isSeriesCompleted: dailyStatus?.isSeriesCompleted ?? false,
       ));
-
-      unawaited(_progressionRepo.ensureNextLevelsExist('world_1', progression?.currentLevel ?? 1));
     } else {
       AppLogger.log('HomeBloc: No local player found yet');
       emit(state.copyWith(isLoading: false));
