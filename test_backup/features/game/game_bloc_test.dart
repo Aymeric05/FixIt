@@ -241,6 +241,16 @@ void main() {
               currentPathJson: '[{"r":0,"c":0},{"r":0,"c":1}]',
               updatedAt: DateTime.now(),
             ));
+        when(() => mockProgressionRepo.getGlobalLevel(any(), any()))
+            .thenAnswer((_) async => GlobalLevel(
+                  id: 1,
+                  worldId: 'world_1',
+                  levelNumber: 1,
+                  hintsJson: '[[1, null, null, null, null, null], [null, null, null, null, null, null], [null, null, null, null, null, null], [null, null, null, null, null, null], [null, null, null, null, null, null], [null, null, null, null, null, 12]]',
+                  wallsJson: '[]',
+                  solutionJson: '[]',
+                  createdAt: DateTime.now(),
+                ));
         return GameBloc(
           progressionRepo: mockProgressionRepo,
           dailyRepo: mockDailyRepo,
