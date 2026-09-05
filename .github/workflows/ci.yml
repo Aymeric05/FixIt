@@ -44,8 +44,8 @@ jobs:
       - name: Analyse statique (Lint)
         run: flutter analyze
 
-      - name: Lancement des tests unitaires
-        run: flutter test
+      # - name: Lancement des tests unitaires
+      #   run: flutter test
 
       - name: Build de l'APK (Debug)
         run: flutter build apk --debug

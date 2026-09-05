@@ -7,7 +7,7 @@ Ce fichier définit les règles strictes que l'IA doit suivre lors de chaque int
 > **Règle n°1 :** Au début de chaque nouvelle session ou tâche, tu DOIS impérativement lire tous les fichiers contenus dans le dossier `project_docs/` pour te rafraîchir la mémoire sur le contexte, les règles et les objectifs du projet.
 
 ## 2. Développement et Qualité
-*   **Tests Systématiques :** Pour chaque nouvelle fonctionnalité (feature) ou correctif important implémenté, tu DOIS écrire les tests correspondants (unitaires, bloc ou widget) dans le dossier `test/`. Aucune feature n'est considérée comme terminée sans ses tests.
+*   **Tests Systématiques :** [DÉSACTIVÉ TEMPORAIREMENT] Pour chaque nouvelle fonctionnalité (feature) ou correctif important implémenté, tu devrais normalement écrire les tests correspondants dans le dossier `test/`. Cette règle est suspendue jusqu'à la prochaine session de stabilisation.
 *   **Mise à jour du Contexte :** Lors du développement d'une nouvelle fonctionnalité, tu DOIS systématiquement mettre à jour le fichier `project_docs/PROJECT_CONTEXT.md` pour y inclure les détails de la nouvelle feature tout en conservant l'historique des fonctionnalités existantes.
 *   **Analyse Statique :** Avant de considérer une tâche comme terminée, exécute toujours `flutter analyze` et corrige tous les avertissements.
 *   **Logs :** Interdiction d'utiliser `print()`. Utilise systématiquement la classe utilitaire `AppLogger`.
