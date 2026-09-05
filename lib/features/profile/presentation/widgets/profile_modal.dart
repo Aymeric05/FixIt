@@ -232,9 +232,11 @@ class _ProfileModalState extends State<ProfileModal> {
                             decoration: const InputDecoration(
                               border: InputBorder.none,
                               isDense: true,
+                              contentPadding: EdgeInsets.only(right: 10),
                             ),
                           ),
                         ),
+                        const SizedBox(width: 5),
                         GestureDetector(
                           onTap: () {
                             context.read<ProfileBloc>().add(
@@ -243,7 +245,7 @@ class _ProfileModalState extends State<ProfileModal> {
                           },
                           child: const Icon(Icons.check, color: Colors.green, size: 18),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 12),
                         GestureDetector(
                           onTap: () => setState(() => _isEditing = false),
                           child: const Icon(Icons.close, color: Colors.red, size: 18),

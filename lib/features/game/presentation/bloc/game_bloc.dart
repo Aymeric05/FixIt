@@ -370,9 +370,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         _triggerCollision(emit, tapped.row - last.row, tapped.col - last.col);
       }
     } else {
-      if (event.isDrag) {
-        _triggerCollision(emit, (tapped.row - last.row).sign.toInt(), (tapped.col - last.col).sign.toInt());
-      }
+      // NOT ADJACENT (Too far)
+      // Just make the snake angry as requested, no dizziness/shake
+      emit(state.copyWith(isAngry: true));
     }
   }
 
