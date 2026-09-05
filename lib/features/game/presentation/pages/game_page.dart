@@ -1114,13 +1114,10 @@ void _paintHead(Canvas canvas, Size size, bool isAngry, bool isDizzy, double cel
     
     for (var eyeOffset in [Offset(-eyeSize, -eyeSize / 2), Offset(eyeSize, -eyeSize / 2)]) {
       final eyeCenter = center + eyeOffset;
-      final path = Path();
-      for (double t = 0; i < 10; i++) { // Simple spiral
-         // Actually let's just draw some arcs
-      }
-      // Simpler spiral: just 2 circles inside
-      canvas.drawCircle(eyeCenter, eyeSize * 0.6, spiralPaint);
-      canvas.drawCircle(eyeCenter, eyeSize * 0.3, spiralPaint);
+      // Simple spiral effect using concentric circles
+      canvas.drawCircle(eyeCenter, eyeSize * 0.7, spiralPaint);
+      canvas.drawCircle(eyeCenter, eyeSize * 0.4, spiralPaint);
+      canvas.drawCircle(eyeCenter, eyeSize * 0.15, spiralPaint);
     }
   } else {
     canvas.drawCircle(center + Offset(-eyeSize, -eyeSize / 2), eyeSize / 2, Paint()..color = Colors.black);
