@@ -71,8 +71,6 @@ class UseItemRevealPath extends GameEvent {}
 
 class RecoverFromDizzy extends GameEvent {}
 
-<<<<<<< HEAD
 class ResetAngryFace extends GameEvent {}
-=======
+
 class AbandonGame extends GameEvent {}
->>>>>>> origin/main
