@@ -752,7 +752,12 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                   color: AppColors.candyPink,
                   darkColor: AppColors.candyPinkDark,
                   onPressed: () {
+<<<<<<< HEAD
                     if (widget.mode == FixItGameMode.story) {
+=======
+                    context.read<GameBloc>().add(AbandonGame());
+                    if (widget.mode == GameMode.story) {
+>>>>>>> origin/main
                       context.read<HomeBloc>().add(LoseLife(playerId: playerId));
                     }
                     Navigator.pop(dialogContext);
@@ -824,7 +829,12 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                 color: AppColors.candyPink,
                 darkColor: AppColors.candyPinkDark,
                 onPressed: () {
+<<<<<<< HEAD
                   if (widget.mode == FixItGameMode.story) {
+=======
+                  context.read<GameBloc>().add(AbandonGame());
+                  if (widget.mode == GameMode.story) {
+>>>>>>> origin/main
                     context.read<HomeBloc>().add(LoseLife(playerId: playerId));
                   }
                   Navigator.pop(dialogContext);

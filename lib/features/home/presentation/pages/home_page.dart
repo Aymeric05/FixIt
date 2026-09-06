@@ -360,10 +360,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                 }
                                               },
                                             ),
-                                            Positioned(
-                                              right: 20,
-                                              child: _FloatingBuyButton(),
-                                            ),
                                           ],
                                         ),
                                       ),
@@ -458,76 +454,4 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   // Removed _buildExperienceBar as it's now in experience_bar.dart
-}
-
-class _FloatingBuyButton extends StatefulWidget {
-  @override
-  State<_FloatingBuyButton> createState() => _FloatingBuyButtonState();
-}
-
-class _FloatingBuyButtonState extends State<_FloatingBuyButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    )..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0, end: 15).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, -_animation.value),
-          child: child,
-        );
-      },
-      child: CandyButton(
-        width: 60,
-        height: 60,
-        color: AppColors.candyPink,
-        darkColor: AppColors.candyPinkDark,
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (dialogContext) => BlocProvider.value(
-              value: BlocProvider.of<HomeBloc>(context),
-              child: const LivesStoreDialog(),
-            ),
-          );
-        },
-        child: const Stack(
-          alignment: Alignment.center,
-          children: [
-            Icon(Icons.favorite, color: Colors.white, size: 30),
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: CircleAvatar(
-                radius: 10,
-                backgroundColor: AppColors.candyGreen,
-                child: Icon(Icons.add, color: Colors.white, size: 14),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
