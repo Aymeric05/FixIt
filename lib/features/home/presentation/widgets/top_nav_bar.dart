@@ -21,6 +21,8 @@ import 'package:fixit/features/home/presentation/widgets/daily_challenge_button.
 
 import 'package:fixit/core/utils/app_notifications.dart';
 
+class TopNavBar extends StatelessWidget {
+  static final GlobalKey puzzleKey = GlobalKey();
   final VoidCallback? onDailyPressed;
   final Set<String> unlockedWorlds;
   final int currentWorldIndex;
@@ -108,11 +110,10 @@ import 'package:fixit/core/utils/app_notifications.dart';
 
               // Center: Juicy Heart & Puzzles
               Column(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   JuicyHeartIndicator(state: state),
                   const SizedBox(height: 15),
-                  _buildPuzzleIndicator(context, state),
+                  PuzzleIndicator(state: state),
                 ],
               ),
 
@@ -156,10 +157,6 @@ import 'package:fixit/core/utils/app_notifications.dart';
         );
       },
     );
-  }
-
-  Widget _buildPuzzleIndicator(BuildContext context, HomeState state) {
-    return PuzzleIndicator(state: state);
   }
 
   Widget _buildProfileSection(BuildContext context) {
@@ -303,18 +300,11 @@ class _PuzzleIndicatorState extends State<PuzzleIndicator> with SingleTickerProv
   @override
   void didUpdateWidget(PuzzleIndicator oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Pulse only on win action to avoid random pulses on data reload
-    // Use the difference between stored state and displayed animated pieces
     if (widget.state.puzzlePieces > widget.state.animatedPuzzlePieces) {
-      // Delay the pulse slightly to match the "impact" of the flying piece
       Future.delayed(const Duration(milliseconds: 2200), () {
         if (mounted) {
           _controller.forward(from: 0.0);
-          // Trigger the state sync for the number display in the Bloc
-          // This ensures the number changes exactly when the pulse happens
-          context.read<HomeBloc>().emit(widget.state.copyWith(
-            animatedPuzzlePieces: widget.state.puzzlePieces,
-          ));
+          context.read<HomeBloc>().add(SyncAnimatedPuzzles());
         }
       });
     }

@@ -89,3 +89,5 @@ class DebugSetLevel extends HomeEvent {
   @override
   List<Object> get props => [level, isActive];
 }
+
+class SyncAnimatedPuzzles extends HomeEvent {}

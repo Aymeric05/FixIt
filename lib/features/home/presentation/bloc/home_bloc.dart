@@ -39,6 +39,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<FinishWorldLoading>(_onFinishWorldLoading);
     on<AppResumed>(_onAppResumed);
     on<DebugSetLevel>(_onDebugSetLevel);
+    on<SyncAnimatedPuzzles>(_onSyncAnimatedPuzzles);
   }
 
   Future<void> _onLoadHomeData(LoadHomeData event, Emitter<HomeState> emit) async {
@@ -530,6 +531,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       // Crucial: await the refresh so the state is updated before the dialog closes
       await _refreshProgression(emit, user.id);
     }
+  }
+
+  void _onSyncAnimatedPuzzles(SyncAnimatedPuzzles event, Emitter<HomeState> emit) {
+    emit(state.copyWith(animatedPuzzlePieces: state.puzzlePieces));
   }
 
   void _startRechargeTimer() {

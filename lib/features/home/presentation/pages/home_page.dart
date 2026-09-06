@@ -184,7 +184,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         final box = key.currentContext!.findRenderObject() as RenderBox;
         final position = box.localToGlobal(Offset.zero);
         setState(() {
-          // Add +25 Y offset to land perfectly in the middle of the bubble (downward shift)
+          // Centered landing
           _puzzleTargetOffset = Offset(position.dx + box.size.width / 2, position.dy + box.size.height / 2 + 25);
           _puzzleRewardCount = (gainedPieces >= 20) ? 10 : 5;
           _showPuzzleReward = true;
@@ -202,7 +202,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             if (state is AuthFailure) {
               AppNotifications.show(context, 'Auth Error: ${state.message}', isError: true);
             } else if (state is AuthAuthenticated) {
-              // Reload home data and friends when authenticated
               context.read<HomeBloc>().add(LoadHomeData(playerId: state.user.id));
               context.read<FriendsBloc>().add(LoadFriends(state.user.id));
               context.read<FriendsBloc>().add(StartSocialSubscription(state.user.id));
@@ -253,15 +252,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     key: ValueKey(bg),
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Colors.lightBlue, Colors.green],
-                          ),
-                        ),
-                      );
+                      return Container(color: Colors.blue);
                     },
                   );
                 },
@@ -277,6 +268,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               builder: (context, state) {
                 return Stack(
                   children: [
+                    Column(
+                      children: [
                         TopNavBar(
                           unlockedWorlds: state.unlockedWorlds,
                           currentWorldIndex: state.currentWorldIndex,
@@ -299,7 +292,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         Expanded(
                           child: Stack(
                             children: [
-                              const Center(),
                               Align(
                                 alignment: Alignment.bottomCenter,
                                 child: Padding(
@@ -359,6 +351,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                 }
                                               },
                                             ),
+                                            Positioned(
+                                              right: 20,
+                                              child: _FloatingBuyButton(),
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -378,7 +374,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       Positioned.fill(
                         child: LoadingScreen(
                           isDataLoading: false,
-                          duration: const Duration(milliseconds: 800), // Faster transition
+                          duration: const Duration(milliseconds: 800),
                           onComplete: () {
                             context.read<HomeBloc>().add(FinishWorldLoading());
                           },
@@ -404,15 +400,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 confettiController: _confettiController,
                 blastDirectionality: BlastDirectionality.explosive,
                 shouldLoop: false,
-                colors: const [
-                  Colors.green,
-                  Colors.blue,
-                  Colors.pink,
-                  Colors.orange,
-                  Colors.purple,
-                  Colors.yellow,
-                  Colors.red,
-                ],
+                colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple, Colors.yellow, Colors.red],
                 numberOfParticles: 60,
                 gravity: 0.1,
               ),
@@ -451,6 +439,76 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       ),
     );
   }
+}
 
-  // Removed _buildExperienceBar as it's now in experience_bar.dart
+class _FloatingBuyButton extends StatefulWidget {
+  @override
+  State<_FloatingBuyButton> createState() => _FloatingBuyButtonState();
+}
+
+class _FloatingBuyButtonState extends State<_FloatingBuyButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0, end: 15).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, -_animation.value),
+          child: child,
+        );
+      },
+      child: CandyButton(
+        width: 60,
+        height: 60,
+        color: AppColors.candyPink,
+        darkColor: AppColors.candyPinkDark,
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (dialogContext) => BlocProvider.value(
+              value: BlocProvider.of<HomeBloc>(context),
+              child: const LivesStoreDialog(),
+            ),
+          );
+        },
+        child: const Stack(
+          alignment: Alignment.center,
+          children: [
+            Icon(Icons.favorite, color: Colors.white, size: 30),
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: CircleAvatar(
+                radius: 10,
+                backgroundColor: AppColors.candyGreen,
+                child: Icon(Icons.add, color: Colors.white, size: 14),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
