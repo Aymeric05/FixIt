@@ -14,7 +14,7 @@ import 'package:fixit/features/friends/presentation/bloc/friends_event.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:confetti/confetti.dart';
-import 'package:fixit/features/home/presentation/widgets/puzzle_reward_animation.dart';
+import 'package:fixit/features/home/presentation/widgets/puzzle_reward_burst.dart';
 import 'package:fixit/features/home/presentation/widgets/world_unlock_overlay.dart';
 import 'package:fixit/features/home/presentation/widgets/experience_bar.dart';
 import 'package:fixit/features/game/presentation/pages/desert_game_page.dart';
@@ -37,7 +37,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late ConfettiController _confettiController;
   bool _showPuzzleReward = false;
-  int _puzzleRewardCount = 5;
+  int _puzzleRewardTotal = 5; // Total reward amount (5 for a normal level, 20 for daily/series)
   Offset _puzzleTargetOffset = Offset.zero;
   bool _isDailyPopupShowing = false;
   bool _showWorldUnlock = false;
@@ -49,7 +49,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _confettiController = ConfettiController(duration: const Duration(milliseconds: 800));
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkDailyChallenge();
     });
@@ -75,9 +75,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (authState is AuthAuthenticated) {
       final repo = DailyRepository();
       final status = await repo.getDailyStatus(authState.user.id);
-      
+
       bool alreadyCompleted = status != null && status.isDailyLevelCompleted && status.isSeriesCompleted;
-      
+
       if (!alreadyCompleted && mounted) {
         _showDailyPopup(
           isDailyCompleted: status?.isDailyLevelCompleted ?? false,
@@ -107,20 +107,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => hState.currentWorldIndex == 1 
-                ? const GamePage(
-                    level: 1,
-                    difficulty: GameDifficulty.easy,
-                    mode: FixItGameMode.dailySingle,
-                  )
-                : DesertGamePage(
-                    level: 1,
-                    difficulty: GameDifficulty.easy,
-                    mode: FixItGameMode.dailySingle,
-                    invWaterBucket: hState.itemWaterBucket,
-                    invGoldenWrench: hState.itemGoldenWrench,
-                    invSandShovel: hState.itemSandShovel,
-                  ),
+              builder: (context) => hState.currentWorldIndex == 1
+                  ? const GamePage(
+                level: 1,
+                difficulty: GameDifficulty.easy,
+                mode: FixItGameMode.dailySingle,
+              )
+                  : DesertGamePage(
+                level: 1,
+                difficulty: GameDifficulty.easy,
+                mode: FixItGameMode.dailySingle,
+                invWaterBucket: hState.itemWaterBucket,
+                invGoldenWrench: hState.itemGoldenWrench,
+                invSandShovel: hState.itemSandShovel,
+              ),
             ),
           ).then((_) {
             if (mounted) {
@@ -134,13 +134,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         onPlaySeries: () {
           Navigator.pop(dialogContext);
           final hState = context.read<HomeBloc>().state;
-          
+
           int startLevel = 1;
           if (status != null) {
             if (status.isSeriesCompleted) {
-              startLevel = 3; 
+              startLevel = 3;
             } else if (status.seriesCurrentLevel > 0) {
-              startLevel = status.seriesCurrentLevel; 
+              startLevel = status.seriesCurrentLevel;
             }
           }
 
@@ -148,19 +148,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             context,
             MaterialPageRoute(
               builder: (context) => hState.currentWorldIndex == 1
-                ? GamePage(
-                    level: startLevel,
-                    difficulty: GameDifficulty.easy,
-                    mode: FixItGameMode.dailySeries,
-                  )
-                : DesertGamePage(
-                    level: startLevel,
-                    difficulty: GameDifficulty.easy,
-                    mode: FixItGameMode.dailySeries,
-                    invWaterBucket: hState.itemWaterBucket,
-                    invGoldenWrench: hState.itemGoldenWrench,
-                    invSandShovel: hState.itemSandShovel,
-                  ),
+                  ? GamePage(
+                level: startLevel,
+                difficulty: GameDifficulty.easy,
+                mode: FixItGameMode.dailySeries,
+              )
+                  : DesertGamePage(
+                level: startLevel,
+                difficulty: GameDifficulty.easy,
+                mode: FixItGameMode.dailySeries,
+                invWaterBucket: hState.itemWaterBucket,
+                invGoldenWrench: hState.itemGoldenWrench,
+                invSandShovel: hState.itemSandShovel,
+              ),
             ),
           ).then((_) {
             if (mounted) {
@@ -177,6 +177,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
   }
 
+  /// Determines how many duplicated visual pieces should fly in for a given
+  /// total reward. Normal level wins (+5) get one piece per puzzle gained.
+  /// Daily quests / daily series (+20) are capped at 10 visual pieces so the
+  /// animation doesn't get overloaded, even though the badge still shows +20
+  /// and the total still increments by 20.
+  int _visualPieceCountFor(int totalReward) {
+    if (totalReward >= 20) return 10;
+    return totalReward;
+  }
+
   void _triggerPuzzleAnimation(int gainedPieces) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final key = TopNavBar.puzzleKey;
@@ -184,9 +194,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         final box = key.currentContext!.findRenderObject() as RenderBox;
         final position = box.localToGlobal(Offset.zero);
         setState(() {
-          // Add +10 Y offset to land closer to center of the bubble
-          _puzzleTargetOffset = Offset(position.dx + box.size.width / 2, position.dy + box.size.height / 2 + 10);
-          _puzzleRewardCount = (gainedPieces >= 20) ? 10 : 5;
+          // Centered landing
+          _puzzleTargetOffset = Offset(position.dx + box.size.width / 2, position.dy + box.size.height / 2 + 25);
+          _puzzleRewardTotal = gainedPieces; // 5 (story) or 20 (daily/series)
           _showPuzzleReward = true;
         });
       }
@@ -202,7 +212,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             if (state is AuthFailure) {
               AppNotifications.show(context, 'Auth Error: ${state.message}', isError: true);
             } else if (state is AuthAuthenticated) {
-              // Reload home data and friends when authenticated
               context.read<HomeBloc>().add(LoadHomeData(playerId: state.user.id));
               context.read<FriendsBloc>().add(LoadFriends(state.user.id));
               context.read<FriendsBloc>().add(StartSocialSubscription(state.user.id));
@@ -253,15 +262,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     key: ValueKey(bg),
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Colors.lightBlue, Colors.green],
-                          ),
-                        ),
-                      );
+                      return Container(color: Colors.blue);
                     },
                   );
                 },
@@ -281,6 +282,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       children: [
                         TopNavBar(
                           unlockedWorlds: state.unlockedWorlds,
+                          currentWorldIndex: state.currentWorldIndex,
                           onDailyPressed: () async {
                             final authState = context.read<AuthBloc>().state;
                             if (authState is AuthAuthenticated) {
@@ -300,7 +302,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         Expanded(
                           child: Stack(
                             children: [
-                              const Center(),
                               Align(
                                 alignment: Alignment.bottomCenter,
                                 child: Padding(
@@ -315,11 +316,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                           alignment: Alignment.center,
                                           children: [
                                             MainPlayButton(
-                                              level: state.currentWorldIndex == 2 
-                                                  ? (state.currentLevel - 10).clamp(1, 10) 
-                                                  : (state.currentWorldIndex == 3 
-                                                      ? (state.currentLevel - 20).clamp(1, 10) 
-                                                      : state.currentLevel),
+                                              level: state.currentWorldIndex == 2
+                                                  ? (state.currentLevel - 10).clamp(1, 10)
+                                                  : (state.currentWorldIndex == 3
+                                                  ? (state.currentLevel - 20).clamp(1, 10)
+                                                  : state.currentLevel),
                                               color: state.currentWorldIndex == 2 ? AppColors.candyGreen : null,
                                               darkColor: state.currentWorldIndex == 2 ? AppColors.candyGreenDark : null,
                                               onTap: () {
@@ -360,6 +361,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                 }
                                               },
                                             ),
+                                            Positioned(
+                                              right: 20,
+                                              child: _FloatingBuyButton(),
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -379,7 +384,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       Positioned.fill(
                         child: LoadingScreen(
                           isDataLoading: false,
-                          duration: const Duration(milliseconds: 800), // Faster transition
+                          duration: const Duration(milliseconds: 800),
                           onComplete: () {
                             context.read<HomeBloc>().add(FinishWorldLoading());
                           },
@@ -405,15 +410,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 confettiController: _confettiController,
                 blastDirectionality: BlastDirectionality.explosive,
                 shouldLoop: false,
-                colors: const [
-                  Colors.green,
-                  Colors.blue,
-                  Colors.pink,
-                  Colors.orange,
-                  Colors.purple,
-                  Colors.yellow,
-                  Colors.red,
-                ],
+                colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple, Colors.yellow, Colors.red],
                 numberOfParticles: 60,
                 gravity: 0.1,
               ),
@@ -439,12 +436,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
             ),
             if (_showPuzzleReward)
-              PuzzleRewardAnimation(
-                startOffset: Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height / 2 - 150),
+              PuzzleRewardBurst(
+                startOffset: Offset(_puzzleTargetOffset.dx, MediaQuery.of(context).size.height / 2),
                 endOffset: _puzzleTargetOffset,
-                pieceCount: _puzzleRewardCount,
+                totalReward: _puzzleRewardTotal,
+                visualPieceCount: _visualPieceCountFor(_puzzleRewardTotal),
                 onComplete: () {
                   setState(() => _showPuzzleReward = false);
+                  context.read<HomeBloc>().add(SyncAnimatedPuzzles());
                 },
               ),
           ],
@@ -452,6 +451,76 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       ),
     );
   }
+}
 
-  // Removed _buildExperienceBar as it's now in experience_bar.dart
+class _FloatingBuyButton extends StatefulWidget {
+  @override
+  State<_FloatingBuyButton> createState() => _FloatingBuyButtonState();
+}
+
+class _FloatingBuyButtonState extends State<_FloatingBuyButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0, end: 15).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, -_animation.value),
+          child: child,
+        );
+      },
+      child: CandyButton(
+        width: 60,
+        height: 60,
+        color: AppColors.candyPink,
+        darkColor: AppColors.candyPinkDark,
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (dialogContext) => BlocProvider.value(
+              value: BlocProvider.of<HomeBloc>(context),
+              child: const LivesStoreDialog(),
+            ),
+          );
+        },
+        child: const Stack(
+          alignment: Alignment.center,
+          children: [
+            Icon(Icons.favorite, color: Colors.white, size: 30),
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: CircleAvatar(
+                radius: 10,
+                backgroundColor: AppColors.candyGreen,
+                child: Icon(Icons.add, color: Colors.white, size: 14),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

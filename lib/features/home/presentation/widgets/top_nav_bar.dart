@@ -25,8 +25,14 @@ class TopNavBar extends StatelessWidget {
   static final GlobalKey puzzleKey = GlobalKey();
   final VoidCallback? onDailyPressed;
   final Set<String> unlockedWorlds;
+  final int currentWorldIndex;
 
-  const TopNavBar({super.key, this.onDailyPressed, this.unlockedWorlds = const {'meadow'}});
+  const TopNavBar({
+    super.key, 
+    this.onDailyPressed, 
+    this.unlockedWorlds = const {'meadow'},
+    required this.currentWorldIndex,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +72,7 @@ class TopNavBar extends StatelessWidget {
                         context,
                         MapDialog(
                           unlockedWorldIds: unlockedWorlds,
+                          currentWorldId: currentWorldIndex == 2 ? 'desert' : (currentWorldIndex == 3 ? 'ice' : 'meadow'),
                           onWorldSelected: (worldId) {
                             int index = 1;
                             switch (worldId) {
@@ -103,11 +110,10 @@ class TopNavBar extends StatelessWidget {
 
               // Center: Juicy Heart & Puzzles
               Column(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   JuicyHeartIndicator(state: state),
                   const SizedBox(height: 15),
-                  _buildPuzzleIndicator(context, state),
+                  PuzzleIndicator(state: state),
                 ],
               ),
 
@@ -151,10 +157,6 @@ class TopNavBar extends StatelessWidget {
         );
       },
     );
-  }
-
-  Widget _buildPuzzleIndicator(BuildContext context, HomeState state) {
-    return PuzzleIndicator(state: state);
   }
 
   Widget _buildProfileSection(BuildContext context) {
@@ -298,12 +300,8 @@ class _PuzzleIndicatorState extends State<PuzzleIndicator> with SingleTickerProv
   @override
   void didUpdateWidget(PuzzleIndicator oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Pulse only on win action to avoid random pulses on data reload
-    if (widget.state.lastAction == HomeLastAction.win && 
-        widget.state.puzzlePieces > oldWidget.state.puzzlePieces) {
-      Future.delayed(const Duration(milliseconds: 2200), () {
-        if (mounted) _controller.forward(from: 0.0);
-      });
+    if (widget.state.animatedPuzzlePieces > oldWidget.state.animatedPuzzlePieces) {
+      _controller.forward(from: 0.0);
     }
   }
 
@@ -334,7 +332,7 @@ class _PuzzleIndicatorState extends State<PuzzleIndicator> with SingleTickerProv
             const ShinyPuzzleIcon(size: 24),
             const SizedBox(width: 8),
             Text(
-              '${widget.state.puzzlePieces}',
+              '${widget.state.animatedPuzzlePieces}',
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w900,

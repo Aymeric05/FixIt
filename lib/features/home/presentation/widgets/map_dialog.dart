@@ -5,11 +5,13 @@ import 'package:fixit/core/theme/app_colors.dart';
 class MapDialog extends StatefulWidget {
   final Set<String> unlockedWorldIds;
   final ValueChanged<String>? onWorldSelected;
+  final String currentWorldId;
 
   const MapDialog({
     super.key,
     this.unlockedWorldIds = const {'meadow'},
     this.onWorldSelected,
+    this.currentWorldId = 'meadow',
   });
 
   @override
@@ -35,7 +37,9 @@ class _MapDialogState extends State<MapDialog> {
   @override
   void initState() {
     super.initState();
-    _currentRollIndex = _infiniteFactor ~/ 2;
+    final initialIndex = worlds.indexWhere((w) => w.id == widget.currentWorldId);
+    _currentRollIndex = (initialIndex != -1) ? (_infiniteFactor ~/ 2 + initialIndex) : (_infiniteFactor ~/ 2);
+    
     _rollController = PageController(
       viewportFraction: 0.6,
       initialPage: _currentRollIndex,
