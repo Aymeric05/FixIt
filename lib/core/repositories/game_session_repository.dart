@@ -13,7 +13,7 @@ class GameSessionRepository {
     required String playerId,
     required String worldId,
     required int levelNumber,
-    required GameMode mode,
+    required FixItGameMode mode,
     required int remainingSeconds,
     required List<GridOffset> currentPath,
   }) async {
@@ -44,7 +44,7 @@ class GameSessionRepository {
     required String playerId,
     required String worldId,
     required int levelNumber,
-    required GameMode mode,
+    required FixItGameMode mode,
   }) async {
     try {
       final modeStr = mode.name;
@@ -65,7 +65,7 @@ class GameSessionRepository {
     required String playerId,
     required String worldId,
     required int levelNumber,
-    required GameMode mode,
+    required FixItGameMode mode,
   }) async {
     try {
       final modeStr = mode.name;

@@ -54,7 +54,7 @@ class TickLifeRecharge extends HomeEvent {}
 
 class CompleteLevel extends HomeEvent {
   final String? playerId;
-  final GameMode mode;
+  final FixItGameMode mode;
   final int level;
   const CompleteLevel({this.playerId, required this.mode, required this.level});
   @override

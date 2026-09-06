@@ -17,6 +17,7 @@ import 'package:confetti/confetti.dart';
 import 'package:fixit/features/home/presentation/widgets/puzzle_reward_animation.dart';
 import 'package:fixit/features/home/presentation/widgets/world_unlock_overlay.dart';
 import 'package:fixit/features/home/presentation/widgets/experience_bar.dart';
+import 'package:fixit/features/game/presentation/pages/desert_game_page.dart';
 
 import 'package:fixit/features/home/presentation/widgets/daily_popup.dart';
 import 'package:fixit/features/home/presentation/widgets/no_lives_dialog.dart';
@@ -102,14 +103,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         isSeriesCompleted: isSeriesCompleted,
         onPlayDaily: () {
           Navigator.pop(dialogContext);
+          final hState = context.read<HomeBloc>().state;
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const GamePage(
-                level: 1,
-                difficulty: GameDifficulty.easy,
-                mode: GameMode.dailySingle,
-              ),
+              builder: (context) => hState.currentWorldIndex == 1 
+                ? const GamePage(
+                    level: 1,
+                    difficulty: GameDifficulty.easy,
+                    mode: FixItGameMode.dailySingle,
+                  )
+                : DesertGamePage(
+                    level: 1,
+                    difficulty: GameDifficulty.easy,
+                    mode: FixItGameMode.dailySingle,
+                    invWaterBucket: hState.itemWaterBucket,
+                    invGoldenWrench: hState.itemGoldenWrench,
+                    invSandShovel: hState.itemSandShovel,
+                  ),
             ),
           ).then((_) {
             if (mounted) {
@@ -122,6 +133,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         },
         onPlaySeries: () {
           Navigator.pop(dialogContext);
+          final hState = context.read<HomeBloc>().state;
           
           int startLevel = 1;
           if (status != null) {
@@ -135,11 +147,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => GamePage(
-                level: startLevel,
-                difficulty: GameDifficulty.easy,
-                mode: GameMode.dailySeries,
-              ),
+              builder: (context) => hState.currentWorldIndex == 1
+                ? GamePage(
+                    level: startLevel,
+                    difficulty: GameDifficulty.easy,
+                    mode: FixItGameMode.dailySeries,
+                  )
+                : DesertGamePage(
+                    level: startLevel,
+                    difficulty: GameDifficulty.easy,
+                    mode: FixItGameMode.dailySeries,
+                    invWaterBucket: hState.itemWaterBucket,
+                    invGoldenWrench: hState.itemGoldenWrench,
+                    invSandShovel: hState.itemSandShovel,
+                  ),
             ),
           ).then((_) {
             if (mounted) {
@@ -312,17 +333,31 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                   );
                                                   return;
                                                 }
-                                                Navigator.of(context).push(
-                                                  MaterialPageRoute(
-                                                    builder: (context) => GamePage(
-                                                      level: state.currentLevel,
-                                                      difficulty: state.difficulty,
-                                                      invPlusTime: state.itemPlusTime,
-                                                      invMoreNumbers: state.itemMoreNumbers,
-                                                      invRevealPath: state.itemRevealPath,
+                                                if (state.currentWorldIndex == 1) {
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute(
+                                                      builder: (context) => GamePage(
+                                                        level: state.currentLevel,
+                                                        difficulty: state.difficulty,
+                                                        invPlusTime: state.itemPlusTime,
+                                                        invMoreNumbers: state.itemMoreNumbers,
+                                                        invRevealPath: state.itemRevealPath,
+                                                      ),
                                                     ),
-                                                  ),
-                                                );
+                                                  );
+                                                } else if (state.currentWorldIndex == 2) {
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute(
+                                                      builder: (context) => DesertGamePage(
+                                                        level: (state.currentLevel - 10).clamp(1, 10),
+                                                        difficulty: state.difficulty,
+                                                        invWaterBucket: state.itemWaterBucket,
+                                                        invGoldenWrench: state.itemGoldenWrench,
+                                                        invSandShovel: state.itemSandShovel,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
                                               },
                                             ),
                                             Positioned(

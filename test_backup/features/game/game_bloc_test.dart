@@ -22,7 +22,7 @@ void main() {
   late GameSessionRepository mockSessionRepo;
 
   setUpAll(() {
-    registerFallbackValue(GameMode.story);
+    registerFallbackValue(FixItGameMode.story);
   });
 
   setUp(() {
@@ -92,7 +92,7 @@ void main() {
         level: 1,
         difficulty: GameDifficulty.easy,
         playerId: 'player-1',
-        mode: GameMode.dailySingle,
+        mode: FixItGameMode.dailySingle,
       )),
       wait: const Duration(milliseconds: 300),
       verify: (bloc) {
@@ -261,7 +261,7 @@ void main() {
         level: 1,
         difficulty: GameDifficulty.easy,
         playerId: 'player-1',
-        mode: GameMode.story,
+        mode: FixItGameMode.story,
       )),
       verify: (bloc) {
         expect(bloc.state.remainingSeconds, equals(150));

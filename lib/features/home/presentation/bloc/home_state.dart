@@ -12,6 +12,12 @@ class HomeState extends Equatable {
   final int itemPlusTime;
   final int itemMoreNumbers;
   final int itemRevealPath;
+
+  // World 2 Items
+  final int itemWaterBucket;
+  final int itemGoldenWrench;
+  final int itemSandShovel;
+
   final GameDifficulty difficulty;
   final bool isLoading;
   
@@ -31,6 +37,7 @@ class HomeState extends Equatable {
   final int timerTick; 
   final bool isWorldLoading;
   final DateTime? lastDailyPuzzleAt;
+  final bool isDailyCompleted;
   final bool isSeriesCompleted;
   final Set<String> unlockedWorlds; 
   final bool isDebugLevelActive;
@@ -45,6 +52,9 @@ class HomeState extends Equatable {
     this.itemPlusTime = 5,
     this.itemMoreNumbers = 5,
     this.itemRevealPath = 5,
+    this.itemWaterBucket = 5,
+    this.itemGoldenWrench = 5,
+    this.itemSandShovel = 5,
     this.difficulty = GameDifficulty.easy,
     this.isLoading = false,
     this.isMusicEnabled = true,
@@ -76,6 +86,9 @@ class HomeState extends Equatable {
     int? itemPlusTime,
     int? itemMoreNumbers,
     int? itemRevealPath,
+    int? itemWaterBucket,
+    int? itemGoldenWrench,
+    int? itemSandShovel,
     GameDifficulty? difficulty,
     bool? isLoading,
     bool? isMusicEnabled,
@@ -106,6 +119,9 @@ class HomeState extends Equatable {
       itemPlusTime: itemPlusTime ?? this.itemPlusTime,
       itemMoreNumbers: itemMoreNumbers ?? this.itemMoreNumbers,
       itemRevealPath: itemRevealPath ?? this.itemRevealPath,
+      itemWaterBucket: itemWaterBucket ?? this.itemWaterBucket,
+      itemGoldenWrench: itemGoldenWrench ?? this.itemGoldenWrench,
+      itemSandShovel: itemSandShovel ?? this.itemSandShovel,
       difficulty: difficulty ?? this.difficulty,
       isLoading: isLoading ?? this.isLoading,
       isMusicEnabled: isMusicEnabled ?? this.isMusicEnabled,
@@ -139,6 +155,9 @@ class HomeState extends Equatable {
         itemPlusTime,
         itemMoreNumbers,
         itemRevealPath,
+        itemWaterBucket,
+        itemGoldenWrench,
+        itemSandShovel,
         difficulty,
         isLoading,
         isMusicEnabled,
@@ -160,5 +179,4 @@ class HomeState extends Equatable {
         isDebugLevelActive,
         justUnlockedWorldIndex,
       ];
-}
 }

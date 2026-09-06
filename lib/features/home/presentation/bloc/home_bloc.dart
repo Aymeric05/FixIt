@@ -183,8 +183,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
       int? justUnlocked;
       if (state.lastAction == HomeLastAction.win) {
-         if (progression?.currentLevel == 11 && !state.unlockedWorlds.contains('desert')) justUnlocked = 2;
-         if (progression?.currentLevel == 21 && !state.unlockedWorlds.contains('ice')) justUnlocked = 3;
+         if (progression != null && progression.currentLevel == 11 && !state.unlockedWorlds.contains('desert')) justUnlocked = 2;
+         if (progression != null && progression.currentLevel == 21 && !state.unlockedWorlds.contains('ice')) justUnlocked = 3;
       }
 
       // Progression calculation logic:
@@ -210,6 +210,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         itemPlusTime: player.itemPlusTime,
         itemMoreNumbers: player.itemMoreNumbers,
         itemRevealPath: player.itemRevealPath,
+        itemWaterBucket: player.itemWaterBucket,
+        itemGoldenWrench: player.itemGoldenWrench,
+        itemSandShovel: player.itemSandShovel,
         currentLevel: progression?.currentLevel ?? 1,
         levelsCompletedInWorld: levelsInWorld,
         isLoading: false,
@@ -294,10 +297,16 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     int plusTime = state.itemPlusTime;
     int moreNums = state.itemMoreNumbers;
     int revealPath = state.itemRevealPath;
+    int waterBucket = state.itemWaterBucket;
+    int goldenWrench = state.itemGoldenWrench;
+    int sandShovel = state.itemSandShovel;
 
     if (event.itemKey == 'plus_time') plusTime++;
     if (event.itemKey == 'more_numbers') moreNums++;
     if (event.itemKey == 'reveal_path') revealPath++;
+    if (event.itemKey == 'water_bucket') waterBucket++;
+    if (event.itemKey == 'golden_wrench') goldenWrench++;
+    if (event.itemKey == 'sand_shovel') sandShovel++;
 
     await (_db.update(_db.players)..where((t) => t.id.isNotNull())).write(
       PlayersCompanion(
@@ -305,6 +314,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         itemPlusTime: drift.Value(plusTime),
         itemMoreNumbers: drift.Value(moreNums),
         itemRevealPath: drift.Value(revealPath),
+        itemWaterBucket: drift.Value(waterBucket),
+        itemGoldenWrench: drift.Value(goldenWrench),
+        itemSandShovel: drift.Value(sandShovel),
       ),
     );
 
@@ -313,6 +325,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       itemPlusTime: plusTime,
       itemMoreNumbers: moreNums,
       itemRevealPath: revealPath,
+      itemWaterBucket: waterBucket,
+      itemGoldenWrench: goldenWrench,
+      itemSandShovel: sandShovel,
     ));
   }
 
@@ -390,9 +405,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Future<void> _onCompleteLevel(CompleteLevel event, Emitter<HomeState> emit) async {
     // Increment puzzle pieces for completing a level
     // 20 for Daily/Series End, 5 for Story
-    final bool isSeriesEnd = event.mode == GameMode.dailySeries && event.level >= 3;
-    final bool isSingleDaily = event.mode == GameMode.dailySingle;
-    final bool isStory = event.mode == GameMode.story;
+    final bool isSeriesEnd = event.mode == FixItGameMode.dailySeries && event.level >= 3;
+    final bool isSingleDaily = event.mode == FixItGameMode.dailySingle;
+    final bool isStory = event.mode == FixItGameMode.story;
 
     final int reward = (isSingleDaily || isSeriesEnd) ? 20 : (isStory ? 5 : 0);
     

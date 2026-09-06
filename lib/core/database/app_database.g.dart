@@ -137,6 +137,42 @@ class $PlayersTable extends Players with TableInfo<$PlayersTable, Player> {
     requiredDuringInsert: false,
     defaultValue: const Constant(5),
   );
+  static const VerificationMeta _itemWaterBucketMeta = const VerificationMeta(
+    'itemWaterBucket',
+  );
+  @override
+  late final GeneratedColumn<int> itemWaterBucket = GeneratedColumn<int>(
+    'item_water_bucket',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(5),
+  );
+  static const VerificationMeta _itemGoldenWrenchMeta = const VerificationMeta(
+    'itemGoldenWrench',
+  );
+  @override
+  late final GeneratedColumn<int> itemGoldenWrench = GeneratedColumn<int>(
+    'item_golden_wrench',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(5),
+  );
+  static const VerificationMeta _itemSandShovelMeta = const VerificationMeta(
+    'itemSandShovel',
+  );
+  @override
+  late final GeneratedColumn<int> itemSandShovel = GeneratedColumn<int>(
+    'item_sand_shovel',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(5),
+  );
   static const VerificationMeta _lastLifeLostAtMeta = const VerificationMeta(
     'lastLifeLostAt',
   );
@@ -173,6 +209,9 @@ class $PlayersTable extends Players with TableInfo<$PlayersTable, Player> {
     itemPlusTime,
     itemMoreNumbers,
     itemRevealPath,
+    itemWaterBucket,
+    itemGoldenWrench,
+    itemSandShovel,
     lastLifeLostAt,
     updatedAt,
   ];
@@ -268,6 +307,33 @@ class $PlayersTable extends Players with TableInfo<$PlayersTable, Player> {
         ),
       );
     }
+    if (data.containsKey('item_water_bucket')) {
+      context.handle(
+        _itemWaterBucketMeta,
+        itemWaterBucket.isAcceptableOrUnknown(
+          data['item_water_bucket']!,
+          _itemWaterBucketMeta,
+        ),
+      );
+    }
+    if (data.containsKey('item_golden_wrench')) {
+      context.handle(
+        _itemGoldenWrenchMeta,
+        itemGoldenWrench.isAcceptableOrUnknown(
+          data['item_golden_wrench']!,
+          _itemGoldenWrenchMeta,
+        ),
+      );
+    }
+    if (data.containsKey('item_sand_shovel')) {
+      context.handle(
+        _itemSandShovelMeta,
+        itemSandShovel.isAcceptableOrUnknown(
+          data['item_sand_shovel']!,
+          _itemSandShovelMeta,
+        ),
+      );
+    }
     if (data.containsKey('last_life_lost_at')) {
       context.handle(
         _lastLifeLostAtMeta,
@@ -336,6 +402,18 @@ class $PlayersTable extends Players with TableInfo<$PlayersTable, Player> {
         DriftSqlType.int,
         data['${effectivePrefix}item_reveal_path'],
       )!,
+      itemWaterBucket: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}item_water_bucket'],
+      )!,
+      itemGoldenWrench: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}item_golden_wrench'],
+      )!,
+      itemSandShovel: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}item_sand_shovel'],
+      )!,
       lastLifeLostAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_life_lost_at'],
@@ -365,6 +443,9 @@ class Player extends DataClass implements Insertable<Player> {
   final int itemPlusTime;
   final int itemMoreNumbers;
   final int itemRevealPath;
+  final int itemWaterBucket;
+  final int itemGoldenWrench;
+  final int itemSandShovel;
   final DateTime? lastLifeLostAt;
   final DateTime? updatedAt;
   const Player({
@@ -379,6 +460,9 @@ class Player extends DataClass implements Insertable<Player> {
     required this.itemPlusTime,
     required this.itemMoreNumbers,
     required this.itemRevealPath,
+    required this.itemWaterBucket,
+    required this.itemGoldenWrench,
+    required this.itemSandShovel,
     this.lastLifeLostAt,
     this.updatedAt,
   });
@@ -400,6 +484,9 @@ class Player extends DataClass implements Insertable<Player> {
     map['item_plus_time'] = Variable<int>(itemPlusTime);
     map['item_more_numbers'] = Variable<int>(itemMoreNumbers);
     map['item_reveal_path'] = Variable<int>(itemRevealPath);
+    map['item_water_bucket'] = Variable<int>(itemWaterBucket);
+    map['item_golden_wrench'] = Variable<int>(itemGoldenWrench);
+    map['item_sand_shovel'] = Variable<int>(itemSandShovel);
     if (!nullToAbsent || lastLifeLostAt != null) {
       map['last_life_lost_at'] = Variable<DateTime>(lastLifeLostAt);
     }
@@ -426,6 +513,9 @@ class Player extends DataClass implements Insertable<Player> {
       itemPlusTime: Value(itemPlusTime),
       itemMoreNumbers: Value(itemMoreNumbers),
       itemRevealPath: Value(itemRevealPath),
+      itemWaterBucket: Value(itemWaterBucket),
+      itemGoldenWrench: Value(itemGoldenWrench),
+      itemSandShovel: Value(itemSandShovel),
       lastLifeLostAt: lastLifeLostAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lastLifeLostAt),
@@ -452,6 +542,9 @@ class Player extends DataClass implements Insertable<Player> {
       itemPlusTime: serializer.fromJson<int>(json['itemPlusTime']),
       itemMoreNumbers: serializer.fromJson<int>(json['itemMoreNumbers']),
       itemRevealPath: serializer.fromJson<int>(json['itemRevealPath']),
+      itemWaterBucket: serializer.fromJson<int>(json['itemWaterBucket']),
+      itemGoldenWrench: serializer.fromJson<int>(json['itemGoldenWrench']),
+      itemSandShovel: serializer.fromJson<int>(json['itemSandShovel']),
       lastLifeLostAt: serializer.fromJson<DateTime?>(json['lastLifeLostAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
@@ -471,6 +564,9 @@ class Player extends DataClass implements Insertable<Player> {
       'itemPlusTime': serializer.toJson<int>(itemPlusTime),
       'itemMoreNumbers': serializer.toJson<int>(itemMoreNumbers),
       'itemRevealPath': serializer.toJson<int>(itemRevealPath),
+      'itemWaterBucket': serializer.toJson<int>(itemWaterBucket),
+      'itemGoldenWrench': serializer.toJson<int>(itemGoldenWrench),
+      'itemSandShovel': serializer.toJson<int>(itemSandShovel),
       'lastLifeLostAt': serializer.toJson<DateTime?>(lastLifeLostAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
@@ -488,6 +584,9 @@ class Player extends DataClass implements Insertable<Player> {
     int? itemPlusTime,
     int? itemMoreNumbers,
     int? itemRevealPath,
+    int? itemWaterBucket,
+    int? itemGoldenWrench,
+    int? itemSandShovel,
     Value<DateTime?> lastLifeLostAt = const Value.absent(),
     Value<DateTime?> updatedAt = const Value.absent(),
   }) => Player(
@@ -502,6 +601,9 @@ class Player extends DataClass implements Insertable<Player> {
     itemPlusTime: itemPlusTime ?? this.itemPlusTime,
     itemMoreNumbers: itemMoreNumbers ?? this.itemMoreNumbers,
     itemRevealPath: itemRevealPath ?? this.itemRevealPath,
+    itemWaterBucket: itemWaterBucket ?? this.itemWaterBucket,
+    itemGoldenWrench: itemGoldenWrench ?? this.itemGoldenWrench,
+    itemSandShovel: itemSandShovel ?? this.itemSandShovel,
     lastLifeLostAt: lastLifeLostAt.present
         ? lastLifeLostAt.value
         : this.lastLifeLostAt,
@@ -532,6 +634,15 @@ class Player extends DataClass implements Insertable<Player> {
       itemRevealPath: data.itemRevealPath.present
           ? data.itemRevealPath.value
           : this.itemRevealPath,
+      itemWaterBucket: data.itemWaterBucket.present
+          ? data.itemWaterBucket.value
+          : this.itemWaterBucket,
+      itemGoldenWrench: data.itemGoldenWrench.present
+          ? data.itemGoldenWrench.value
+          : this.itemGoldenWrench,
+      itemSandShovel: data.itemSandShovel.present
+          ? data.itemSandShovel.value
+          : this.itemSandShovel,
       lastLifeLostAt: data.lastLifeLostAt.present
           ? data.lastLifeLostAt.value
           : this.lastLifeLostAt,
@@ -553,6 +664,9 @@ class Player extends DataClass implements Insertable<Player> {
           ..write('itemPlusTime: $itemPlusTime, ')
           ..write('itemMoreNumbers: $itemMoreNumbers, ')
           ..write('itemRevealPath: $itemRevealPath, ')
+          ..write('itemWaterBucket: $itemWaterBucket, ')
+          ..write('itemGoldenWrench: $itemGoldenWrench, ')
+          ..write('itemSandShovel: $itemSandShovel, ')
           ..write('lastLifeLostAt: $lastLifeLostAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -572,6 +686,9 @@ class Player extends DataClass implements Insertable<Player> {
     itemPlusTime,
     itemMoreNumbers,
     itemRevealPath,
+    itemWaterBucket,
+    itemGoldenWrench,
+    itemSandShovel,
     lastLifeLostAt,
     updatedAt,
   );
@@ -590,6 +707,9 @@ class Player extends DataClass implements Insertable<Player> {
           other.itemPlusTime == this.itemPlusTime &&
           other.itemMoreNumbers == this.itemMoreNumbers &&
           other.itemRevealPath == this.itemRevealPath &&
+          other.itemWaterBucket == this.itemWaterBucket &&
+          other.itemGoldenWrench == this.itemGoldenWrench &&
+          other.itemSandShovel == this.itemSandShovel &&
           other.lastLifeLostAt == this.lastLifeLostAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -606,6 +726,9 @@ class PlayersCompanion extends UpdateCompanion<Player> {
   final Value<int> itemPlusTime;
   final Value<int> itemMoreNumbers;
   final Value<int> itemRevealPath;
+  final Value<int> itemWaterBucket;
+  final Value<int> itemGoldenWrench;
+  final Value<int> itemSandShovel;
   final Value<DateTime?> lastLifeLostAt;
   final Value<DateTime?> updatedAt;
   const PlayersCompanion({
@@ -620,6 +743,9 @@ class PlayersCompanion extends UpdateCompanion<Player> {
     this.itemPlusTime = const Value.absent(),
     this.itemMoreNumbers = const Value.absent(),
     this.itemRevealPath = const Value.absent(),
+    this.itemWaterBucket = const Value.absent(),
+    this.itemGoldenWrench = const Value.absent(),
+    this.itemSandShovel = const Value.absent(),
     this.lastLifeLostAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -635,6 +761,9 @@ class PlayersCompanion extends UpdateCompanion<Player> {
     this.itemPlusTime = const Value.absent(),
     this.itemMoreNumbers = const Value.absent(),
     this.itemRevealPath = const Value.absent(),
+    this.itemWaterBucket = const Value.absent(),
+    this.itemGoldenWrench = const Value.absent(),
+    this.itemSandShovel = const Value.absent(),
     this.lastLifeLostAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : username = Value(username);
@@ -650,6 +779,9 @@ class PlayersCompanion extends UpdateCompanion<Player> {
     Expression<int>? itemPlusTime,
     Expression<int>? itemMoreNumbers,
     Expression<int>? itemRevealPath,
+    Expression<int>? itemWaterBucket,
+    Expression<int>? itemGoldenWrench,
+    Expression<int>? itemSandShovel,
     Expression<DateTime>? lastLifeLostAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -665,6 +797,9 @@ class PlayersCompanion extends UpdateCompanion<Player> {
       if (itemPlusTime != null) 'item_plus_time': itemPlusTime,
       if (itemMoreNumbers != null) 'item_more_numbers': itemMoreNumbers,
       if (itemRevealPath != null) 'item_reveal_path': itemRevealPath,
+      if (itemWaterBucket != null) 'item_water_bucket': itemWaterBucket,
+      if (itemGoldenWrench != null) 'item_golden_wrench': itemGoldenWrench,
+      if (itemSandShovel != null) 'item_sand_shovel': itemSandShovel,
       if (lastLifeLostAt != null) 'last_life_lost_at': lastLifeLostAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -682,6 +817,9 @@ class PlayersCompanion extends UpdateCompanion<Player> {
     Value<int>? itemPlusTime,
     Value<int>? itemMoreNumbers,
     Value<int>? itemRevealPath,
+    Value<int>? itemWaterBucket,
+    Value<int>? itemGoldenWrench,
+    Value<int>? itemSandShovel,
     Value<DateTime?>? lastLifeLostAt,
     Value<DateTime?>? updatedAt,
   }) {
@@ -697,6 +835,9 @@ class PlayersCompanion extends UpdateCompanion<Player> {
       itemPlusTime: itemPlusTime ?? this.itemPlusTime,
       itemMoreNumbers: itemMoreNumbers ?? this.itemMoreNumbers,
       itemRevealPath: itemRevealPath ?? this.itemRevealPath,
+      itemWaterBucket: itemWaterBucket ?? this.itemWaterBucket,
+      itemGoldenWrench: itemGoldenWrench ?? this.itemGoldenWrench,
+      itemSandShovel: itemSandShovel ?? this.itemSandShovel,
       lastLifeLostAt: lastLifeLostAt ?? this.lastLifeLostAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -738,6 +879,15 @@ class PlayersCompanion extends UpdateCompanion<Player> {
     if (itemRevealPath.present) {
       map['item_reveal_path'] = Variable<int>(itemRevealPath.value);
     }
+    if (itemWaterBucket.present) {
+      map['item_water_bucket'] = Variable<int>(itemWaterBucket.value);
+    }
+    if (itemGoldenWrench.present) {
+      map['item_golden_wrench'] = Variable<int>(itemGoldenWrench.value);
+    }
+    if (itemSandShovel.present) {
+      map['item_sand_shovel'] = Variable<int>(itemSandShovel.value);
+    }
     if (lastLifeLostAt.present) {
       map['last_life_lost_at'] = Variable<DateTime>(lastLifeLostAt.value);
     }
@@ -761,6 +911,9 @@ class PlayersCompanion extends UpdateCompanion<Player> {
           ..write('itemPlusTime: $itemPlusTime, ')
           ..write('itemMoreNumbers: $itemMoreNumbers, ')
           ..write('itemRevealPath: $itemRevealPath, ')
+          ..write('itemWaterBucket: $itemWaterBucket, ')
+          ..write('itemGoldenWrench: $itemGoldenWrench, ')
+          ..write('itemSandShovel: $itemSandShovel, ')
           ..write('lastLifeLostAt: $lastLifeLostAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -3925,6 +4078,9 @@ typedef $$PlayersTableCreateCompanionBuilder =
       Value<int> itemPlusTime,
       Value<int> itemMoreNumbers,
       Value<int> itemRevealPath,
+      Value<int> itemWaterBucket,
+      Value<int> itemGoldenWrench,
+      Value<int> itemSandShovel,
       Value<DateTime?> lastLifeLostAt,
       Value<DateTime?> updatedAt,
     });
@@ -3941,6 +4097,9 @@ typedef $$PlayersTableUpdateCompanionBuilder =
       Value<int> itemPlusTime,
       Value<int> itemMoreNumbers,
       Value<int> itemRevealPath,
+      Value<int> itemWaterBucket,
+      Value<int> itemGoldenWrench,
+      Value<int> itemSandShovel,
       Value<DateTime?> lastLifeLostAt,
       Value<DateTime?> updatedAt,
     });
@@ -4006,6 +4165,21 @@ class $$PlayersTableFilterComposer
 
   ColumnFilters<int> get itemRevealPath => $composableBuilder(
     column: $table.itemRevealPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get itemWaterBucket => $composableBuilder(
+    column: $table.itemWaterBucket,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get itemGoldenWrench => $composableBuilder(
+    column: $table.itemGoldenWrench,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get itemSandShovel => $composableBuilder(
+    column: $table.itemSandShovel,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4084,6 +4258,21 @@ class $$PlayersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get itemWaterBucket => $composableBuilder(
+    column: $table.itemWaterBucket,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get itemGoldenWrench => $composableBuilder(
+    column: $table.itemGoldenWrench,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get itemSandShovel => $composableBuilder(
+    column: $table.itemSandShovel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get lastLifeLostAt => $composableBuilder(
     column: $table.lastLifeLostAt,
     builder: (column) => ColumnOrderings(column),
@@ -4149,6 +4338,21 @@ class $$PlayersTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get itemWaterBucket => $composableBuilder(
+    column: $table.itemWaterBucket,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get itemGoldenWrench => $composableBuilder(
+    column: $table.itemGoldenWrench,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get itemSandShovel => $composableBuilder(
+    column: $table.itemSandShovel,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get lastLifeLostAt => $composableBuilder(
     column: $table.lastLifeLostAt,
     builder: (column) => column,
@@ -4197,6 +4401,9 @@ class $$PlayersTableTableManager
                 Value<int> itemPlusTime = const Value.absent(),
                 Value<int> itemMoreNumbers = const Value.absent(),
                 Value<int> itemRevealPath = const Value.absent(),
+                Value<int> itemWaterBucket = const Value.absent(),
+                Value<int> itemGoldenWrench = const Value.absent(),
+                Value<int> itemSandShovel = const Value.absent(),
                 Value<DateTime?> lastLifeLostAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => PlayersCompanion(
@@ -4211,6 +4418,9 @@ class $$PlayersTableTableManager
                 itemPlusTime: itemPlusTime,
                 itemMoreNumbers: itemMoreNumbers,
                 itemRevealPath: itemRevealPath,
+                itemWaterBucket: itemWaterBucket,
+                itemGoldenWrench: itemGoldenWrench,
+                itemSandShovel: itemSandShovel,
                 lastLifeLostAt: lastLifeLostAt,
                 updatedAt: updatedAt,
               ),
@@ -4227,6 +4437,9 @@ class $$PlayersTableTableManager
                 Value<int> itemPlusTime = const Value.absent(),
                 Value<int> itemMoreNumbers = const Value.absent(),
                 Value<int> itemRevealPath = const Value.absent(),
+                Value<int> itemWaterBucket = const Value.absent(),
+                Value<int> itemGoldenWrench = const Value.absent(),
+                Value<int> itemSandShovel = const Value.absent(),
                 Value<DateTime?> lastLifeLostAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => PlayersCompanion.insert(
@@ -4241,6 +4454,9 @@ class $$PlayersTableTableManager
                 itemPlusTime: itemPlusTime,
                 itemMoreNumbers: itemMoreNumbers,
                 itemRevealPath: itemRevealPath,
+                itemWaterBucket: itemWaterBucket,
+                itemGoldenWrench: itemGoldenWrench,
+                itemSandShovel: itemSandShovel,
                 lastLifeLostAt: lastLifeLostAt,
                 updatedAt: updatedAt,
               ),

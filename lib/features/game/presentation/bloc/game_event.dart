@@ -13,7 +13,7 @@ class StartGame extends GameEvent {
   final int level;
   final GameDifficulty difficulty;
   final String playerId;
-  final GameMode mode;
+  final FixItGameMode mode;
   final int invPlusTime;
   final int invMoreNumbers;
   final int invRevealPath;
@@ -22,7 +22,7 @@ class StartGame extends GameEvent {
     required this.level,
     required this.difficulty,
     required this.playerId,
-    this.mode = GameMode.story,
+    this.mode = FixItGameMode.story,
     this.invPlusTime = 5,
     this.invMoreNumbers = 5,
     this.invRevealPath = 5,
