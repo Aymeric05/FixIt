@@ -1,20 +1,23 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/features/home/presentation/widgets/shiny_puzzle_icon.dart';
+import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 
 class PuzzleRewardAnimation extends StatefulWidget {
   final Offset startOffset;
   final Offset endOffset;
-  final int pieceCount;
-  final int totalGained;
+  final int incrementAmount; // How much this piece adds to the total on impact
+  final int? badgeValue; // If non-null, shows "+badgeValue" on this piece only
   final VoidCallback onComplete;
 
   const PuzzleRewardAnimation({
     super.key,
     required this.startOffset,
     required this.endOffset,
-    this.pieceCount = 5,
-    required this.totalGained,
+    required this.incrementAmount,
+    this.badgeValue,
     required this.onComplete,
   });
 
@@ -23,165 +26,106 @@ class PuzzleRewardAnimation extends StatefulWidget {
 }
 
 class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with TickerProviderStateMixin {
-  late List<AnimationController> _controllers;
-  late List<Animation<double>> _scaleAnimations;
-  late List<Animation<Offset>> _moveAnimations;
-  late List<Animation<double>> _opacityAnimations;
-  
-  late List<bool> _showBadge;
-  late List<bool> _hasImpacted;
-  int _completedCount = 0;
+  late AnimationController _controller;
+  late Animation<Offset> _moveAnimation;
+  late Animation<double> _opacityAnimation;
+  bool _hasImpacted = false;
 
   @override
   void initState() {
     super.initState();
-    _showBadge = List.filled(widget.pieceCount, false);
-    _hasImpacted = List.filled(widget.pieceCount, false);
-    _controllers = List.generate(widget.pieceCount, (index) {
-      return AnimationController(
-        vsync: this,
-        duration: const Duration(milliseconds: 2500),
-      );
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+
+    _moveAnimation = Tween<Offset>(
+      begin: widget.startOffset,
+      end: widget.endOffset,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInQuad));
+
+    _opacityAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 20),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 60),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 20),
+    ]).animate(_controller);
+
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        widget.onComplete();
+      }
     });
 
-    _scaleAnimations = [];
-    _moveAnimations = [];
-    _opacityAnimations = [];
+    _controller.addListener(() {
+      // Impact detection (trigger pulse and increment when close to target)
+      if (_controller.value >= 0.85 && !_hasImpacted) {
+        _hasImpacted = true;
+        context.read<HomeBloc>().add(IncrementAnimatedPuzzles(widget.incrementAmount));
+      }
+    });
 
-    for (int i = 0; i < widget.pieceCount; i++) {
-      final double startDelay = i * 0.05; // Tight staggered launch
-      
-      _scaleAnimations.add(TweenSequence<double>([
-        TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.1).chain(CurveTween(curve: Curves.easeOutBack)), weight: 30),
-        TweenSequenceItem(tween: Tween(begin: 1.1, end: 1.0).chain(CurveTween(curve: Curves.easeInOut)), weight: 70),
-      ]).animate(CurvedAnimation(
-        parent: _controllers[i],
-        curve: Interval(startDelay, (startDelay + 0.3).clamp(0.0, 1.0), curve: Curves.linear),
-      )));
-
-      _moveAnimations.add(Tween<Offset>(
-        begin: widget.startOffset,
-        end: widget.endOffset,
-      ).animate(CurvedAnimation(
-        parent: _controllers[i],
-        curve: Interval((startDelay + 0.5).clamp(0.0, 1.0), (startDelay + 0.9).clamp(0.0, 1.0), curve: Curves.easeIn),
-      )));
-
-      _opacityAnimations.add(TweenSequence<double>([
-        TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 10),
-        TweenSequenceItem(tween: ConstantTween(1.0), weight: 80),
-        TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 10),
-      ]).animate(CurvedAnimation(
-        parent: _controllers[i],
-        curve: Interval(startDelay, 1.0, curve: Curves.linear),
-      )));
-
-      _controllers[i].addStatusListener((status) {
-        if (status == AnimationStatus.completed) {
-          _completedCount++;
-          if (_completedCount == widget.pieceCount) {
-            widget.onComplete();
-          }
-        }
-      });
-
-      _controllers[i].addListener(() {
-        if (_controllers[i].value > (startDelay + 0.1) && !_showBadge[i]) {
-          setState(() => _showBadge[i] = true);
-        }
-        
-        // Impact detection (around 0.9 of the animation duration)
-        if (_controllers[i].value >= (startDelay + 0.9) && !_hasImpacted[i]) {
-          _hasImpacted[i] = true;
-          // Increment the animated counter by the portion this piece represents
-          final increment = widget.totalGained ~/ widget.pieceCount;
-          context.read<HomeBloc>().add(IncrementAnimatedPuzzles(increment));
-        }
-      });
-      
-      _controllers[i].forward();
-    }
+    _controller.forward();
   }
 
   @override
   void dispose() {
-    for (var c in _controllers) {
-      c.dispose();
-    }
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: List.generate(widget.pieceCount, (i) {
-        return AnimatedBuilder(
-          animation: _controllers[i],
-          builder: (context, child) {
-            final position = _moveAnimations[i].value;
-            final scale = _scaleAnimations[i].value;
-            final opacity = _opacityAnimations[i].value;
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        if (_controller.value == 0 && _controller.status != AnimationStatus.forward) return const SizedBox.shrink();
 
-            if (opacity <= 0) return const SizedBox.shrink();
+        final position = _moveAnimation.value;
+        final opacity = _opacityAnimation.value;
 
-            return Positioned(
-              left: position.dx - 27,
-              top: position.dy - 27, // Use exact center
-              child: Opacity(
-                opacity: opacity,
-                child: Transform.scale(
-                  scale: scale,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const ShinyPuzzleIcon(size: 55), // Increased size from 40 to 55
-                      if (_showBadge[i])
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 0.0, end: 1.0),
-                            duration: const Duration(milliseconds: 300),
-                            builder: (context, value, child) {
-                              return Transform.scale(
-                                scale: value,
-                                child: Stack(
-                                  children: [
-                                    // Heavy black outline
-                                    Text(
-                                      '+${widget.totalGained ~/ widget.pieceCount}',
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.w900,
-                                        foreground: Paint()
-                                          ..style = PaintingStyle.stroke
-                                          ..strokeWidth = 5
-                                          ..color = Colors.black,
-                                      ),
-                                    ),
-                                    // White center text for maximum visibility on any background
-                                    Text(
-                                      '+${widget.totalGained ~/ widget.pieceCount}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 24,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
+        return Positioned(
+          left: position.dx - 27,
+          top: position.dy - 27,
+          child: Opacity(
+            opacity: opacity,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const ShinyPuzzleIcon(size: 55),
+                if (widget.badgeValue != null)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Stack(
+                      children: [
+                        Text(
+                          "+${widget.badgeValue}",
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            foreground: Paint()
+                              ..style = PaintingStyle.stroke
+                              ..strokeWidth = 4
+                              ..color = Colors.black,
                           ),
                         ),
-                    ],
+                        Text(
+                          "+${widget.badgeValue}",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 22,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ),
-            );
-          },
+              ],
+            ),
+          ),
         );
-      }),
+      },
     );
   }
 }
