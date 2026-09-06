@@ -91,3 +91,10 @@ class DebugSetLevel extends HomeEvent {
 }
 
 class SyncAnimatedPuzzles extends HomeEvent {}
+
+class IncrementAnimatedPuzzles extends HomeEvent {
+  final int count;
+  const IncrementAnimatedPuzzles(this.count);
+  @override
+  List<Object> get props => [count];
+}

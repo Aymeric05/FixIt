@@ -36,10 +36,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<LoseLife>(_onLoseLife);
     on<ChangeWorld>(_onChangeWorld);
     on<MidnightReached>(_onMidnightReached);
-    on<FinishWorldLoading>(_onFinishWorldLoading);
-    on<AppResumed>(_onAppResumed);
     on<DebugSetLevel>(_onDebugSetLevel);
     on<SyncAnimatedPuzzles>(_onSyncAnimatedPuzzles);
+    on<IncrementAnimatedPuzzles>(_onIncrementAnimatedPuzzles);
   }
 
   Future<void> _onLoadHomeData(LoadHomeData event, Emitter<HomeState> emit) async {
@@ -535,6 +534,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   void _onSyncAnimatedPuzzles(SyncAnimatedPuzzles event, Emitter<HomeState> emit) {
     emit(state.copyWith(animatedPuzzlePieces: state.puzzlePieces));
+  }
+
+  void _onIncrementAnimatedPuzzles(IncrementAnimatedPuzzles event, Emitter<HomeState> emit) {
+    emit(state.copyWith(animatedPuzzlePieces: state.animatedPuzzlePieces + event.count));
   }
 
   void _startRechargeTimer() {

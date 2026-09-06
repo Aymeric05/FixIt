@@ -6,6 +6,7 @@ class PuzzleRewardAnimation extends StatefulWidget {
   final Offset startOffset;
   final Offset endOffset;
   final int pieceCount;
+  final int totalGained;
   final VoidCallback onComplete;
 
   const PuzzleRewardAnimation({
@@ -13,6 +14,7 @@ class PuzzleRewardAnimation extends StatefulWidget {
     required this.startOffset,
     required this.endOffset,
     this.pieceCount = 5,
+    required this.totalGained,
     required this.onComplete,
   });
 
@@ -27,14 +29,14 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
   late List<Animation<double>> _opacityAnimations;
   
   late List<bool> _showBadge;
+  late List<bool> _hasImpacted;
   int _completedCount = 0;
-  late int _totalGained;
 
   @override
   void initState() {
     super.initState();
-    _totalGained = (widget.pieceCount == 10) ? 20 : 5;
     _showBadge = List.filled(widget.pieceCount, false);
+    _hasImpacted = List.filled(widget.pieceCount, false);
     _controllers = List.generate(widget.pieceCount, (index) {
       return AnimationController(
         vsync: this,
@@ -62,7 +64,7 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
         end: widget.endOffset,
       ).animate(CurvedAnimation(
         parent: _controllers[i],
-        curve: Interval((startDelay + 0.5).clamp(0.0, 1.0), (startDelay + 0.9).clamp(0.0, 1.0), curve: Curves.easeInBack),
+        curve: Interval((startDelay + 0.5).clamp(0.0, 1.0), (startDelay + 0.9).clamp(0.0, 1.0), curve: Curves.easeIn),
       )));
 
       _opacityAnimations.add(TweenSequence<double>([
@@ -86,6 +88,14 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
       _controllers[i].addListener(() {
         if (_controllers[i].value > (startDelay + 0.1) && !_showBadge[i]) {
           setState(() => _showBadge[i] = true);
+        }
+        
+        // Impact detection (around 0.9 of the animation duration)
+        if (_controllers[i].value >= (startDelay + 0.9) && !_hasImpacted[i]) {
+          _hasImpacted[i] = true;
+          // Increment the animated counter by the portion this piece represents
+          final increment = widget.totalGained ~/ widget.pieceCount;
+          context.read<HomeBloc>().add(IncrementAnimatedPuzzles(increment));
         }
       });
       
@@ -139,7 +149,7 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
                                   children: [
                                     // Heavy black outline
                                     Text(
-                                      '+$_totalGained',
+                                      '+${widget.totalGained ~/ widget.pieceCount}',
                                       style: TextStyle(
                                         fontSize: 24,
                                         fontWeight: FontWeight.w900,
@@ -151,7 +161,7 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
                                     ),
                                     // White center text for maximum visibility on any background
                                     Text(
-                                      '+$_totalGained',
+                                      '+${widget.totalGained ~/ widget.pieceCount}',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w900,

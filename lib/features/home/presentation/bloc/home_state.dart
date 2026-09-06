@@ -185,4 +185,3 @@ class HomeState extends Equatable {
         justUnlockedWorldIndex,
       ];
 }
-}

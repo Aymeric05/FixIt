@@ -427,11 +427,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ),
             if (_showPuzzleReward)
               PuzzleRewardAnimation(
-                startOffset: Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height / 2 - 150),
+                startOffset: Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height / 2),
                 endOffset: _puzzleTargetOffset,
                 pieceCount: _puzzleRewardCount,
+                totalGained: (_puzzleRewardCount == 10) ? 20 : 5,
                 onComplete: () {
                   setState(() => _showPuzzleReward = false);
+                  // Ensure final sync
+                  context.read<HomeBloc>().add(SyncAnimatedPuzzles());
                 },
               ),
           ],
