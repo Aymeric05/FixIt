@@ -393,10 +393,14 @@ class ProgressionRepository {
 
     // 5. Update local Drift progression
     if (shouldUpdateProgression) {
+      final List<String> worlds = ['meadow'];
+      if (nextLevelToSave > 10) worlds.add('desert');
+      if (nextLevelToSave > 20) worlds.add('ice');
+
       final progressionCompanion = ProgressionsCompanion.insert(
         playerSupabaseId: Value(playerSupabaseId),
         currentLevel: Value(nextLevelToSave),
-        unlockedWorlds: const ['world_1'],
+        unlockedWorlds: worlds,
         updatedAt: Value(DateTime.now()),
       );
       

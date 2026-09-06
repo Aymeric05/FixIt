@@ -1,4 +1,4 @@
-enum GameMode {
+enum FixItGameMode {
   story,
   dailySingle,
   dailySeries,

@@ -54,9 +54,11 @@ class TickLifeRecharge extends HomeEvent {}
 
 class CompleteLevel extends HomeEvent {
   final String? playerId;
-  const CompleteLevel({this.playerId});
+  final FixItGameMode mode;
+  final int level;
+  const CompleteLevel({this.playerId, required this.mode, required this.level});
   @override
-  List<Object> get props => [playerId ?? ''];
+  List<Object> get props => [playerId ?? '', mode, level];
 }
 
 class LoseLife extends HomeEvent {
@@ -79,3 +81,11 @@ class MidnightReached extends HomeEvent {}
 class FinishWorldLoading extends HomeEvent {}
 
 class AppResumed extends HomeEvent {}
+
+class DebugSetLevel extends HomeEvent {
+  final int level;
+  final bool isActive;
+  const DebugSetLevel(this.level, {required this.isActive});
+  @override
+  List<Object> get props => [level, isActive];
+}

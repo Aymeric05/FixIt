@@ -107,7 +107,8 @@ class DatabaseService {
         'friends',
         'friend_requests',
         'players',
-        'global_levels'
+        'global_levels',
+        'active_game_states'
       ];
       
       for (final table in tables) {

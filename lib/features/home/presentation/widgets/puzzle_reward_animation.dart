@@ -5,12 +5,14 @@ import 'package:fixit/features/home/presentation/widgets/shiny_puzzle_icon.dart'
 class PuzzleRewardAnimation extends StatefulWidget {
   final Offset startOffset;
   final Offset endOffset;
+  final int pieceCount;
   final VoidCallback onComplete;
 
   const PuzzleRewardAnimation({
     super.key,
     required this.startOffset,
     required this.endOffset,
+    this.pieceCount = 5,
     required this.onComplete,
   });
 
@@ -19,19 +21,21 @@ class PuzzleRewardAnimation extends StatefulWidget {
 }
 
 class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with TickerProviderStateMixin {
-  static const int pieceCount = 5;
   late List<AnimationController> _controllers;
   late List<Animation<double>> _scaleAnimations;
   late List<Animation<Offset>> _moveAnimations;
   late List<Animation<double>> _opacityAnimations;
   
-  final List<bool> _showBadge = List.filled(pieceCount, false);
+  late List<bool> _showBadge;
   int _completedCount = 0;
+  late int _totalGained;
 
   @override
   void initState() {
     super.initState();
-    _controllers = List.generate(pieceCount, (index) {
+    _totalGained = (widget.pieceCount == 10) ? 20 : 5;
+    _showBadge = List.filled(widget.pieceCount, false);
+    _controllers = List.generate(widget.pieceCount, (index) {
       return AnimationController(
         vsync: this,
         duration: const Duration(milliseconds: 2500),
@@ -42,7 +46,7 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
     _moveAnimations = [];
     _opacityAnimations = [];
 
-    for (int i = 0; i < pieceCount; i++) {
+    for (int i = 0; i < widget.pieceCount; i++) {
       final double startDelay = i * 0.05; // Tight staggered launch
       
       _scaleAnimations.add(TweenSequence<double>([
@@ -73,7 +77,7 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
       _controllers[i].addStatusListener((status) {
         if (status == AnimationStatus.completed) {
           _completedCount++;
-          if (_completedCount == pieceCount) {
+          if (_completedCount == widget.pieceCount) {
             widget.onComplete();
           }
         }
@@ -100,7 +104,7 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
   @override
   Widget build(BuildContext context) {
     return Stack(
-      children: List.generate(pieceCount, (i) {
+      children: List.generate(widget.pieceCount, (i) {
         return AnimatedBuilder(
           animation: _controllers[i],
           builder: (context, child) {
@@ -112,7 +116,7 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
 
             return Positioned(
               left: position.dx - 27,
-              top: position.dy - 150, // Shifted up even more (from -100 to -150)
+              top: position.dy - 27, // Use exact center
               child: Opacity(
                 opacity: opacity,
                 child: Transform.scale(
@@ -131,21 +135,30 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
                             builder: (context, value, child) {
                               return Transform.scale(
                                 scale: value,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.candyGreen,
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color: Colors.white, width: 1.0),
-                                  ),
-                                  child: const Text(
-                                    '+1',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 9,
+                                child: Stack(
+                                  children: [
+                                    // Heavy black outline
+                                    Text(
+                                      '+$_totalGained',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w900,
+                                        foreground: Paint()
+                                          ..style = PaintingStyle.stroke
+                                          ..strokeWidth = 5
+                                          ..color = Colors.black,
+                                      ),
                                     ),
-                                  ),
+                                    // White center text for maximum visibility on any background
+                                    Text(
+                                      '+$_totalGained',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 24,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               );
                             },

@@ -15,6 +15,9 @@ import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:confetti/confetti.dart';
 import 'package:fixit/features/home/presentation/widgets/puzzle_reward_animation.dart';
+import 'package:fixit/features/home/presentation/widgets/world_unlock_overlay.dart';
+import 'package:fixit/features/home/presentation/widgets/experience_bar.dart';
+import 'package:fixit/features/game/presentation/pages/desert_game_page.dart';
 
 import 'package:fixit/features/home/presentation/widgets/daily_popup.dart';
 import 'package:fixit/features/home/presentation/widgets/no_lives_dialog.dart';
@@ -34,8 +37,12 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late ConfettiController _confettiController;
   bool _showPuzzleReward = false;
+  int _puzzleRewardCount = 5;
   Offset _puzzleTargetOffset = Offset.zero;
   bool _isDailyPopupShowing = false;
+  bool _showWorldUnlock = false;
+  int _unlockingWorldIndex = 2;
+  final GlobalKey _experienceBarKey = GlobalKey();
 
   @override
   void initState() {
@@ -96,14 +103,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         isSeriesCompleted: isSeriesCompleted,
         onPlayDaily: () {
           Navigator.pop(dialogContext);
+          final hState = context.read<HomeBloc>().state;
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const GamePage(
-                level: 1,
-                difficulty: GameDifficulty.easy,
-                mode: GameMode.dailySingle,
-              ),
+              builder: (context) => hState.currentWorldIndex == 1 
+                ? const GamePage(
+                    level: 1,
+                    difficulty: GameDifficulty.easy,
+                    mode: FixItGameMode.dailySingle,
+                  )
+                : DesertGamePage(
+                    level: 1,
+                    difficulty: GameDifficulty.easy,
+                    mode: FixItGameMode.dailySingle,
+                    invWaterBucket: hState.itemWaterBucket,
+                    invGoldenWrench: hState.itemGoldenWrench,
+                    invSandShovel: hState.itemSandShovel,
+                  ),
             ),
           ).then((_) {
             if (mounted) {
@@ -116,6 +133,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         },
         onPlaySeries: () {
           Navigator.pop(dialogContext);
+          final hState = context.read<HomeBloc>().state;
           
           int startLevel = 1;
           if (status != null) {
@@ -129,11 +147,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => GamePage(
-                level: startLevel,
-                difficulty: GameDifficulty.easy,
-                mode: GameMode.dailySeries,
-              ),
+              builder: (context) => hState.currentWorldIndex == 1
+                ? GamePage(
+                    level: startLevel,
+                    difficulty: GameDifficulty.easy,
+                    mode: FixItGameMode.dailySeries,
+                  )
+                : DesertGamePage(
+                    level: startLevel,
+                    difficulty: GameDifficulty.easy,
+                    mode: FixItGameMode.dailySeries,
+                    invWaterBucket: hState.itemWaterBucket,
+                    invGoldenWrench: hState.itemGoldenWrench,
+                    invSandShovel: hState.itemSandShovel,
+                  ),
             ),
           ).then((_) {
             if (mounted) {
@@ -150,14 +177,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
   }
 
-  void _triggerPuzzleAnimation() {
+  void _triggerPuzzleAnimation(int gainedPieces) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final key = TopNavBar.puzzleKey;
       if (key.currentContext != null) {
         final box = key.currentContext!.findRenderObject() as RenderBox;
         final position = box.localToGlobal(Offset.zero);
         setState(() {
-          _puzzleTargetOffset = Offset(position.dx + box.size.width / 2, position.dy + box.size.height / 2);
+          // Add +10 Y offset to land closer to center of the bubble
+          _puzzleTargetOffset = Offset(position.dx + box.size.width / 2, position.dy + box.size.height / 2 + 10);
+          _puzzleRewardCount = (gainedPieces >= 20) ? 10 : 5;
           _showPuzzleReward = true;
         });
       }
@@ -182,11 +211,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           },
         ),
         BlocListener<HomeBloc, HomeState>(
-          listenWhen: (previous, current) =>
-              (previous.levelsCompletedInWorld != current.levelsCompletedInWorld && current.lastAction == HomeLastAction.win),
+          listenWhen: (previous, current) {
+            return current.gainedPuzzlePieces > 0 || current.justUnlockedWorldIndex != null;
+          },
           listener: (context, state) {
-            _confettiController.play();
-            _triggerPuzzleAnimation();
+            if (state.gainedPuzzlePieces > 0) {
+              _confettiController.play();
+              _triggerPuzzleAnimation(state.gainedPuzzlePieces);
+            }
+
+            if (state.justUnlockedWorldIndex != null) {
+              setState(() {
+                _unlockingWorldIndex = state.justUnlockedWorldIndex!;
+                _showWorldUnlock = true;
+              });
+            }
           },
         ),
         BlocListener<HomeBloc, HomeState>(
@@ -206,9 +245,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 buildWhen: (prev, curr) => prev.currentWorldIndex != curr.currentWorldIndex,
                 builder: (context, state) {
                   String bg = 'assets/images/monde1_background.png';
-                  // Add logic for other worlds if assets exist
+                  if (state.currentWorldIndex == 2) bg = 'assets/images/Monde_2.png';
+                  if (state.currentWorldIndex == 3) bg = 'assets/images/Monde_3.png';
+
                   return Image.asset(
                     bg,
+                    key: ValueKey(bg),
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
@@ -238,6 +280,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     Column(
                       children: [
                         TopNavBar(
+                          unlockedWorlds: state.unlockedWorlds,
                           onDailyPressed: () async {
                             final authState = context.read<AuthBloc>().state;
                             if (authState is AuthAuthenticated) {
@@ -272,7 +315,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                           alignment: Alignment.center,
                                           children: [
                                             MainPlayButton(
-                                              level: state.currentLevel,
+                                              level: state.currentWorldIndex == 2 
+                                                  ? (state.currentLevel - 10).clamp(1, 10) 
+                                                  : (state.currentWorldIndex == 3 
+                                                      ? (state.currentLevel - 20).clamp(1, 10) 
+                                                      : state.currentLevel),
+                                              color: state.currentWorldIndex == 2 ? AppColors.candyGreen : null,
+                                              darkColor: state.currentWorldIndex == 2 ? AppColors.candyGreenDark : null,
                                               onTap: () {
                                                 if (state.lives <= 0) {
                                                   showDialog(
@@ -284,24 +333,38 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                   );
                                                   return;
                                                 }
-                                                Navigator.of(context).push(
-                                                  MaterialPageRoute(
-                                                    builder: (context) => GamePage(
-                                                      level: state.currentLevel,
-                                                      difficulty: state.difficulty,
-                                                      invPlusTime: state.itemPlusTime,
-                                                      invMoreNumbers: state.itemMoreNumbers,
-                                                      invRevealPath: state.itemRevealPath,
+                                                if (state.currentWorldIndex == 1) {
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute(
+                                                      builder: (context) => GamePage(
+                                                        level: state.currentLevel,
+                                                        difficulty: state.difficulty,
+                                                        invPlusTime: state.itemPlusTime,
+                                                        invMoreNumbers: state.itemMoreNumbers,
+                                                        invRevealPath: state.itemRevealPath,
+                                                      ),
                                                     ),
-                                                  ),
-                                                );
+                                                  );
+                                                } else if (state.currentWorldIndex == 2) {
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute(
+                                                      builder: (context) => DesertGamePage(
+                                                        level: (state.currentLevel - 10).clamp(1, 10),
+                                                        difficulty: state.difficulty,
+                                                        invWaterBucket: state.itemWaterBucket,
+                                                        invGoldenWrench: state.itemGoldenWrench,
+                                                        invSandShovel: state.itemSandShovel,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
                                               },
                                             ),
                                           ],
                                         ),
                                       ),
                                       const SizedBox(height: 30),
-                                      _buildExperienceBar(state),
+                                      ExperienceBar(state: state, barKey: _experienceBarKey),
                                       const SizedBox(height: 10),
                                     ],
                                   ),
@@ -316,10 +379,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       Positioned.fill(
                         child: LoadingScreen(
                           isDataLoading: false,
+                          duration: const Duration(milliseconds: 800), // Faster transition
                           onComplete: () {
                             context.read<HomeBloc>().add(FinishWorldLoading());
                           },
                         ),
+                      ),
+                    if (_showWorldUnlock)
+                      WorldUnlockOverlay(
+                        worldIndex: _unlockingWorldIndex,
+                        barKey: _experienceBarKey,
+                        state: state,
+                        onTransition: () {
+                          setState(() => _showWorldUnlock = false);
+                          context.read<HomeBloc>().add(ChangeWorld(_unlockingWorldIndex, _unlockingWorldIndex == 2 ? 'desert' : 'ice'));
+                        },
                       ),
                   ],
                 );
@@ -366,8 +440,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ),
             if (_showPuzzleReward)
               PuzzleRewardAnimation(
-                startOffset: Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height / 2),
+                startOffset: Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height / 2 - 150),
                 endOffset: _puzzleTargetOffset,
+                pieceCount: _puzzleRewardCount,
                 onComplete: () {
                   setState(() => _showPuzzleReward = false);
                 },
@@ -378,47 +453,5 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildExperienceBar(HomeState state) {
-    double progress = state.levelsCompletedInWorld / state.maxLevelsInWorld;
-    int levelsLeft = state.maxLevelsInWorld - state.levelsCompletedInWorld;
-    return Container(
-      width: 320,
-      height: 40,
-      decoration: BoxDecoration(
-        color: Colors.blue.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white, width: 3),
-        boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 8)],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(17),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: FractionallySizedBox(
-                widthFactor: progress.clamp(0.0, 1.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.yellow,
-                    boxShadow: [BoxShadow(color: Colors.yellow.withValues(alpha: 0.5), blurRadius: 6)],
-                  ),
-                ),
-              ),
-            ),
-            Text(
-              'NEXT WORLD IN $levelsLeft LEVELS',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-                shadows: [Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1, 1))],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Removed _buildExperienceBar as it's now in experience_bar.dart
 }

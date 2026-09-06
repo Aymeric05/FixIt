@@ -25,7 +25,7 @@ import 'package:flutter/services.dart';
 class GamePage extends StatefulWidget {
   final int level;
   final GameDifficulty difficulty;
-  final GameMode mode;
+  final FixItGameMode mode;
   final int invPlusTime;
   final int invMoreNumbers;
   final int invRevealPath;
@@ -34,7 +34,7 @@ class GamePage extends StatefulWidget {
     super.key,
     required this.level,
     required this.difficulty,
-    this.mode = GameMode.story,
+    this.mode = FixItGameMode.story,
     this.invPlusTime = 5,
     this.invMoreNumbers = 5,
     this.invRevealPath = 5,
@@ -91,7 +91,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
           final playerIdInner = authStateInner is AuthAuthenticated ? authStateInner.user.id : null;
 
           if (gameStatus == GameStatus.won) {
-            context.read<HomeBloc>().add(CompleteLevel(playerId: playerIdInner));
+            context.read<HomeBloc>().add(CompleteLevel(playerId: playerIdInner, mode: widget.mode, level: widget.level));
             Navigator.pop(context);
           } else {
             final currentLives = context.read<HomeBloc>().state.lives;
@@ -123,7 +123,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                 final authStateInner = context.read<AuthBloc>().state;
                 if (authStateInner is AuthAuthenticated) {
                   final currentUserId = authStateInner.user.id;
-                  if (widget.mode == GameMode.story) {
+                  if (widget.mode == FixItGameMode.story) {
                     final repo = ProgressionRepository();
                     try {
                       await repo.markLevelAsCompleted(
@@ -171,9 +171,12 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                                 borderRadius: 40,
                                 color: Colors.amber,
                                 darkColor: Colors.orange.shade900,
-                                onPressed: () => _showWinDialog(context, state, playerId),
-                                child: const Icon(Icons.emoji_events, color: Colors.white, size: 40),
-                              ),
+                      onPressed: () {
+                        context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode, level: widget.level));
+                        _showWinDialog(context, state, playerId);
+                      },
+                      child: const Icon(Icons.emoji_events, color: Colors.white, size: 40),
+                    ),
                             ),
                         ],
                       );
@@ -194,14 +197,14 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
 
     return BlocBuilder<GameBloc, GameState>(
       builder: (context, state) {
-        final totalSeconds = state.mode == GameMode.dailySeries 
+        final totalSeconds = state.mode == FixItGameMode.dailySeries 
             ? state.seriesAccumulatedTime + (state.initialSeconds - state.remainingSeconds)
             : state.remainingSeconds;
         
         final minutes = (totalSeconds / 60).floor();
         final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
         
-        final isCountingUp = state.mode != GameMode.story;
+        final isCountingUp = state.mode != FixItGameMode.story;
 
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
@@ -262,9 +265,9 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                           ),
                           alignment: Alignment.center,
                           child: Text(
-                            state.mode == GameMode.dailySeries 
+                            state.mode == FixItGameMode.dailySeries 
                                 ? 'SERIES ${widget.level}/3' 
-                                : state.mode == GameMode.dailySingle 
+                                : state.mode == FixItGameMode.dailySingle 
                                     ? 'DAILY LEVEL' 
                                     : 'LEVEL ${widget.level}',
                             style: const TextStyle(
@@ -283,7 +286,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                   // Close Button
                   Padding(
                     padding: const EdgeInsets.only(bottom: 2),
-                    child: CandyButton(
+                       child: CandyButton(
                       width: 52,
                       height: 52,
                       borderRadius: 26,
@@ -292,7 +295,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                       darkColor: Colors.red.shade900,
                       onPressed: () {
                         if (state.status == GameStatus.won) {
-                          context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
+                          context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode, level: widget.level));
                           Navigator.pop(context);
                         } else {
                           final currentLives = context.read<HomeBloc>().state.lives;
@@ -716,16 +719,18 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                 color: AppColors.candyPurple,
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              "YOU WILL LOSE A LIFE!",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.redAccent,
+            if (widget.mode == FixItGameMode.story) ...[
+              const SizedBox(height: 8),
+              const Text(
+                "YOU WILL LOSE A LIFE!",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.redAccent,
+                ),
               ),
-            ),
+            ],
             const SizedBox(height: 30),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -747,8 +752,12 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                   color: AppColors.candyPink,
                   darkColor: AppColors.candyPinkDark,
                   onPressed: () {
+<<<<<<< HEAD
+                    if (widget.mode == FixItGameMode.story) {
+=======
                     context.read<GameBloc>().add(AbandonGame());
                     if (widget.mode == GameMode.story) {
+>>>>>>> origin/main
                       context.read<HomeBloc>().add(LoseLife(playerId: playerId));
                     }
                     Navigator.pop(dialogContext);
@@ -820,8 +829,12 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                 color: AppColors.candyPink,
                 darkColor: AppColors.candyPinkDark,
                 onPressed: () {
+<<<<<<< HEAD
+                  if (widget.mode == FixItGameMode.story) {
+=======
                   context.read<GameBloc>().add(AbandonGame());
                   if (widget.mode == GameMode.story) {
+>>>>>>> origin/main
                     context.read<HomeBloc>().add(LoseLife(playerId: playerId));
                   }
                   Navigator.pop(dialogContext);
@@ -896,7 +909,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                         child: Column(
                           children: [
                             Text(
-                              state.mode == GameMode.dailySeries ? "TOTAL SERIES TIME" : "YOUR TIME", 
+                              state.mode == FixItGameMode.dailySeries ? "TOTAL SERIES TIME" : "YOUR TIME", 
                               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.candyGreenDark)
                             ),
                             Text(timeStr, style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: AppColors.candyGreenDark)),
@@ -918,7 +931,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                       const SizedBox(height: 15),
 
                       // STATS BLOCK - Only show if not intermediate series level
-                      if (state.mode != GameMode.dailySeries || widget.level == 3) ...[
+                      if (state.mode != FixItGameMode.dailySeries || widget.level == 3) ...[
                         // GLOBAL STATS BLOCK
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -972,7 +985,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                           CandyButton(
                             width: 130, height: 55, color: AppColors.candyPink, darkColor: AppColors.candyPinkDark,
                             onPressed: () {
-                              context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
+                              context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode, level: widget.level));
                               Navigator.pop(dialogContext);
                               Navigator.pop(context);
                             },
@@ -981,13 +994,13 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                           CandyButton(
                             width: 130, height: 55, color: AppColors.candyGreen, darkColor: AppColors.candyGreenDark,
                             onPressed: () {
-                              context.read<HomeBloc>().add(CompleteLevel(playerId: playerId));
+                              context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode, level: widget.level));
                               Navigator.pop(dialogContext);
                               
-                              if (widget.mode == GameMode.dailySeries && widget.level < 3) {
+                              if (widget.mode == FixItGameMode.dailySeries && widget.level < 3) {
                                 final nextLevel = widget.level + 1;
-                                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => GamePage(level: nextLevel, difficulty: widget.difficulty, mode: GameMode.dailySeries)));
-                              } else if (widget.mode == GameMode.story) {
+                                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => GamePage(level: nextLevel, difficulty: widget.difficulty, mode: FixItGameMode.dailySeries)));
+                              } else if (widget.mode == FixItGameMode.story) {
                                 final nextLevel = widget.level + 1;
                                 Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => GamePage(level: nextLevel, difficulty: widget.difficulty)));
                               } else {
@@ -995,7 +1008,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                               }
                             },
                             child: Text(
-                              (widget.mode == GameMode.dailySeries && widget.level < 3) || widget.mode == GameMode.story 
+                              (widget.mode == FixItGameMode.dailySeries && widget.level < 3) || widget.mode == FixItGameMode.story 
                                 ? 'NEXT' 
                                 : 'CLOSE', 
                               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)

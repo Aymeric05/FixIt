@@ -8,9 +8,16 @@ class HomeState extends Equatable {
   final int lives;
   final int maxLives;
   final int puzzlePieces;
+  final int gainedPuzzlePieces; // New field to track rewards for animation
   final int itemPlusTime;
   final int itemMoreNumbers;
   final int itemRevealPath;
+
+  // World 2 Items
+  final int itemWaterBucket;
+  final int itemGoldenWrench;
+  final int itemSandShovel;
+
   final GameDifficulty difficulty;
   final bool isLoading;
   
@@ -32,15 +39,22 @@ class HomeState extends Equatable {
   final DateTime? lastDailyPuzzleAt;
   final bool isDailyCompleted;
   final bool isSeriesCompleted;
+  final Set<String> unlockedWorlds; 
+  final bool isDebugLevelActive;
+  final int? justUnlockedWorldIndex; // 2 or 3 if a world was JUST unlocked
 
   const HomeState({
     this.currentLevel = 1,
     this.lives = 5,
     this.maxLives = 5,
     this.puzzlePieces = 50,
+    this.gainedPuzzlePieces = 0,
     this.itemPlusTime = 5,
     this.itemMoreNumbers = 5,
     this.itemRevealPath = 5,
+    this.itemWaterBucket = 5,
+    this.itemGoldenWrench = 5,
+    this.itemSandShovel = 5,
     this.difficulty = GameDifficulty.easy,
     this.isLoading = false,
     this.isMusicEnabled = true,
@@ -58,6 +72,9 @@ class HomeState extends Equatable {
     this.lastDailyPuzzleAt,
     this.isDailyCompleted = false,
     this.isSeriesCompleted = false,
+    this.unlockedWorlds = const {'meadow'},
+    this.isDebugLevelActive = false,
+    this.justUnlockedWorldIndex,
   });
 
   HomeState copyWith({
@@ -65,9 +82,13 @@ class HomeState extends Equatable {
     int? lives,
     int? maxLives,
     int? puzzlePieces,
+    int? gainedPuzzlePieces,
     int? itemPlusTime,
     int? itemMoreNumbers,
     int? itemRevealPath,
+    int? itemWaterBucket,
+    int? itemGoldenWrench,
+    int? itemSandShovel,
     GameDifficulty? difficulty,
     bool? isLoading,
     bool? isMusicEnabled,
@@ -85,15 +106,22 @@ class HomeState extends Equatable {
     DateTime? lastDailyPuzzleAt,
     bool? isDailyCompleted,
     bool? isSeriesCompleted,
+    Set<String>? unlockedWorlds,
+    bool? isDebugLevelActive,
+    int? justUnlockedWorldIndex,
   }) {
     return HomeState(
       currentLevel: currentLevel ?? this.currentLevel,
       lives: lives ?? this.lives,
       maxLives: maxLives ?? this.maxLives,
       puzzlePieces: puzzlePieces ?? this.puzzlePieces,
+      gainedPuzzlePieces: gainedPuzzlePieces ?? this.gainedPuzzlePieces,
       itemPlusTime: itemPlusTime ?? this.itemPlusTime,
       itemMoreNumbers: itemMoreNumbers ?? this.itemMoreNumbers,
       itemRevealPath: itemRevealPath ?? this.itemRevealPath,
+      itemWaterBucket: itemWaterBucket ?? this.itemWaterBucket,
+      itemGoldenWrench: itemGoldenWrench ?? this.itemGoldenWrench,
+      itemSandShovel: itemSandShovel ?? this.itemSandShovel,
       difficulty: difficulty ?? this.difficulty,
       isLoading: isLoading ?? this.isLoading,
       isMusicEnabled: isMusicEnabled ?? this.isMusicEnabled,
@@ -111,6 +139,9 @@ class HomeState extends Equatable {
       lastDailyPuzzleAt: lastDailyPuzzleAt ?? this.lastDailyPuzzleAt,
       isDailyCompleted: isDailyCompleted ?? this.isDailyCompleted,
       isSeriesCompleted: isSeriesCompleted ?? this.isSeriesCompleted,
+      unlockedWorlds: unlockedWorlds ?? this.unlockedWorlds,
+      isDebugLevelActive: isDebugLevelActive ?? this.isDebugLevelActive,
+      justUnlockedWorldIndex: justUnlockedWorldIndex, // Always use provided value (nullable)
     );
   }
 
@@ -120,9 +151,13 @@ class HomeState extends Equatable {
         lives,
         maxLives,
         puzzlePieces,
+        gainedPuzzlePieces,
         itemPlusTime,
         itemMoreNumbers,
         itemRevealPath,
+        itemWaterBucket,
+        itemGoldenWrench,
+        itemSandShovel,
         difficulty,
         isLoading,
         isMusicEnabled,
@@ -140,5 +175,8 @@ class HomeState extends Equatable {
         lastDailyPuzzleAt,
         isDailyCompleted,
         isSeriesCompleted,
+        unlockedWorlds,
+        isDebugLevelActive,
+        justUnlockedWorldIndex,
       ];
 }

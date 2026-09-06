@@ -22,7 +22,7 @@ class GameState extends Equatable {
   final int levelNumber;
   final LevelWinSummary? winSummary;
   final List<FriendRankEntry> friendsLeaderboard;
-  final GameMode mode;
+  final FixItGameMode mode;
   final int seriesAccumulatedTime;
   final int? wonTime; // Explicit time when won, to avoid recalculation bugs
   final bool isPaused;
@@ -52,7 +52,7 @@ class GameState extends Equatable {
     this.levelNumber = 1,
     this.winSummary,
     this.friendsLeaderboard = const [],
-    this.mode = GameMode.story,
+    this.mode = FixItGameMode.story,
     this.seriesAccumulatedTime = 0,
     this.wonTime,
     this.isPaused = false,
@@ -81,7 +81,7 @@ class GameState extends Equatable {
     int? levelNumber,
     LevelWinSummary? winSummary,
     List<FriendRankEntry>? friendsLeaderboard,
-    GameMode? mode,
+    FixItGameMode? mode,
     int? seriesAccumulatedTime,
     int? wonTime,
     bool? isPaused,

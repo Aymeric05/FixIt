@@ -45,6 +45,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<UseItemMoreNumbers>(_onUseItemMoreNumbers);
     on<UseItemRevealPath>(_onUseItemRevealPath);
     on<RecoverFromDizzy>(_onRecoverFromDizzy);
+    on<ResetAngryFace>(_onResetAngryFace);
     on<AbandonGame>(_onAbandonGame);
   }
 
@@ -55,10 +56,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     int initialSeconds = 300;
     int hintsCount = 12;
 
-    if (event.mode == GameMode.dailySingle) {
+    if (event.mode == FixItGameMode.dailySingle) {
       initialSeconds = 3600; // 1 hour (effectively no limit)
       hintsCount = 12;
-    } else if (event.mode == GameMode.dailySeries) {
+    } else if (event.mode == FixItGameMode.dailySeries) {
       initialSeconds = 3600; 
       hintsCount = 10 + event.level; // Slightly harder per level in series
     } else {
@@ -92,9 +93,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     Set<String> walls;
     Map<GridOffset, int> hintSteps = {};
 
-    final String worldId = event.mode == GameMode.story 
+    final String worldId = event.mode == FixItGameMode.story 
         ? 'world_1' 
-        : event.mode == GameMode.dailySeries 
+        : event.mode == FixItGameMode.dailySeries 
             ? _dailyRepo.getTodaySeriesWorldId() 
             : _dailyRepo.getTodayWorldId();
 
@@ -109,10 +110,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       );
     }
 
-    if (event.mode != GameMode.story) {
+    if (event.mode != FixItGameMode.story) {
       final daily = _dailyRepo.generateDailyLevel(
         worldLevel: event.level,
-        isSeries: event.mode == GameMode.dailySeries,
+        isSeries: event.mode == FixItGameMode.dailySeries,
       );
       hints = daily.hints;
       solution = daily.solution;
@@ -201,7 +202,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     if (event.playerId.isNotEmpty) {
       final status = await _dailyRepo.getDailyStatus(event.playerId);
       if (status != null) {
-        if (event.mode == GameMode.dailySingle && status.isDailyLevelCompleted) {
+        if (event.mode == FixItGameMode.dailySingle && status.isDailyLevelCompleted) {
           final summary = await _progressionRepo.getLevelWinSummary(
             worldId: _dailyRepo.getTodayWorldId(),
             levelNumber: event.level,
@@ -221,7 +222,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
             ));
           }
           return;
-        } else if (event.mode == GameMode.dailySeries) {
+        } else if (event.mode == FixItGameMode.dailySeries) {
           if (event.level <= status.seriesCurrentLevel) {
             final summary = await _progressionRepo.getLevelWinSummary(
               worldId: _dailyRepo.getTodaySeriesWorldId(),
@@ -250,7 +251,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       }
     }
 
-    if (event.mode == GameMode.story && event.level == 1 && event.playerId.isNotEmpty) {
+    if (event.mode == FixItGameMode.story && event.level == 1 && event.playerId.isNotEmpty) {
       unawaited(_progressionRepo.grantLevel1Reward(event.playerId).catchError((e) => AppLogger.error('Reward error', e)));
     }
 
@@ -258,7 +259,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       _startTimer(finalRemainingSeconds);
     }
     
-    if (event.mode == GameMode.story) {
+    if (event.mode == FixItGameMode.story) {
       unawaited(_progressionRepo.ensureNextLevelsExist('world_1', event.level));
     }
   }
@@ -338,24 +339,24 @@ class GameBloc extends Bloc<GameEvent, GameState> {
               emit(state.copyWith(currentPath: newPath, isAngry: false));
 
               final timeTaken = state.initialSeconds - state.remainingSeconds;
-              final worldId = state.mode == GameMode.story ? 'world_1' : _dailyRepo.getTodayWorldId();
+              final worldId = state.mode == FixItGameMode.story ? 'world_1' : _dailyRepo.getTodayWorldId();
 
               int displayTime = timeTaken;
-              if (state.mode == GameMode.dailySingle && _playerId != null) {
+              if (state.mode == FixItGameMode.dailySingle && _playerId != null) {
                 await _dailyRepo.updateDailyStatus(playerId: _playerId!, isDailyLevelCompleted: true, dailyLevelTime: timeTaken);
                 await _progressionRepo.markLevelAsCompleted(playerSupabaseId: _playerId!, worldId: worldId, levelNumber: state.levelNumber, timeSeconds: timeTaken, updateProgression: false);
-              } else if (state.mode == GameMode.dailySeries && _playerId != null) {
+              } else if (state.mode == FixItGameMode.dailySeries && _playerId != null) {
                 displayTime = state.seriesAccumulatedTime + timeTaken;
                 await _dailyRepo.updateDailyStatus(playerId: _playerId!, seriesCurrentLevel: state.levelNumber, seriesAccumulatedTime: displayTime, isSeriesCompleted: state.levelNumber >= 3);
                 await _progressionRepo.markLevelAsCompleted(playerSupabaseId: _playerId!, worldId: _dailyRepo.getTodaySeriesWorldId(), levelNumber: state.levelNumber, timeSeconds: displayTime, updateProgression: false);
               }
 
               LevelWinSummary? summary;
-              if (state.mode == GameMode.story) {
+              if (state.mode == FixItGameMode.story) {
                  summary = await _progressionRepo.getLevelWinSummary(worldId: 'world_1', levelNumber: state.levelNumber, playerId: _playerId ?? '', playerTime: timeTaken);
-              } else if (state.mode == GameMode.dailySingle) {
+              } else if (state.mode == FixItGameMode.dailySingle) {
                  summary = await _progressionRepo.getLevelWinSummary(worldId: _dailyRepo.getTodayWorldId(), levelNumber: state.levelNumber, playerId: _playerId ?? '', playerTime: timeTaken);
-              } else if (state.mode == GameMode.dailySeries) {
+              } else if (state.mode == FixItGameMode.dailySeries) {
                  summary = await _progressionRepo.getLevelWinSummary(worldId: _dailyRepo.getTodaySeriesWorldId(), levelNumber: state.levelNumber, playerId: _playerId ?? '', playerTime: displayTime);
               }
 
@@ -371,9 +372,27 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         _triggerCollision(emit, tapped.row - last.row, tapped.col - last.col);
       }
     } else {
-      if (event.isDrag) {
-        _triggerCollision(emit, (tapped.row - last.row).sign.toInt(), (tapped.col - last.col).sign.toInt());
-      }
+      // NOT ADJACENT (Too far)
+      // Just make the snake angry as requested, for 0.5s
+      _triggerAngryFace(emit);
+    }
+  }
+
+  void _triggerAngryFace(Emitter<GameState> emit) {
+    if (state.isAngry && !state.isDizzy) return;
+    
+    emit(state.copyWith(isAngry: true));
+    
+    _dizzyTimer?.cancel();
+    _dizzyTimer = Timer(const Duration(milliseconds: 500), () {
+      add(ResetAngryFace());
+    });
+  }
+
+  void _onResetAngryFace(ResetAngryFace event, Emitter<GameState> emit) {
+    if (state.isAngry && !state.isDizzy) {
+      // Only reset if we are not actually in an error state (re-calculate)
+      emit(state.copyWith(isAngry: _checkIfAngry(state.currentPath)));
     }
   }
 
@@ -406,9 +425,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   }
 
   Future<void> _onLoadFriendsLeaderboard(LoadFriendsLeaderboard event, Emitter<GameState> emit) async {
-    final worldId = state.mode == GameMode.story 
+    final worldId = state.mode == FixItGameMode.story 
         ? 'world_1' 
-        : state.mode == GameMode.dailySeries 
+        : state.mode == FixItGameMode.dailySeries 
             ? _dailyRepo.getTodaySeriesWorldId() 
             : _dailyRepo.getTodayWorldId();
             
@@ -617,9 +636,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   Future<void> _saveCurrentSession() async {
     if (_playerId == null || _playerId!.isEmpty || state.status != GameStatus.playing) return;
 
-    final String worldId = state.mode == GameMode.story 
+    final String worldId = state.mode == FixItGameMode.story 
         ? 'world_1' 
-        : state.mode == GameMode.dailySeries 
+        : state.mode == FixItGameMode.dailySeries 
             ? _dailyRepo.getTodaySeriesWorldId() 
             : _dailyRepo.getTodayWorldId();
 
@@ -636,9 +655,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   Future<void> _deleteCurrentSession() async {
     if (_playerId == null || _playerId!.isEmpty) return;
 
-    final String worldId = state.mode == GameMode.story 
+    final String worldId = state.mode == FixItGameMode.story 
         ? 'world_1' 
-        : state.mode == GameMode.dailySeries 
+        : state.mode == FixItGameMode.dailySeries 
             ? _dailyRepo.getTodaySeriesWorldId() 
             : _dailyRepo.getTodayWorldId();
 

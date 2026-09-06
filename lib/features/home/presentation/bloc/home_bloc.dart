@@ -8,6 +8,7 @@ import 'package:fixit/core/database/app_database.dart';
 import 'package:fixit/core/repositories/progression_repository.dart';
 import 'package:fixit/core/repositories/daily_repository.dart';
 import 'package:fixit/core/utils/app_logger.dart';
+import 'package:fixit/core/models/daily_mode.dart';
 
 part 'home_event.dart';
 part 'home_state.dart';
@@ -37,6 +38,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<MidnightReached>(_onMidnightReached);
     on<FinishWorldLoading>(_onFinishWorldLoading);
     on<AppResumed>(_onAppResumed);
+    on<DebugSetLevel>(_onDebugSetLevel);
   }
 
   Future<void> _onLoadHomeData(LoadHomeData event, Emitter<HomeState> emit) async {
@@ -173,6 +175,35 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       // Fetch Daily Status
       final dailyStatus = await _dailyRepo.getDailyStatus(playerSupabaseId);
 
+      // Determine unlocked worlds
+      final Set<String> unlocked = {'meadow'};
+      if (progression != null) {
+        if (progression.currentLevel > 10) unlocked.add('desert');
+        if (progression.currentLevel > 20) unlocked.add('ice');
+      }
+
+      int? justUnlocked;
+      if (state.lastAction == HomeLastAction.win) {
+         if (progression != null && progression.currentLevel == 11 && !state.unlockedWorlds.contains('desert')) justUnlocked = 2;
+         if (progression != null && progression.currentLevel == 21 && !state.unlockedWorlds.contains('ice')) justUnlocked = 3;
+      }
+
+      // Progression calculation logic:
+      // World 1 (Meadow): Levels 1-10
+      // World 2 (Desert): Levels 1-10 (offset from global 11)
+      // We use currentWorldIndex to filter logic in the UI
+      
+      int levelsInWorld = 0;
+      if (progression != null) {
+        if (state.currentWorldIndex == 1) {
+          levelsInWorld = min(10, progression.currentLevel - 1);
+        } else if (state.currentWorldIndex == 2) {
+          levelsInWorld = progression.currentLevel > 10 ? (progression.currentLevel - 11) : 0;
+        } else if (state.currentWorldIndex == 3) {
+          levelsInWorld = progression.currentLevel > 20 ? (progression.currentLevel - 21) : 0;
+        }
+      }
+
       emit(state.copyWith(
         lives: lives,
         nextLifeTime: nextLifeTime,
@@ -180,16 +211,26 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         itemPlusTime: player.itemPlusTime,
         itemMoreNumbers: player.itemMoreNumbers,
         itemRevealPath: player.itemRevealPath,
+        itemWaterBucket: player.itemWaterBucket,
+        itemGoldenWrench: player.itemGoldenWrench,
+        itemSandShovel: player.itemSandShovel,
         currentLevel: progression?.currentLevel ?? 1,
-        levelsCompletedInWorld: (progression?.currentLevel ?? 1) - 1,
+        levelsCompletedInWorld: levelsInWorld,
         isLoading: false,
-        currentDate: _dailyRepo.getTodayWorldId(), // Used to detect day changes
+        currentDate: _dailyRepo.getTodayWorldId(), 
         isDailyCompleted: dailyStatus?.isDailyLevelCompleted ?? false,
         isSeriesCompleted: dailyStatus?.isSeriesCompleted ?? false,
+        unlockedWorlds: unlocked,
+        justUnlockedWorldIndex: justUnlocked,
       ));
+
+      // Reset justUnlockedWorldIndex after emitting once
+      if (justUnlocked != null) {
+        emit(state.copyWith(justUnlockedWorldIndex: null));
+      }
     } else {
-      AppLogger.log('HomeBloc: No local player found yet');
-      emit(state.copyWith(isLoading: false));
+      AppLogger.log('HomeBloc: No local player found yet. Resetting to initial state.');
+      emit(const HomeState());
     }
   }
 
@@ -257,10 +298,16 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     int plusTime = state.itemPlusTime;
     int moreNums = state.itemMoreNumbers;
     int revealPath = state.itemRevealPath;
+    int waterBucket = state.itemWaterBucket;
+    int goldenWrench = state.itemGoldenWrench;
+    int sandShovel = state.itemSandShovel;
 
     if (event.itemKey == 'plus_time') plusTime++;
     if (event.itemKey == 'more_numbers') moreNums++;
     if (event.itemKey == 'reveal_path') revealPath++;
+    if (event.itemKey == 'water_bucket') waterBucket++;
+    if (event.itemKey == 'golden_wrench') goldenWrench++;
+    if (event.itemKey == 'sand_shovel') sandShovel++;
 
     await (_db.update(_db.players)..where((t) => t.id.isNotNull())).write(
       PlayersCompanion(
@@ -268,6 +315,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         itemPlusTime: drift.Value(plusTime),
         itemMoreNumbers: drift.Value(moreNums),
         itemRevealPath: drift.Value(revealPath),
+        itemWaterBucket: drift.Value(waterBucket),
+        itemGoldenWrench: drift.Value(goldenWrench),
+        itemSandShovel: drift.Value(sandShovel),
       ),
     );
 
@@ -276,6 +326,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       itemPlusTime: plusTime,
       itemMoreNumbers: moreNums,
       itemRevealPath: revealPath,
+      itemWaterBucket: waterBucket,
+      itemGoldenWrench: goldenWrench,
+      itemSandShovel: sandShovel,
     ));
   }
 
@@ -351,35 +404,60 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   Future<void> _onCompleteLevel(CompleteLevel event, Emitter<HomeState> emit) async {
-    // Increment puzzle pieces by 5 for completing a level
-    try {
-      final player = await (_db.select(_db.players)
-            ..where((t) => event.playerId != null && event.playerId!.isNotEmpty 
-                ? t.supabaseId.equals(event.playerId!) 
-                : t.id.isNotNull()))
-          .getSingle();
-      
-      final newPuzzles = player.puzzlePieces + 5;
-      
-      await (_db.update(_db.players)
-            ..where((t) => event.playerId != null && event.playerId!.isNotEmpty 
-                ? t.supabaseId.equals(event.playerId!) 
-                : t.id.isNotNull()))
-          .write(PlayersCompanion(puzzlePieces: drift.Value(newPuzzles)));
-          
-      if (event.playerId != null && event.playerId!.isNotEmpty) {
-        unawaited(DatabaseService().supabase.from('profiles').update({'puzzle_pieces': newPuzzles}).eq('id', event.playerId!));
+    // Increment puzzle pieces for completing a level
+    // 20 for Daily/Series End, 5 for Story
+    final bool isSeriesEnd = event.mode == FixItGameMode.dailySeries && event.level >= 3;
+    final bool isSingleDaily = event.mode == FixItGameMode.dailySingle;
+    final bool isStory = event.mode == FixItGameMode.story;
+
+    final int reward = (isSingleDaily || isSeriesEnd) ? 20 : (isStory ? 5 : 0);
+    
+    if (reward > 0) {
+      try {
+        final player = await (_db.select(_db.players)
+              ..where((t) => event.playerId != null && event.playerId!.isNotEmpty 
+                  ? t.supabaseId.equals(event.playerId!) 
+                  : t.id.isNotNull()))
+            .getSingle();
+        
+        final newPuzzles = player.puzzlePieces + reward;
+        
+        await (_db.update(_db.players)
+              ..where((t) => event.playerId != null && event.playerId!.isNotEmpty 
+                  ? t.supabaseId.equals(event.playerId!) 
+                  : t.id.isNotNull()))
+            .write(PlayersCompanion(puzzlePieces: drift.Value(newPuzzles)));
+            
+        if (event.playerId != null && event.playerId!.isNotEmpty) {
+          unawaited(DatabaseService().supabase.from('profiles').update({'puzzle_pieces': newPuzzles}).eq('id', event.playerId!));
+        }
+      } catch (e) {
+        AppLogger.error('Error incrementing puzzles on complete level', e);
       }
-    } catch (e) {
-      AppLogger.error('Error incrementing puzzles on complete level', e);
     }
 
-    emit(state.copyWith(lastAction: HomeLastAction.win));
+    // IMPORTANT: World logic
+    // If you are in World 1 and you finish level 10, the NEXT refresh will see currentLevel 11.
+    // The UI listener will trigger the WorldUnlockOverlay.
+    
+    // Emit win state with specific gained pieces for celebration
+    emit(state.copyWith(
+      lastAction: reward > 0 ? HomeLastAction.win : HomeLastAction.none, 
+      gainedPuzzlePieces: reward,
+    ));
+
     // Hard refresh from DB for the specific player
     await _refreshProgression(emit, event.playerId);
+    
+    // IMPORTANT: Reset gained pieces so listener only triggers once
+    emit(state.copyWith(gainedPuzzlePieces: 0, lastAction: HomeLastAction.none));
   }
 
   Future<void> _onLoseLife(LoseLife event, Emitter<HomeState> emit) async {
+    // Safety check: Never lose life in daily modes (logic usually in GamePage, but added here too)
+    // Actually LoseLife doesn't know about the mode.
+    // I will rely on GamePage not sending it.
+    
     if (state.lives > 0) {
       final newLives = state.lives - 1;
       final now = DateTime.now();
@@ -423,6 +501,28 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   void _onFinishWorldLoading(FinishWorldLoading event, Emitter<HomeState> emit) {
     emit(state.copyWith(isWorldLoading: false));
+  }
+
+  Future<void> _onDebugSetLevel(DebugSetLevel event, Emitter<HomeState> emit) async {
+    final user = DatabaseService().supabase.auth.currentUser;
+    if (user != null) {
+      if (event.isActive) {
+        // Force update the DB locally so the refresh sees it
+        await _progressionRepo.markLevelAsCompleted(
+          playerSupabaseId: user.id,
+          worldId: 'world_1',
+          levelNumber: event.level - 1,
+          timeSeconds: 0,
+        );
+      } else {
+        // When deactivating, we just reload the real data from DB
+      }
+      
+      emit(state.copyWith(isDebugLevelActive: event.isActive));
+      
+      // Crucial: await the refresh so the state is updated before the dialog closes
+      await _refreshProgression(emit, user.id);
+    }
   }
 
   void _startRechargeTimer() {

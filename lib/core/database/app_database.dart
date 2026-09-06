@@ -18,6 +18,12 @@ class Players extends Table {
   IntColumn get itemPlusTime => integer().withDefault(const Constant(5))();
   IntColumn get itemMoreNumbers => integer().withDefault(const Constant(5))();
   IntColumn get itemRevealPath => integer().withDefault(const Constant(5))();
+  
+  // World 2 Items (Desert)
+  IntColumn get itemWaterBucket => integer().withDefault(const Constant(5))();
+  IntColumn get itemGoldenWrench => integer().withDefault(const Constant(5))();
+  IntColumn get itemSandShovel => integer().withDefault(const Constant(5))();
+
   DateTimeColumn get lastLifeLostAt => dateTime().nullable()();
   
   DateTimeColumn get updatedAt => dateTime().nullable()();
@@ -139,7 +145,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? e]) : super(e ?? conn.openConnection());
 
   @override
-  int get schemaVersion => 6; // Increment version
+  int get schemaVersion => 7; // Increment from 6 to 7
 
   @override
   MigrationStrategy get migration {
@@ -164,6 +170,15 @@ class AppDatabase extends _$AppDatabase {
           }
           if (!cols.contains('item_reveal_path')) {
             await customStatement('ALTER TABLE players ADD COLUMN item_reveal_path INTEGER DEFAULT 5;');
+          }
+          if (!cols.contains('item_water_bucket')) {
+            await customStatement('ALTER TABLE players ADD COLUMN item_water_bucket INTEGER DEFAULT 5;');
+          }
+          if (!cols.contains('item_golden_wrench')) {
+            await customStatement('ALTER TABLE players ADD COLUMN item_golden_wrench INTEGER DEFAULT 5;');
+          }
+          if (!cols.contains('item_sand_shovel')) {
+            await customStatement('ALTER TABLE players ADD COLUMN item_sand_shovel INTEGER DEFAULT 5;');
           }
         } catch (e) {
           AppLogger.error('Error checking players table columns', e);
@@ -193,6 +208,9 @@ class AppDatabase extends _$AppDatabase {
               item_plus_time = COALESCE(item_plus_time, 5),
               item_more_numbers = COALESCE(item_more_numbers, 5),
               item_reveal_path = COALESCE(item_reveal_path, 5),
+              item_water_bucket = COALESCE(item_water_bucket, 5),
+              item_golden_wrench = COALESCE(item_golden_wrench, 5),
+              item_sand_shovel = COALESCE(item_sand_shovel, 5),
               total_games_played = COALESCE(total_games_played, 0),
               highscore = COALESCE(highscore, 0),
               username = COALESCE(username, 'Guest')
@@ -201,6 +219,9 @@ class AppDatabase extends _$AppDatabase {
                OR item_plus_time IS NULL 
                OR item_more_numbers IS NULL 
                OR item_reveal_path IS NULL
+               OR item_water_bucket IS NULL
+               OR item_golden_wrench IS NULL
+               OR item_sand_shovel IS NULL
                OR total_games_played IS NULL
                OR highscore IS NULL
                OR username IS NULL;
@@ -245,6 +266,11 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 6) {
           await m.createTable(activeGameStates);
+        }
+        if (from < 7) {
+          await m.addColumn(players, players.itemWaterBucket);
+          await m.addColumn(players, players.itemGoldenWrench);
+          await m.addColumn(players, players.itemSandShovel);
         }
       },
     );

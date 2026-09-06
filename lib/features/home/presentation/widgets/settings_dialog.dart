@@ -93,6 +93,17 @@ class _SettingsDialogState extends State<SettingsDialog> {
                     style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
                   ),
                 ),
+              const SizedBox(height: 10),
+              if (!_isResetting)
+                _buildSettingRow(
+                  context,
+                  icon: Icons.bug_report,
+                  label: 'Debug Level 10',
+                  value: state.isDebugLevelActive,
+                  onToggle: () {
+                    context.read<HomeBloc>().add(DebugSetLevel(10, isActive: !state.isDebugLevelActive));
+                  },
+                ),
             ],
           ),
         );
