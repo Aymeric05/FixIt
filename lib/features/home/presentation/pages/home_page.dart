@@ -184,8 +184,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         final box = key.currentContext!.findRenderObject() as RenderBox;
         final position = box.localToGlobal(Offset.zero);
         setState(() {
-          // Add +10 Y offset to land closer to center of the bubble
-          _puzzleTargetOffset = Offset(position.dx + box.size.width / 2, position.dy + box.size.height / 2 + 10);
+          // Add +25 Y offset to land perfectly in the middle of the bubble (downward shift)
+          _puzzleTargetOffset = Offset(position.dx + box.size.width / 2, position.dy + box.size.height / 2 + 25);
           _puzzleRewardCount = (gainedPieces >= 20) ? 10 : 5;
           _showPuzzleReward = true;
         });
@@ -277,10 +277,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               builder: (context, state) {
                 return Stack(
                   children: [
-                    Column(
-                      children: [
                         TopNavBar(
                           unlockedWorlds: state.unlockedWorlds,
+                          currentWorldIndex: state.currentWorldIndex,
                           onDailyPressed: () async {
                             final authState = context.read<AuthBloc>().state;
                             if (authState is AuthAuthenticated) {

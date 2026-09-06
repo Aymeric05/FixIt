@@ -194,13 +194,17 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       // We use currentWorldIndex to filter logic in the UI
       
       int levelsInWorld = 0;
+      int maxLevelsInWorld = 10;
       if (progression != null) {
         if (state.currentWorldIndex == 1) {
           levelsInWorld = min(10, progression.currentLevel - 1);
+          maxLevelsInWorld = 10;
         } else if (state.currentWorldIndex == 2) {
           levelsInWorld = progression.currentLevel > 10 ? (progression.currentLevel - 11) : 0;
+          maxLevelsInWorld = 20; // World 2 now requires 20 levels
         } else if (state.currentWorldIndex == 3) {
-          levelsInWorld = progression.currentLevel > 20 ? (progression.currentLevel - 21) : 0;
+          levelsInWorld = progression.currentLevel > 30 ? (progression.currentLevel - 31) : 0;
+          maxLevelsInWorld = 30;
         }
       }
 
@@ -208,6 +212,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         lives: lives,
         nextLifeTime: nextLifeTime,
         puzzlePieces: player.puzzlePieces,
+        animatedPuzzlePieces: player.puzzlePieces, // Keep in sync on load
         itemPlusTime: player.itemPlusTime,
         itemMoreNumbers: player.itemMoreNumbers,
         itemRevealPath: player.itemRevealPath,
@@ -216,6 +221,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         itemSandShovel: player.itemSandShovel,
         currentLevel: progression?.currentLevel ?? 1,
         levelsCompletedInWorld: levelsInWorld,
+        maxLevelsInWorld: maxLevelsInWorld,
         isLoading: false,
         currentDate: _dailyRepo.getTodayWorldId(), 
         isDailyCompleted: dailyStatus?.isDailyLevelCompleted ?? false,
@@ -449,7 +455,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     // Hard refresh from DB for the specific player
     await _refreshProgression(emit, event.playerId);
     
-    // IMPORTANT: Reset gained pieces so listener only triggers once
+    // UI will update animatedPuzzlePieces via timer or listener later
+    // For now we just reset gained pieces trigger
     emit(state.copyWith(gainedPuzzlePieces: 0, lastAction: HomeLastAction.none));
   }
 
