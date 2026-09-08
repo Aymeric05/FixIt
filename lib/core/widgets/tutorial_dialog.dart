@@ -5,9 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/models/grid_offset.dart';
-import 'package:fixit/features/game/presentation/pages/game_page.dart';
-import 'package:fixit/features/game/presentation/bloc/game_bloc.dart';
-import 'package:fixit/features/game/presentation/bloc/game_event.dart';
+import 'package:fixit/features/game/presentation/meadow/pages/meadow_game_page.dart';
+import 'package:fixit/features/game/presentation/meadow/bloc/meadow_game_bloc.dart';
+import 'package:fixit/features/game/presentation/meadow/bloc/meadow_game_event.dart';
 
 class TutorialDialog extends StatefulWidget {
   final String tutorialKey;
@@ -25,7 +25,7 @@ class TutorialDialog extends StatefulWidget {
     final hasSeen = prefs.getBool(tutorialKey) ?? false;
 
     if (!hasSeen && context.mounted) {
-      context.read<GameBloc>().add(PauseTimer());
+      context.read<MeadowGameBloc>().add(PauseTimer());
 
       await showDialog(
         context: context,
@@ -38,7 +38,7 @@ class TutorialDialog extends StatefulWidget {
       await prefs.setBool(tutorialKey, true);
       
       if (context.mounted) {
-        context.read<GameBloc>().add(ResumeTimer());
+        context.read<MeadowGameBloc>().add(ResumeTimer());
       }
     }
   }

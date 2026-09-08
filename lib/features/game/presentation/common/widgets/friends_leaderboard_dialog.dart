@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fixit/core/theme/app_colors.dart';
-import 'package:fixit/features/game/presentation/bloc/game_bloc.dart';
-import 'package:fixit/features/game/presentation/bloc/game_event.dart';
-import 'package:fixit/features/game/presentation/bloc/game_state.dart';
+import 'package:fixit/features/game/presentation/meadow/bloc/meadow_game_bloc.dart';
+import 'package:fixit/features/game/presentation/meadow/bloc/meadow_game_event.dart';
+import 'package:fixit/features/game/presentation/meadow/bloc/meadow_game_state.dart';
 import 'package:fixit/features/home/presentation/widgets/candy_dialog.dart';
 
 class FriendsLeaderboardDialog extends StatelessWidget {
@@ -13,19 +13,15 @@ class FriendsLeaderboardDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Trigger load if not already loaded
-    context.read<GameBloc>().add(LoadFriendsLeaderboard(playerId: playerId));
+    context.read<MeadowGameBloc>().add(LoadFriendsLeaderboard(playerId: playerId));
 
     return CandyDialog(
       title: 'RANKINGS',
       content: SizedBox(
         height: 350,
         width: 300,
-        child: BlocBuilder<GameBloc, GameState>(
+        child: BlocBuilder<MeadowGameBloc, MeadowGameState>(
           builder: (context, state) {
-            if (state.friendsLeaderboard.isEmpty && state.winSummary?.friendCompletionCount != 0) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
             final list = state.friendsLeaderboard;
             if (list.isEmpty) {
               return const Center(child: Text('No friends ranked yet.'));

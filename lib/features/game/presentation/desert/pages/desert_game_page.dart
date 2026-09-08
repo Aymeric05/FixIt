@@ -1,9 +1,9 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fixit/features/game/presentation/bloc/desert_game_bloc.dart';
-import 'package:fixit/features/game/presentation/bloc/desert_game_event.dart';
-import 'package:fixit/features/game/presentation/bloc/desert_game_state.dart';
+import 'package:fixit/features/game/presentation/desert/bloc/desert_game_bloc.dart';
+import 'package:fixit/features/game/presentation/desert/bloc/desert_game_event.dart';
+import 'package:fixit/features/game/presentation/desert/bloc/desert_game_state.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/core/widgets/candy_button.dart';

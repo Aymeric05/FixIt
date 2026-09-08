@@ -4,14 +4,14 @@ import 'package:fixit/core/models/grid_offset.dart';
 import 'package:fixit/core/models/daily_mode.dart';
 import 'package:fixit/core/models/level_win_summary.dart';
 
-enum GameStatus { initial, playing, winning, won, lost }
+enum MeadowGameStatus { initial, playing, winning, won, lost }
 
-class GameState extends Equatable {
+class MeadowGameState extends Equatable {
   final List<List<int?>> hints; // The pre-filled numbers (1 to N)
   final List<GridOffset> currentPath; // The user's current progress
   final int remainingSeconds;
   final int initialSeconds; // Added to calculate time taken
-  final GameStatus status;
+  final MeadowGameStatus status;
   final List<GridOffset> solutionPath; // The generated 1-36 path
   final Map<GridOffset, int> hintSteps; // Map grid position to step index (0-35)
   final Set<String> walls; // "r1,c1-r2,c2" formatted strings for walls between adjacent cells
@@ -36,12 +36,12 @@ class GameState extends Equatable {
   final List<GridOffset> highlightedCells;
   final Set<String> usedItems;
 
-  const GameState({
+  const MeadowGameState({
     this.hints = const [],
     this.currentPath = const [],
     this.remainingSeconds = 0,
     this.initialSeconds = 0,
-    this.status = GameStatus.initial,
+    this.status = MeadowGameStatus.initial,
     this.solutionPath = const [],
     this.hintSteps = const {},
     this.walls = const {},
@@ -65,12 +65,12 @@ class GameState extends Equatable {
     this.usedItems = const {},
   });
 
-  GameState copyWith({
+  MeadowGameState copyWith({
     List<List<int?>>? hints,
     List<GridOffset>? currentPath,
     int? remainingSeconds,
     int? initialSeconds,
-    GameStatus? status,
+    MeadowGameStatus? status,
     List<GridOffset>? solutionPath,
     Map<GridOffset, int>? hintSteps,
     Set<String>? walls,
@@ -93,7 +93,7 @@ class GameState extends Equatable {
     List<GridOffset>? highlightedCells,
     Set<String>? usedItems,
   }) {
-    return GameState(
+    return MeadowGameState(
       hints: hints ?? this.hints,
       currentPath: currentPath ?? this.currentPath,
       remainingSeconds: remainingSeconds ?? this.remainingSeconds,

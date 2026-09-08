@@ -1,9 +1,9 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fixit/features/game/presentation/bloc/game_bloc.dart';
-import 'package:fixit/features/game/presentation/bloc/game_event.dart';
-import 'package:fixit/features/game/presentation/bloc/game_state.dart';
+import 'package:fixit/features/game/presentation/meadow/bloc/meadow_game_bloc.dart';
+import 'package:fixit/features/game/presentation/meadow/bloc/meadow_game_event.dart';
+import 'package:fixit/features/game/presentation/meadow/bloc/meadow_game_state.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'package:fixit/core/models/grid_offset.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
@@ -16,13 +16,13 @@ import 'package:fixit/core/theme/app_colors.dart';
 import 'package:confetti/confetti.dart';
 import 'package:fixit/core/widgets/tutorial_dialog.dart';
 import 'package:fixit/core/utils/app_logger.dart';
-import 'package:fixit/features/game/presentation/widgets/friends_leaderboard_dialog.dart';
+import 'package:fixit/features/game/presentation/common/widgets/friends_leaderboard_dialog.dart';
 import 'package:fixit/core/models/level_win_summary.dart';
 import 'package:fixit/core/models/daily_mode.dart';
 import 'package:fixit/core/widgets/breaking_heart_animation.dart';
 import 'package:flutter/services.dart';
 
-class GamePage extends StatefulWidget {
+class MeadowGamePage extends StatefulWidget {
   final int level;
   final GameDifficulty difficulty;
   final FixItGameMode mode;
@@ -30,7 +30,7 @@ class GamePage extends StatefulWidget {
   final int invMoreNumbers;
   final int invRevealPath;
 
-  const GamePage({
+  const MeadowGamePage({
     super.key,
     required this.level,
     required this.difficulty,
@@ -41,10 +41,10 @@ class GamePage extends StatefulWidget {
   });
 
   @override
-  State<GamePage> createState() => _GamePageState();
+  State<MeadowGamePage> createState() => _MeadowGamePageState();
 }
 
-class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
+class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStateMixin {
   late ConfettiController _confettiController;
   late AnimationController _blinkController;
 
@@ -71,7 +71,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
     final playerId = authState is AuthAuthenticated ? authState.user.id : '';
 
     return BlocProvider(
-      create: (context) => GameBloc()
+      create: (context) => MeadowGameBloc()
         ..add(StartGame(
           level: widget.level,
           difficulty: widget.difficulty,
@@ -86,11 +86,11 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
         onPopInvokedWithResult: (didPop, result) {
           if (didPop) return;
           
-          final gameStatus = context.read<GameBloc>().state.status;
+          final gameStatus = context.read<MeadowGameBloc>().state.status;
           final authStateInner = context.read<AuthBloc>().state;
           final playerIdInner = authStateInner is AuthAuthenticated ? authStateInner.user.id : null;
 
-          if (gameStatus == GameStatus.won) {
+          if (gameStatus == MeadowGameStatus.won) {
             context.read<HomeBloc>().add(CompleteLevel(playerId: playerIdInner, mode: widget.mode, level: widget.level));
             Navigator.pop(context);
           } else {
@@ -99,27 +99,27 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
           }
         },
         child: Scaffold(
-          body: BlocListener<GameBloc, GameState>(
+          body: BlocListener<MeadowGameBloc, MeadowGameState>(
             listenWhen: (previous, current) => previous.status != current.status || (current.isDizzy && !previous.isDizzy),
             listener: (context, state) async {
               if (state.isDizzy) {
                 HapticFeedback.vibrate();
               }
               
-              if (state.status == GameStatus.playing && widget.level == 1) {
+              if (state.status == MeadowGameStatus.playing && widget.level == 1) {
                 TutorialDialog.showIfFirstTime(
                   context,
                   tutorialKey: 'snake_tutorial_seen',
                 );
               }
 
-              if (state.status == GameStatus.lost) {
+              if (state.status == MeadowGameStatus.lost) {
                 final authStateInner = context.read<AuthBloc>().state;
                 final playerIdInner = authStateInner is AuthAuthenticated ? authStateInner.user.id : null;
                 final currentLives = context.read<HomeBloc>().state.lives;
                 if (!context.mounted) return;
                 _showGameOverDialog(context, currentLives, playerIdInner);
-              } else if (state.status == GameStatus.won) {
+              } else if (state.status == MeadowGameStatus.won) {
                 final authStateInner = context.read<AuthBloc>().state;
                 if (authStateInner is AuthAuthenticated) {
                   final currentUserId = authStateInner.user.id;
@@ -151,7 +151,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                   ),
                 ),
                 SafeArea(
-                  child: BlocBuilder<GameBloc, GameState>(
+                  child: BlocBuilder<MeadowGameBloc, MeadowGameState>(
                     builder: (context, state) {
                       return Column(
                         children: [
@@ -161,8 +161,8 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                           const Spacer(),
                           _buildGridContainer(context),
                           const Spacer(),
-                          // Trophée Button after win
-                          if (state.status == GameStatus.won)
+                          // Trophy Button after win
+                          if (state.status == MeadowGameStatus.won)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 20),
                               child: CandyButton(
@@ -195,7 +195,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
     final authState = context.read<AuthBloc>().state;
     final playerId = authState is AuthAuthenticated ? authState.user.id : null;
 
-    return BlocBuilder<GameBloc, GameState>(
+    return BlocBuilder<MeadowGameBloc, MeadowGameState>(
       builder: (context, state) {
         final totalSeconds = state.mode == FixItGameMode.dailySeries 
             ? state.seriesAccumulatedTime + (state.initialSeconds - state.remainingSeconds)
@@ -225,7 +225,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                       color: Colors.grey,
                       darkColor: Colors.grey.shade700,
                       onPressed: () async {
-                        context.read<GameBloc>().add(PauseTimer());
+                        context.read<MeadowGameBloc>().add(PauseTimer());
                         await showDialog(
                           context: context,
                           builder: (dialogContext) => BlocProvider.value(
@@ -234,7 +234,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                           ),
                         );
                         if (context.mounted) {
-                          context.read<GameBloc>().add(ResumeTimer());
+                          context.read<MeadowGameBloc>().add(ResumeTimer());
                         }
                       },
                       child: const Icon(Icons.settings, color: Colors.white, size: 28),
@@ -298,7 +298,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                       color: Colors.redAccent,
                       darkColor: Colors.red.shade900,
                       onPressed: () {
-                        if (state.status == GameStatus.won) {
+                        if (state.status == MeadowGameStatus.won) {
                           context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode, level: widget.level));
                           Navigator.pop(context);
                         } else {
@@ -344,7 +344,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
   }
 
   Widget _buildItemsRow(BuildContext context) {
-    return BlocBuilder<GameBloc, GameState>(
+    return BlocBuilder<MeadowGameBloc, MeadowGameState>(
       builder: (context, state) {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -361,7 +361,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                 color: Colors.orangeAccent,
                 count: state.inventoryPlusTime,
                 isUsed: state.usedItems.contains('plus_time'),
-                onTap: () => context.read<GameBloc>().add(UseItemPlusTime()),
+                onTap: () => context.read<MeadowGameBloc>().add(UseItemPlusTime()),
               ),
               const SizedBox(width: 25),
               _buildItemButton(
@@ -370,7 +370,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                 color: Colors.lightBlueAccent,
                 count: state.inventoryMoreNumbers,
                 isUsed: state.usedItems.contains('more_numbers'),
-                onTap: () => context.read<GameBloc>().add(UseItemMoreNumbers()),
+                onTap: () => context.read<MeadowGameBloc>().add(UseItemMoreNumbers()),
               ),
               const SizedBox(width: 25),
               _buildItemButton(
@@ -379,7 +379,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                 color: Colors.amber,
                 count: state.inventoryRevealPath,
                 isUsed: state.usedItems.contains('reveal_path'),
-                onTap: () => context.read<GameBloc>().add(UseItemRevealPath()),
+                onTap: () => context.read<MeadowGameBloc>().add(UseItemRevealPath()),
               ),
             ],
           ),
@@ -469,7 +469,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
   }
 
   Widget _buildGridContainer(BuildContext context) {
-    return BlocBuilder<GameBloc, GameState>(
+    return BlocBuilder<MeadowGameBloc, MeadowGameState>(
       builder: (context, state) {
         if (state.hints.isEmpty) return const SizedBox.shrink();
 
@@ -531,7 +531,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                                   final bool isLastNumberReached = state.currentPath.isNotEmpty && 
                                     state.hints[state.currentPath.last.row][state.currentPath.last.col] == maxNumInHints;
                                   
-                                  final bool isMissingCell = state.status == GameStatus.playing && 
+                                  final bool isMissingCell = state.status == MeadowGameStatus.playing && 
                                     isLastNumberReached && 
                                     !state.currentPath.contains(pos);
 
@@ -595,7 +595,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
     );
   }
 
-  List<Widget> _buildWalls(GameState state, double cellSize) {
+  List<Widget> _buildWalls(MeadowGameState state, double cellSize) {
     final List<Widget> wallWidgets = [];
     final thickness = cellSize * 0.75;
     final length = cellSize * 1.2;
@@ -646,7 +646,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
     return wallWidgets;
   }
 
-  Widget _buildSerpentHead(GameState state, double cellSize) {
+  Widget _buildSerpentHead(MeadowGameState state, double cellSize) {
     if (state.currentPath.isEmpty) return const SizedBox.shrink();
 
     final headPos = state.currentPath.last;
@@ -681,11 +681,11 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
     final col = (localPos.dx / cellSize).floor();
 
     if (row >= 0 && row < 6 && col >= 0 && col < 6) {
-      context.read<GameBloc>().add(SelectCell(row, col, isDrag: isDrag));
+      context.read<MeadowGameBloc>().add(SelectCell(row, col, isDrag: isDrag));
     }
   }
 
-  Widget _buildGridLines(GameState state, double cellSize) {
+  Widget _buildGridLines(MeadowGameState state, double cellSize) {
     return IgnorePointer(
       child: AspectRatio(
         aspectRatio: 1,
@@ -702,7 +702,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
   }
 
   void _showQuitConfirmationDialog(BuildContext context, int currentLives, String? playerId) async {
-    context.read<GameBloc>().add(PauseTimer());
+    context.read<MeadowGameBloc>().add(PauseTimer());
     await showDialog(
       context: context,
       barrierDismissible: false,
@@ -757,7 +757,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                   color: AppColors.candyPink,
                   darkColor: AppColors.candyPinkDark,
                   onPressed: () {
-                    context.read<GameBloc>().add(AbandonGame());
+                    context.read<MeadowGameBloc>().add(AbandonGame());
                     if (widget.mode == FixItGameMode.story) {
                       context.read<HomeBloc>().add(LoseLife(playerId: playerId));
                     }
@@ -776,7 +776,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
       ),
     );
     if (context.mounted) {
-      context.read<GameBloc>().add(ResumeTimer());
+      context.read<MeadowGameBloc>().add(ResumeTimer());
     }
   }
 
@@ -812,7 +812,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                 darkColor: AppColors.candyBlueDark,
                 onPressed: () {
                   Navigator.pop(dialogContext);
-                  context.read<GameBloc>().add(ContinueGameWithVideo());
+                  context.read<MeadowGameBloc>().add(ContinueGameWithVideo());
                 },
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -833,7 +833,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                 color: AppColors.candyPink,
                 darkColor: AppColors.candyPinkDark,
                 onPressed: () {
-                  context.read<GameBloc>().add(AbandonGame());
+                  context.read<MeadowGameBloc>().add(AbandonGame());
                   if (widget.mode == FixItGameMode.story) {
                     context.read<HomeBloc>().add(LoseLife(playerId: playerId));
                   }
@@ -852,7 +852,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
     });
   }
 
-  void _showWinDialog(BuildContext context, GameState state, String? playerId) {
+  void _showWinDialog(BuildContext context, MeadowGameState state, String? playerId) {
     final summary = state.winSummary;
     if (summary == null) return;
 
@@ -999,10 +999,10 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                               
                               if (widget.mode == FixItGameMode.dailySeries && widget.level < 3) {
                                 final nextLevel = widget.level + 1;
-                                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => GamePage(level: nextLevel, difficulty: widget.difficulty, mode: FixItGameMode.dailySeries)));
+                                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MeadowGamePage(level: nextLevel, difficulty: widget.difficulty, mode: FixItGameMode.dailySeries)));
                               } else if (widget.mode == FixItGameMode.story) {
                                 final nextLevel = widget.level + 1;
-                                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => GamePage(level: nextLevel, difficulty: widget.difficulty)));
+                                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MeadowGamePage(level: nextLevel, difficulty: widget.difficulty)));
                               } else {
                                 Navigator.pop(context);
                               }
@@ -1089,7 +1089,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
       context: context,
       useRootNavigator: true,
       builder: (ctx) => BlocProvider.value(
-        value: context.read<GameBloc>(),
+        value: context.read<MeadowGameBloc>(),
         child: FriendsLeaderboardDialog(playerId: playerId),
       ),
     );

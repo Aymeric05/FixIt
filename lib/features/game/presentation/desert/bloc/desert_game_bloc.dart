@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fixit/features/game/presentation/bloc/desert_game_event.dart';
-import 'package:fixit/features/game/presentation/bloc/desert_game_state.dart';
+import 'package:fixit/features/game/presentation/desert/bloc/desert_game_event.dart';
+import 'package:fixit/features/game/presentation/desert/bloc/desert_game_state.dart';
 import 'package:fixit/core/repositories/progression_repository.dart';
 import 'package:fixit/core/repositories/daily_repository.dart';
 import 'package:fixit/core/services/database_service.dart';
@@ -33,7 +33,7 @@ class DesertGameBloc extends Bloc<DesertGameEvent, DesertGameState> {
     _playerId = event.playerId;
 
     final grid = _generateGrid(event.level);
-    final initialSeconds = 120 + (event.level * 5); // Example difficulty
+    final initialSeconds = 120 + (event.level * 5); 
 
     emit(state.copyWith(
       status: DesertGameStatus.playing,
@@ -67,14 +67,12 @@ class DesertGameBloc extends Bloc<DesertGameEvent, DesertGameState> {
 
   void _updateWaterFlow(Emitter<DesertGameState> emit) {
     final grid = state.grid.map((row) => List<DesertTile>.from(row)).toList();
-    // 1. Reset water
     for (var row in grid) {
       for (int i = 0; i < row.length; i++) {
         row[i] = row[i].copyWith(isWatered: row[i].type == DesertTileType.source);
       }
     }
 
-    // 2. BFS for water flow
     final queue = <Point<int>>[];
     for (int r = 0; r < 6; r++) {
       for (int c = 0; c < 6; c++) {
@@ -90,15 +88,11 @@ class DesertGameBloc extends Bloc<DesertGameEvent, DesertGameState> {
 
       final r = curr.x;
       final c = curr.y;
-      final currTile = grid[r][c];
-      currTile.copyWith(isWatered: true);
-
-      // Check neighbors
       final neighbors = [
-        Point(r - 1, c), // Up
-        Point(r + 1, c), // Down
-        Point(r, c - 1), // Left
-        Point(r, c + 1), // Right
+        Point(r - 1, c),
+        Point(r + 1, c),
+        Point(r, c - 1),
+        Point(r, c + 1),
       ];
 
       for (var next in neighbors) {
@@ -119,30 +113,19 @@ class DesertGameBloc extends Bloc<DesertGameEvent, DesertGameState> {
     final tileA = grid[a.x][a.y];
     final tileB = grid[b.x][b.y];
     if (tileA.type == DesertTileType.empty || tileB.type == DesertTileType.empty) return false;
-
-    // Relative direction from A to B
     final dr = b.x - a.x;
     final dc = b.y - a.y;
-
-    // Check if A has an opening towards B
-    bool aHasOpening = _hasOpening(tileA, dr, dc);
-    // Check if B has an opening towards A
-    bool bHasOpening = _hasOpening(tileB, -dr, -dc);
-
-    return aHasOpening && bHasOpening;
+    return _hasOpening(tileA, dr, dc) && _hasOpening(tileB, -dr, -dc);
   }
 
   bool _hasOpening(DesertTile tile, int dr, int dc) {
-    // dr, dc: -1,0 (Up), 1,0 (Down), 0,-1 (Left), 0,1 (Right)
     if (tile.type == DesertTileType.source || tile.type == DesertTileType.sink || tile.type == DesertTileType.cross) return true;
-    
     final rot = tile.rotation;
     if (tile.type == DesertTileType.straight) {
-      if (rot == 0 || rot == 2) return dc != 0; // Horizontal
-      return dr != 0; // Vertical
+      if (rot == 0 || rot == 2) return dc != 0;
+      return dr != 0;
     }
     if (tile.type == DesertTileType.elbow) {
-      // 0: Top-Right (Up, Right), 1: Right-Down, 2: Down-Left, 3: Left-Up
       if (rot == 0) return (dr == -1 && dc == 0) || (dr == 0 && dc == 1);
       if (rot == 1) return (dr == 0 && dc == 1) || (dr == 1 && dc == 0);
       if (rot == 2) return (dr == 1 && dc == 0) || (dr == 0 && dc == -1);
@@ -172,12 +155,10 @@ class DesertGameBloc extends Bloc<DesertGameEvent, DesertGameState> {
           await _dailyRepo.updateDailyStatus(playerId: _playerId!, isDailyLevelCompleted: true, dailyLevelTime: timeTaken);
           await _progressionRepo.markLevelAsCompleted(playerSupabaseId: _playerId!, worldId: worldId, levelNumber: state.levelNumber, timeSeconds: timeTaken, updateProgression: false);
         } else if (state.mode == FixItGameMode.dailySeries) {
-          // Note: Series time logic might need accumulating, but for now simple
           await _dailyRepo.updateDailyStatus(playerId: _playerId!, seriesCurrentLevel: state.levelNumber, seriesAccumulatedTime: timeTaken, isSeriesCompleted: state.levelNumber >= 3);
           await _progressionRepo.markLevelAsCompleted(playerSupabaseId: _playerId!, worldId: _dailyRepo.getTodaySeriesWorldId(), levelNumber: state.levelNumber, timeSeconds: timeTaken, updateProgression: false);
         }
       }
-
       emit(state.copyWith(status: DesertGameStatus.won));
     }
   }
@@ -185,11 +166,7 @@ class DesertGameBloc extends Bloc<DesertGameEvent, DesertGameState> {
   List<List<DesertTile>> _generateGrid(int level) {
     final rand = Random();
     final grid = List.generate(6, (_) => List.generate(6, (_) => const DesertTile(type: DesertTileType.empty)));
-    
-    // Place Source
     grid[0][rand.nextInt(6)] = const DesertTile(type: DesertTileType.source, isFixed: true, isWatered: true);
-    
-    // Place 3 Sinks
     for (int i = 0; i < 3; i++) {
       int r = rand.nextInt(4) + 2;
       int c = rand.nextInt(6);
@@ -199,18 +176,11 @@ class DesertGameBloc extends Bloc<DesertGameEvent, DesertGameState> {
         i--;
       }
     }
-
-    // Fill with random pipes
     final types = [DesertTileType.straight, DesertTileType.elbow, DesertTileType.cross];
     for (int r = 0; r < 6; r++) {
       for (int c = 0; c < 6; c++) {
         if (grid[r][c].type == DesertTileType.empty) {
-          final type = types[rand.nextInt(types.length)];
-          grid[r][c] = DesertTile(
-            type: type, 
-            rotation: rand.nextInt(4),
-            hasSandStorm: rand.nextDouble() < 0.1, // 10% sandstorm
-          );
+          grid[r][c] = DesertTile(type: types[rand.nextInt(types.length)], rotation: rand.nextInt(4), hasSandStorm: rand.nextDouble() < 0.1);
         }
       }
     }
@@ -241,23 +211,18 @@ class DesertGameBloc extends Bloc<DesertGameEvent, DesertGameState> {
     if (state.invWaterBucket <= 0) return;
     _timer?.cancel();
     final newTime = state.remainingSeconds + 60;
-    emit(state.copyWith(
-      remainingSeconds: newTime, 
-      invWaterBucket: state.invWaterBucket - 1,
-    ));
+    emit(state.copyWith(remainingSeconds: newTime, invWaterBucket: state.invWaterBucket - 1));
     _startTimer(newTime);
     _updateLocalInventory('item_water_bucket', state.invWaterBucket - 1);
   }
 
   void _onUseGoldenWrench(UseGoldenWrench event, Emitter<DesertGameState> emit) {
     if (state.invGoldenWrench <= 0) return;
-    // Fix a random tile (for now just pick one rotatable)
     final grid = state.grid.map((row) => List<DesertTile>.from(row)).toList();
     for (int r = 0; r < 6; r++) {
       for (int c = 0; c < 6; c++) {
         if (!grid[r][c].isFixed && !grid[r][c].isWatered && grid[r][c].type != DesertTileType.empty) {
-           // In a real game we'd use the solution. Here we just rotate it to something that might work or just WATER it.
-           grid[r][c] = grid[r][c].copyWith(isWatered: true); // Cheat fix
+           grid[r][c] = grid[r][c].copyWith(isWatered: true); 
            emit(state.copyWith(grid: grid, invGoldenWrench: state.invGoldenWrench - 1));
            _updateWaterFlow(emit);
            _updateLocalInventory('item_golden_wrench', state.invGoldenWrench - 1);

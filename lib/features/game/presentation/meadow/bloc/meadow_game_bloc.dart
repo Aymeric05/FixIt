@@ -11,14 +11,14 @@ import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/core/database/app_database.dart';
 import 'package:fixit/core/models/grid_offset.dart';
 import 'package:fixit/core/utils/level_generator.dart';
-import 'package:fixit/features/game/presentation/bloc/game_event.dart';
-import 'package:fixit/features/game/presentation/bloc/game_state.dart';
+import 'package:fixit/features/game/presentation/meadow/bloc/meadow_game_event.dart';
+import 'package:fixit/features/game/presentation/meadow/bloc/meadow_game_state.dart';
 import 'package:fixit/core/models/daily_mode.dart';
 import 'package:fixit/core/models/level_win_summary.dart';
 import 'package:fixit/core/utils/app_logger.dart';
 import 'package:fixit/core/repositories/game_session_repository.dart';
 
-class GameBloc extends Bloc<GameEvent, GameState> {
+class MeadowGameBloc extends Bloc<MeadowGameEvent, MeadowGameState> {
   Timer? _timer;
   Timer? _dizzyTimer;
   late final ProgressionRepository _progressionRepo;
@@ -26,11 +26,11 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   late final GameSessionRepository _sessionRepo;
   String? _playerId;
 
-  GameBloc({
+  MeadowGameBloc({
     ProgressionRepository? progressionRepo,
     DailyRepository? dailyRepo,
     GameSessionRepository? sessionRepo,
-  }) : super(const GameState()) {
+  }) : super(const MeadowGameState()) {
     _progressionRepo = progressionRepo ?? ProgressionRepository();
     _dailyRepo = dailyRepo ?? DailyRepository();
     _sessionRepo = sessionRepo ?? GameSessionRepository();
@@ -49,7 +49,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<AbandonGame>(_onAbandonGame);
   }
 
-  Future<void> _onStartGame(StartGame event, Emitter<GameState> emit) async {
+  Future<void> _onStartGame(StartGame event, Emitter<MeadowGameState> emit) async {
     _timer?.cancel();
     _playerId = event.playerId;
 
@@ -74,7 +74,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
     // Initial state setup
     emit(state.copyWith(
-      status: GameStatus.initial,
+      status: MeadowGameStatus.initial,
       remainingSeconds: initialSeconds,
       initialSeconds: initialSeconds,
       levelNumber: event.level,
@@ -192,7 +192,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       solutionPath: solution,
       hintSteps: hintSteps,
       walls: walls,
-      status: GameStatus.playing,
+      status: MeadowGameStatus.playing,
       currentPath: restoredPath,
       remainingSeconds: finalRemainingSeconds,
       pathColor: randomColor,
@@ -215,7 +215,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
             await _sessionRepo.deleteSession(playerId: event.playerId, worldId: worldId, levelNumber: event.level, mode: event.mode);
             
             emit(state.copyWith(
-              status: GameStatus.won,
+              status: MeadowGameStatus.won,
               winSummary: summary,
               wonTime: status.dailyLevelTime,
               currentPath: solution,
@@ -236,7 +236,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
               await _sessionRepo.deleteSession(playerId: event.playerId, worldId: worldId, levelNumber: event.level, mode: event.mode);
 
               emit(state.copyWith(
-                status: GameStatus.won,
+                status: MeadowGameStatus.won,
                 winSummary: summary,
                 seriesAccumulatedTime: status.seriesAccumulatedTime,
                 wonTime: status.seriesAccumulatedTime,
@@ -264,8 +264,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     }
   }
 
-  Future<void> _onSelectCell(SelectCell event, Emitter<GameState> emit) async {
-    if (state.status != GameStatus.playing) return;
+  Future<void> _onSelectCell(SelectCell event, Emitter<MeadowGameState> emit) async {
+    if (state.status != MeadowGameStatus.playing) return;
     final tapped = GridOffset(event.row, event.col);
     final currentPath = List<GridOffset>.from(state.currentPath);
     
@@ -360,7 +360,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
                  summary = await _progressionRepo.getLevelWinSummary(worldId: _dailyRepo.getTodaySeriesWorldId(), levelNumber: state.levelNumber, playerId: _playerId ?? '', playerTime: displayTime);
               }
 
-              emit(state.copyWith(status: GameStatus.won, winSummary: summary, wonTime: displayTime));
+              emit(state.copyWith(status: MeadowGameStatus.won, winSummary: summary, wonTime: displayTime));
               unawaited(_deleteCurrentSession());
               return;
             }
@@ -378,7 +378,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     }
   }
 
-  void _triggerAngryFace(Emitter<GameState> emit) {
+  void _triggerAngryFace(Emitter<MeadowGameState> emit) {
     if (state.isAngry && !state.isDizzy) return;
     
     emit(state.copyWith(isAngry: true));
@@ -389,14 +389,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     });
   }
 
-  void _onResetAngryFace(ResetAngryFace event, Emitter<GameState> emit) {
+  void _onResetAngryFace(ResetAngryFace event, Emitter<MeadowGameState> emit) {
     if (state.isAngry && !state.isDizzy) {
       // Only reset if we are not actually in an error state (re-calculate)
       emit(state.copyWith(isAngry: _checkIfAngry(state.currentPath)));
     }
   }
 
-  void _triggerCollision(Emitter<GameState> emit, int dr, int dc) {
+  void _triggerCollision(Emitter<MeadowGameState> emit, int dr, int dc) {
     if (state.isDizzy) return;
     
     emit(state.copyWith(
@@ -410,7 +410,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     });
   }
 
-  void _onRecoverFromDizzy(RecoverFromDizzy event, Emitter<GameState> emit) {
+  void _onRecoverFromDizzy(RecoverFromDizzy event, Emitter<MeadowGameState> emit) {
     if (state.isDizzy) {
       emit(state.copyWith(
         isDizzy: false, 
@@ -419,12 +419,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     }
   }
 
-  Future<void> _onAbandonGame(AbandonGame event, Emitter<GameState> emit) async {
+  Future<void> _onAbandonGame(AbandonGame event, Emitter<MeadowGameState> emit) async {
     await _deleteCurrentSession();
     emit(state.copyWith(currentPath: []));
   }
 
-  Future<void> _onLoadFriendsLeaderboard(LoadFriendsLeaderboard event, Emitter<GameState> emit) async {
+  Future<void> _onLoadFriendsLeaderboard(LoadFriendsLeaderboard event, Emitter<MeadowGameState> emit) async {
     final worldId = state.mode == FixItGameMode.story 
         ? 'world_1' 
         : state.mode == FixItGameMode.dailySeries 
@@ -498,9 +498,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     });
   }
 
-  void _onTimerTick(TimerTick event, Emitter<GameState> emit) {
+  void _onTimerTick(TimerTick event, Emitter<MeadowGameState> emit) {
     if (event.remainingSeconds == 0) {
-      emit(state.copyWith(remainingSeconds: 0, status: GameStatus.lost));
+      emit(state.copyWith(remainingSeconds: 0, status: MeadowGameStatus.lost));
       unawaited(_deleteCurrentSession());
     } else {
       emit(state.copyWith(remainingSeconds: event.remainingSeconds));
@@ -510,31 +510,31 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     }
   }
 
-  void _onPauseTimer(PauseTimer event, Emitter<GameState> emit) {
+  void _onPauseTimer(PauseTimer event, Emitter<MeadowGameState> emit) {
     _timer?.cancel();
     emit(state.copyWith(isPaused: true));
     unawaited(_saveCurrentSession());
   }
 
-  void _onResumeTimer(ResumeTimer event, Emitter<GameState> emit) {
+  void _onResumeTimer(ResumeTimer event, Emitter<MeadowGameState> emit) {
     _timer?.cancel();
     emit(state.copyWith(isPaused: false));
     _startTimer(state.remainingSeconds);
   }
 
-  void _onContinueGameWithVideo(ContinueGameWithVideo event, Emitter<GameState> emit) {
+  void _onContinueGameWithVideo(ContinueGameWithVideo event, Emitter<MeadowGameState> emit) {
     _timer?.cancel();
     final newTime = state.remainingSeconds + 180;
     // Don't increase initialSeconds, so the bonus time is reflected as a "gain" in final stats
     emit(state.copyWith(
       remainingSeconds: newTime,
-      status: GameStatus.playing,
+      status: MeadowGameStatus.playing,
     ));
     _startTimer(newTime);
   }
 
-  Future<void> _onUseItemPlusTime(UseItemPlusTime event, Emitter<GameState> emit) async {
-    if (state.inventoryPlusTime <= 0 || state.status != GameStatus.playing || state.usedItems.contains('plus_time')) return;
+  Future<void> _onUseItemPlusTime(UseItemPlusTime event, Emitter<MeadowGameState> emit) async {
+    if (state.inventoryPlusTime <= 0 || state.status != MeadowGameStatus.playing || state.usedItems.contains('plus_time')) return;
     
     _timer?.cancel();
     final newTime = state.remainingSeconds + 120;
@@ -549,8 +549,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     _updateLocalInventory('item_plus_time', newInv);
   }
 
-  Future<void> _onUseItemMoreNumbers(UseItemMoreNumbers event, Emitter<GameState> emit) async {
-    if (state.inventoryMoreNumbers <= 0 || state.status != GameStatus.playing || state.usedItems.contains('more_numbers')) return;
+  Future<void> _onUseItemMoreNumbers(UseItemMoreNumbers event, Emitter<MeadowGameState> emit) async {
+    if (state.inventoryMoreNumbers <= 0 || state.status != MeadowGameStatus.playing || state.usedItems.contains('more_numbers')) return;
     
     final solution = state.solutionPath;
     final Map<GridOffset, int> newHintSteps = {};
@@ -582,8 +582,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     unawaited(_saveCurrentSession());
   }
 
-  Future<void> _onUseItemRevealPath(UseItemRevealPath event, Emitter<GameState> emit) async {
-    if (state.inventoryRevealPath <= 0 || state.status != GameStatus.playing || state.usedItems.contains('reveal_path')) return;
+  Future<void> _onUseItemRevealPath(UseItemRevealPath event, Emitter<MeadowGameState> emit) async {
+    if (state.inventoryRevealPath <= 0 || state.status != MeadowGameStatus.playing || state.usedItems.contains('reveal_path')) return;
 
     int lastStepIndex = -1;
     if (state.currentPath.isNotEmpty) {
@@ -610,13 +610,13 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
     final revealedSoFar = <GridOffset>[];
     for (var cell in nextCells) {
-      if (state.status != GameStatus.playing) break;
+      if (state.status != MeadowGameStatus.playing) break;
       revealedSoFar.add(cell);
       emit(state.copyWith(highlightedCells: List.from(revealedSoFar)));
       await Future.delayed(const Duration(milliseconds: 500));
     }
     
-    if (state.status == GameStatus.playing) {
+    if (state.status == MeadowGameStatus.playing) {
       await Future.delayed(const Duration(seconds: 2));
     }
     
@@ -635,7 +635,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   }
 
   Future<void> _saveCurrentSession() async {
-    if (_playerId == null || _playerId!.isEmpty || state.status != GameStatus.playing) return;
+    if (_playerId == null || _playerId!.isEmpty || state.status != MeadowGameStatus.playing) return;
 
     final String worldId = state.mode == FixItGameMode.story 
         ? 'world_1' 

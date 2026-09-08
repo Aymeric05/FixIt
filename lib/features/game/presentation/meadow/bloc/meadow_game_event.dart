@@ -2,14 +2,14 @@ import 'package:equatable/equatable.dart';
 import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
 import 'package:fixit/core/models/daily_mode.dart';
 
-abstract class GameEvent extends Equatable {
-  const GameEvent();
+abstract class MeadowGameEvent extends Equatable {
+  const MeadowGameEvent();
 
   @override
   List<Object> get props => [];
 }
 
-class StartGame extends GameEvent {
+class StartGame extends MeadowGameEvent {
   final int level;
   final GameDifficulty difficulty;
   final String playerId;
@@ -32,7 +32,7 @@ class StartGame extends GameEvent {
   List<Object> get props => [level, difficulty, playerId, mode, invPlusTime, invMoreNumbers, invRevealPath];
 }
 
-class SelectCell extends GameEvent {
+class SelectCell extends MeadowGameEvent {
   final int row;
   final int col;
   final bool isDrag;
@@ -43,7 +43,7 @@ class SelectCell extends GameEvent {
   List<Object> get props => [row, col, isDrag];
 }
 
-class TimerTick extends GameEvent {
+class TimerTick extends MeadowGameEvent {
   final int remainingSeconds;
 
   const TimerTick(this.remainingSeconds);
@@ -52,7 +52,7 @@ class TimerTick extends GameEvent {
   List<Object> get props => [remainingSeconds];
 }
 
-class LoadFriendsLeaderboard extends GameEvent {
+class LoadFriendsLeaderboard extends MeadowGameEvent {
   final String playerId;
   const LoadFriendsLeaderboard({required this.playerId});
 
@@ -60,17 +60,17 @@ class LoadFriendsLeaderboard extends GameEvent {
   List<Object> get props => [playerId];
 }
 
-class PauseTimer extends GameEvent {}
-class ResumeTimer extends GameEvent {}
+class PauseTimer extends MeadowGameEvent {}
+class ResumeTimer extends MeadowGameEvent {}
 
-class ContinueGameWithVideo extends GameEvent {}
+class ContinueGameWithVideo extends MeadowGameEvent {}
 
-class UseItemPlusTime extends GameEvent {}
-class UseItemMoreNumbers extends GameEvent {}
-class UseItemRevealPath extends GameEvent {}
+class UseItemPlusTime extends MeadowGameEvent {}
+class UseItemMoreNumbers extends MeadowGameEvent {}
+class UseItemRevealPath extends MeadowGameEvent {}
 
-class RecoverFromDizzy extends GameEvent {}
+class RecoverFromDizzy extends MeadowGameEvent {}
 
-class ResetAngryFace extends GameEvent {}
+class ResetAngryFace extends MeadowGameEvent {}
 
-class AbandonGame extends GameEvent {}
+class AbandonGame extends MeadowGameEvent {}

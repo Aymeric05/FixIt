@@ -6,7 +6,7 @@ import 'package:fixit/features/home/presentation/widgets/top_nav_bar.dart';
 import 'package:fixit/features/home/presentation/widgets/main_play_button.dart';
 import 'package:fixit/features/home/presentation/widgets/lives_store_dialog.dart';
 import 'package:fixit/features/home/presentation/pages/loading_screen.dart';
-import 'package:fixit/features/game/presentation/pages/game_page.dart';
+import 'package:fixit/features/game/presentation/meadow/pages/meadow_game_page.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:fixit/features/auth/presentation/bloc/auth_state.dart';
 import 'package:fixit/features/friends/presentation/bloc/friends_bloc.dart';
@@ -17,7 +17,7 @@ import 'package:confetti/confetti.dart';
 import 'package:fixit/features/home/presentation/widgets/puzzle_reward_burst.dart';
 import 'package:fixit/features/home/presentation/widgets/world_unlock_overlay.dart';
 import 'package:fixit/features/home/presentation/widgets/experience_bar.dart';
-import 'package:fixit/features/game/presentation/pages/desert_game_page.dart';
+import 'package:fixit/features/game/presentation/desert/pages/desert_game_page.dart';
 
 import 'package:fixit/features/home/presentation/widgets/daily_popup.dart';
 import 'package:fixit/features/home/presentation/widgets/no_lives_dialog.dart';
@@ -108,7 +108,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             context,
             MaterialPageRoute(
               builder: (context) => hState.currentWorldIndex == 1
-                  ? const GamePage(
+                  ? const MeadowGamePage(
                 level: 1,
                 difficulty: GameDifficulty.easy,
                 mode: FixItGameMode.dailySingle,
@@ -148,7 +148,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             context,
             MaterialPageRoute(
               builder: (context) => hState.currentWorldIndex == 1
-                  ? GamePage(
+                  ? MeadowGamePage(
                 level: startLevel,
                 difficulty: GameDifficulty.easy,
                 mode: FixItGameMode.dailySeries,
@@ -337,7 +337,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                 if (state.currentWorldIndex == 1) {
                                                   Navigator.of(context).push(
                                                     MaterialPageRoute(
-                                                      builder: (context) => GamePage(
+                                                      builder: (context) => MeadowGamePage(
                                                         level: state.currentLevel,
                                                         difficulty: state.difficulty,
                                                         invPlusTime: state.itemPlusTime,
