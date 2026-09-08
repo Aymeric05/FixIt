@@ -130,7 +130,7 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                         playerSupabaseId: currentUserId,
                         worldId: 'world_1',
                         levelNumber: widget.level,
-                        timeSeconds: state.initialSeconds - state.remainingSeconds,
+                        timeSeconds: max(1, state.initialSeconds - state.remainingSeconds),
                       );
                     } catch (e) {
                       AppLogger.error('Error saving completion', e);
@@ -224,14 +224,18 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
                       depth: 4,
                       color: Colors.grey,
                       darkColor: Colors.grey.shade700,
-                      onPressed: () {
-                        showDialog(
+                      onPressed: () async {
+                        context.read<GameBloc>().add(PauseTimer());
+                        await showDialog(
                           context: context,
                           builder: (dialogContext) => BlocProvider.value(
                             value: BlocProvider.of<HomeBloc>(context),
                             child: const SettingsDialog(),
                           ),
                         );
+                        if (context.mounted) {
+                          context.read<GameBloc>().add(ResumeTimer());
+                        }
                       },
                       child: const Icon(Icons.settings, color: Colors.white, size: 28),
                     ),
@@ -697,8 +701,9 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
     );
   }
 
-  void _showQuitConfirmationDialog(BuildContext context, int currentLives, String? playerId) {
-    showDialog(
+  void _showQuitConfirmationDialog(BuildContext context, int currentLives, String? playerId) async {
+    context.read<GameBloc>().add(PauseTimer());
+    await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => CandyDialog(
@@ -770,6 +775,9 @@ class _GamePageState extends State<GamePage> with TickerProviderStateMixin {
         ),
       ),
     );
+    if (context.mounted) {
+      context.read<GameBloc>().add(ResumeTimer());
+    }
   }
 
   void _showGameOverDialog(BuildContext context, int currentLives, String? playerId) {

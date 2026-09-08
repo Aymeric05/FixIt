@@ -45,3 +45,6 @@ class DesertTimerTick extends DesertGameEvent {
 class UseWaterBucket extends DesertGameEvent {}
 class UseGoldenWrench extends DesertGameEvent {}
 class UseSandShovel extends DesertGameEvent {}
+
+class PauseDesertTimer extends DesertGameEvent {}
+class ResumeDesertTimer extends DesertGameEvent {}

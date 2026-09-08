@@ -149,14 +149,18 @@ class _DesertGamePageState extends State<DesertGamePage> with TickerProviderStat
                   depth: 4,
                   color: Colors.grey,
                   darkColor: Colors.grey.shade700,
-                  onPressed: () {
-                    showDialog(
+                  onPressed: () async {
+                    context.read<DesertGameBloc>().add(PauseDesertTimer());
+                    await showDialog(
                       context: context,
                       builder: (dialogContext) => BlocProvider.value(
                         value: BlocProvider.of<HomeBloc>(context),
                         child: const SettingsDialog(),
                       ),
                     );
+                    if (context.mounted) {
+                      context.read<DesertGameBloc>().add(ResumeDesertTimer());
+                    }
                   },
                   child: const Icon(Icons.settings, color: Colors.white, size: 28),
                 ),
@@ -496,8 +500,9 @@ class _DesertGamePageState extends State<DesertGamePage> with TickerProviderStat
     );
   }
 
-  void _showQuitConfirmationDialog(BuildContext context, String playerId) {
-    showDialog(
+  void _showQuitConfirmationDialog(BuildContext context, String playerId) async {
+    context.read<DesertGameBloc>().add(PauseDesertTimer());
+    await showDialog(
       context: context,
       builder: (dialogContext) => CandyDialog(
         title: 'QUIT?',
@@ -548,5 +553,8 @@ class _DesertGamePageState extends State<DesertGamePage> with TickerProviderStat
         ),
       ),
     );
+    if (context.mounted) {
+      context.read<DesertGameBloc>().add(ResumeDesertTimer());
+    }
   }
 }

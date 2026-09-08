@@ -4,14 +4,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fixit/features/game/presentation/bloc/desert_game_event.dart';
 import 'package:fixit/features/game/presentation/bloc/desert_game_state.dart';
 import 'package:fixit/core/repositories/progression_repository.dart';
+import 'package:fixit/core/repositories/daily_repository.dart';
 import 'package:fixit/core/services/database_service.dart';
 import 'package:fixit/core/database/app_database.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:fixit/core/utils/app_logger.dart';
+import 'package:fixit/core/models/daily_mode.dart';
 
 class DesertGameBloc extends Bloc<DesertGameEvent, DesertGameState> {
   Timer? _timer;
   final _progressionRepo = ProgressionRepository();
+  final _dailyRepo = DailyRepository();
   String? _playerId;
 
   DesertGameBloc() : super(const DesertGameState()) {
@@ -21,6 +24,8 @@ class DesertGameBloc extends Bloc<DesertGameEvent, DesertGameState> {
     on<UseWaterBucket>(_onUseWaterBucket);
     on<UseGoldenWrench>(_onUseGoldenWrench);
     on<UseSandShovel>(_onUseSandShovel);
+    on<PauseDesertTimer>(_onPauseDesertTimer);
+    on<ResumeDesertTimer>(_onResumeDesertTimer);
   }
 
   Future<void> _onStartDesertGame(StartDesertGame event, Emitter<DesertGameState> emit) async {
@@ -146,7 +151,7 @@ class DesertGameBloc extends Bloc<DesertGameEvent, DesertGameState> {
     return false;
   }
 
-  void _checkWin(Emitter<DesertGameState> emit) {
+  Future<void> _checkWin(Emitter<DesertGameState> emit) async {
     bool allCactiWatered = true;
     for (var row in state.grid) {
       for (var tile in row) {
@@ -159,6 +164,20 @@ class DesertGameBloc extends Bloc<DesertGameEvent, DesertGameState> {
 
     if (allCactiWatered) {
       _timer?.cancel();
+      final timeTaken = max(1, state.initialSeconds - state.remainingSeconds);
+      final worldId = state.mode == FixItGameMode.story ? 'desert' : _dailyRepo.getTodayWorldId();
+      
+      if (state.mode != FixItGameMode.story && _playerId != null) {
+        if (state.mode == FixItGameMode.dailySingle) {
+          await _dailyRepo.updateDailyStatus(playerId: _playerId!, isDailyLevelCompleted: true, dailyLevelTime: timeTaken);
+          await _progressionRepo.markLevelAsCompleted(playerSupabaseId: _playerId!, worldId: worldId, levelNumber: state.levelNumber, timeSeconds: timeTaken, updateProgression: false);
+        } else if (state.mode == FixItGameMode.dailySeries) {
+          // Note: Series time logic might need accumulating, but for now simple
+          await _dailyRepo.updateDailyStatus(playerId: _playerId!, seriesCurrentLevel: state.levelNumber, seriesAccumulatedTime: timeTaken, isSeriesCompleted: state.levelNumber >= 3);
+          await _progressionRepo.markLevelAsCompleted(playerSupabaseId: _playerId!, worldId: _dailyRepo.getTodaySeriesWorldId(), levelNumber: state.levelNumber, timeSeconds: timeTaken, updateProgression: false);
+        }
+      }
+
       emit(state.copyWith(status: DesertGameStatus.won));
     }
   }
@@ -167,7 +186,6 @@ class DesertGameBloc extends Bloc<DesertGameEvent, DesertGameState> {
     final rand = Random();
     final grid = List.generate(6, (_) => List.generate(6, (_) => const DesertTile(type: DesertTileType.empty)));
     
-    // Simple generation:
     // Place Source
     grid[0][rand.nextInt(6)] = const DesertTile(type: DesertTileType.source, isFixed: true, isWatered: true);
     
@@ -223,7 +241,10 @@ class DesertGameBloc extends Bloc<DesertGameEvent, DesertGameState> {
     if (state.invWaterBucket <= 0) return;
     _timer?.cancel();
     final newTime = state.remainingSeconds + 60;
-    emit(state.copyWith(remainingSeconds: newTime, invWaterBucket: state.invWaterBucket - 1));
+    emit(state.copyWith(
+      remainingSeconds: newTime, 
+      invWaterBucket: state.invWaterBucket - 1,
+    ));
     _startTimer(newTime);
     _updateLocalInventory('item_water_bucket', state.invWaterBucket - 1);
   }
@@ -256,6 +277,15 @@ class DesertGameBloc extends Bloc<DesertGameEvent, DesertGameState> {
     }
     emit(state.copyWith(grid: grid, invSandShovel: state.invSandShovel - 1));
     _updateLocalInventory('item_sand_shovel', state.invSandShovel - 1);
+  }
+
+  void _onPauseDesertTimer(PauseDesertTimer event, Emitter<DesertGameState> emit) {
+    _timer?.cancel();
+  }
+
+  void _onResumeDesertTimer(ResumeDesertTimer event, Emitter<DesertGameState> emit) {
+    _timer?.cancel();
+    _startTimer(state.remainingSeconds);
   }
 
   Future<void> _updateLocalInventory(String field, int newValue) async {

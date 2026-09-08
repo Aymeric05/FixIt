@@ -338,7 +338,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
               _timer?.cancel();
               emit(state.copyWith(currentPath: newPath, isAngry: false));
 
-              final timeTaken = state.initialSeconds - state.remainingSeconds;
+              final timeTaken = max(1, state.initialSeconds - state.remainingSeconds);
               final worldId = state.mode == FixItGameMode.story ? 'world_1' : _dailyRepo.getTodayWorldId();
 
               int displayTime = timeTaken;
@@ -525,6 +525,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   void _onContinueGameWithVideo(ContinueGameWithVideo event, Emitter<GameState> emit) {
     _timer?.cancel();
     final newTime = state.remainingSeconds + 180;
+    // Don't increase initialSeconds, so the bonus time is reflected as a "gain" in final stats
     emit(state.copyWith(
       remainingSeconds: newTime,
       status: GameStatus.playing,
