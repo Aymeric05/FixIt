@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
-import 'package:fixit/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:fixit/features/auth/presentation/bloc/auth_state.dart';
+import 'package:fixit/features/auth/bloc/auth_bloc.dart';
+import 'package:fixit/features/auth/bloc/auth_state.dart';
 import 'package:fixit/core/repositories/profile_repository.dart';
 import 'package:fixit/core/services/database_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';

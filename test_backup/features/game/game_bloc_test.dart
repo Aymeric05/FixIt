@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:fixit/features/game/presentation/meadow/bloc/meadow_game_bloc.dart';
-import 'package:fixit/features/game/presentation/meadow/bloc/meadow_game_event.dart';
-import 'package:fixit/features/game/presentation/meadow/bloc/meadow_game_state.dart';
-import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
+import 'package:fixit/features/game/meadow/bloc/meadow_game_bloc.dart';
+import 'package:fixit/features/game/meadow/bloc/meadow_game_event.dart';
+import 'package:fixit/features/game/meadow/bloc/meadow_game_state.dart';
+import 'package:fixit/features/home/bloc/home_bloc.dart';
 import 'package:fixit/core/repositories/progression_repository.dart';
 import 'package:fixit/core/repositories/daily_repository.dart';
 import 'package:fixit/core/models/grid_offset.dart';
