@@ -342,8 +342,9 @@ class ProgressionRepository {
   }) async {
     // 1. Fetch current progress to avoid downgrades
     int? currentLevel;
+    Progression? currentProg;
     if (updateProgression) {
-      final currentProg = await (_db.select(_db.progressions)
+      currentProg = await (_db.select(_db.progressions)
             ..where((t) => t.playerSupabaseId.equals(playerSupabaseId)))
           .getSingleOrNull();
       currentLevel = currentProg?.currentLevel;
@@ -393,14 +394,12 @@ class ProgressionRepository {
 
     // 5. Update local Drift progression
     if (shouldUpdateProgression) {
-      final List<String> worlds = ['meadow'];
-      if (nextLevelToSave > 10) worlds.add('desert');
-      if (nextLevelToSave > 20) worlds.add('ice');
+      final List<String> currentWorlds = currentProg?.unlockedWorlds ?? ['meadow'];
 
       final progressionCompanion = ProgressionsCompanion.insert(
         playerSupabaseId: Value(playerSupabaseId),
         currentLevel: Value(nextLevelToSave),
-        unlockedWorlds: worlds,
+        unlockedWorlds: currentWorlds,
         updatedAt: Value(DateTime.now()),
       );
       

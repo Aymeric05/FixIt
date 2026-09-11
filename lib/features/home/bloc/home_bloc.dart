@@ -41,6 +41,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<SyncAnimatedPuzzles>(_onSyncAnimatedPuzzles);
     on<IncrementAnimatedPuzzles>(_onIncrementAnimatedPuzzles);
     on<AppResumed>(_onAppResumed);
+    on<ClearWinFlags>(_onClearWinFlags);
   }
 
   Future<void> _onLoadHomeData(LoadHomeData event, Emitter<HomeState> emit) async {
@@ -104,8 +105,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
   }
 
-  Future<void> _refreshProgression(Emitter<HomeState> emit, String? playerId) async {
-    AppLogger.log('HomeBloc: Refreshing progression...');
+  Future<void> _refreshProgression(Emitter<HomeState> emit, String? playerId, {int? finishedLevel}) async {
+    AppLogger.log('HomeBloc: Refreshing progression... FinishedLevel: $finishedLevel');
     // 1. Fetch player data
     List<Player> players = [];
     try {
@@ -178,18 +179,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       // Fetch Daily Status
       final dailyStatus = await _dailyRepo.getDailyStatus(playerSupabaseId);
 
-      // Determine unlocked worlds
-      final Set<String> unlocked = {'meadow'};
-      if (progression != null) {
-        if (progression.currentLevel > 10) unlocked.add('desert');
-        if (progression.currentLevel > 20) unlocked.add('ice');
-      }
+      // Determine unlocked worlds from DB - ALWAYS ensure meadow is included
+      final List<String> rawUnlocked = progression?.unlockedWorlds ?? ['meadow'];
+      final List<String> unlockedIds = rawUnlocked.contains('meadow') ? rawUnlocked : ['meadow', ...rawUnlocked];
+      final Set<String> unlocked = unlockedIds.toSet();
 
       int? justUnlocked;
-      if (state.lastAction == HomeLastAction.win) {
-         if (progression != null && progression.currentLevel == 11 && !state.unlockedWorlds.contains('desert')) justUnlocked = 2;
-         if (progression != null && progression.currentLevel == 31 && !state.unlockedWorlds.contains('ice')) justUnlocked = 3;
-      }
+      if (finishedLevel == 10 && !unlocked.contains('desert')) justUnlocked = 2;
+      if (finishedLevel == 30 && !unlocked.contains('ice')) justUnlocked = 3;
 
       int currentGlobalLevel = progression?.currentLevel ?? 1;
       int levelsInWorld = 0;
@@ -220,7 +217,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       // Clear transition flag ONLY if we are now viewing/playing a world 
       // that is equal or higher than the one we just unlocked.
       int? effectiveJustUnlocked = justUnlocked ?? state.justUnlockedWorldIndex;
-      if (state.currentWorldIndex >= (effectiveJustUnlocked ?? 0) && state.lastAction != HomeLastAction.win) {
+      if (state.currentWorldIndex >= (effectiveJustUnlocked ?? 0) && finishedLevel == null) {
          effectiveJustUnlocked = null;
       }
 
@@ -242,6 +239,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         currentDate: _dailyRepo.getTodayWorldId(), 
         isDailyCompleted: dailyStatus?.isDailyLevelCompleted ?? false,
         isSeriesCompleted: dailyStatus?.isSeriesCompleted ?? false,
+        unlockedWorldIds: unlockedIds,
         unlockedWorlds: unlocked,
         justUnlockedWorldIndex: effectiveJustUnlocked,
       ));
@@ -458,17 +456,18 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     // The UI listener will trigger the WorldUnlockOverlay.
     
     // Emit win state with specific gained pieces for celebration
+    // We do it before refresh to trigger the puzzle animation immediately
     emit(state.copyWith(
       lastAction: reward > 0 ? HomeLastAction.win : HomeLastAction.none, 
       gainedPuzzlePieces: reward,
     ));
 
     // Hard refresh from DB for the specific player
-    await _refreshProgression(emit, event.playerId);
+    await _refreshProgression(emit, event.playerId, finishedLevel: event.level);
     
-    // UI will update animatedPuzzlePieces via timer or listener later
-    // For now we just reset gained pieces trigger
-    emit(state.copyWith(gainedPuzzlePieces: 0, lastAction: HomeLastAction.none));
+    // We NO LONGER clear flags here because _refreshProgression should handle the final state.
+    // Actually, gainedPuzzlePieces should be cleared eventually.
+    // I'll add a delay or another event for that.
   }
 
   Future<void> _onLoseLife(LoseLife event, Emitter<HomeState> emit) async {
@@ -511,16 +510,42 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   void _onChangeWorld(ChangeWorld event, Emitter<HomeState> emit) async {
-    // We update the world index and show the loading screen, 
-    // but we don't clear justUnlockedWorldIndex yet to keep the UI state (bar color/text)
-    // consistent until the new progression data is fully calculated.
+    final user = DatabaseService().supabase.auth.currentUser;
+    final String uId = user?.id ?? '';
+
+    // If it's a new world being unlocked, persist it to DB
+    if (!state.unlockedWorlds.contains(event.worldId)) {
+      try {
+        final currentProg = await (_db.select(_db.progressions)
+              ..where((t) => t.playerSupabaseId.equals(uId)))
+            .getSingleOrNull();
+        
+        final List<String> currentList = currentProg?.unlockedWorlds ?? ['meadow'];
+        if (!currentList.contains(event.worldId)) {
+          final newList = [...currentList, event.worldId];
+          await (_db.update(_db.progressions)
+                ..where((t) => t.playerSupabaseId.equals(uId)))
+              .write(ProgressionsCompanion(unlockedWorlds: drift.Value(newList)));
+          
+          // Also sync to Supabase
+          unawaited(DatabaseService().supabase.from('progression').upsert({
+            'player_id': uId,
+            'unlocked_worlds': newList.join(','),
+            'updated_at': DateTime.now().toIso8601String(),
+          }, onConflict: 'player_id').catchError((e) => AppLogger.error('Supabase sync failed', e)));
+        }
+      } catch (e) {
+        AppLogger.error('Error updating unlocked worlds', e);
+      }
+    }
+
     emit(state.copyWith(
       currentWorldIndex: event.worldIndex,
       isWorldLoading: true,
+      justUnlockedWorldIndex: null, // Clear the unlock flag immediately
     ));
     
-    final user = DatabaseService().supabase.auth.currentUser;
-    await _refreshProgression(emit, user?.id);
+    await _refreshProgression(emit, uId);
   }
 
   void _onFinishWorldLoading(FinishWorldLoading event, Emitter<HomeState> emit) {
@@ -555,6 +580,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   void _onIncrementAnimatedPuzzles(IncrementAnimatedPuzzles event, Emitter<HomeState> emit) {
     emit(state.copyWith(animatedPuzzlePieces: state.animatedPuzzlePieces + event.count));
+  }
+
+  void _onClearWinFlags(ClearWinFlags event, Emitter<HomeState> emit) {
+    emit(state.copyWith(
+      gainedPuzzlePieces: 0,
+      lastAction: HomeLastAction.none,
+    ));
   }
 
   void _startRechargeTimer() {

@@ -1,15 +1,13 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fixit/core/theme/app_colors.dart';
 import 'package:fixit/features/home/widgets/shiny_puzzle_icon.dart';
 import 'package:fixit/features/home/bloc/home_bloc.dart';
 
 class PuzzleRewardAnimation extends StatefulWidget {
   final Offset startOffset;
   final Offset endOffset;
-  final int incrementAmount; // How much this piece adds to the total on impact
-  final int? badgeValue; // If non-null, shows "+badgeValue" on this piece only
+  final int incrementAmount; 
+  final int? badgeValue; 
   final VoidCallback onComplete;
 
   const PuzzleRewardAnimation({
@@ -58,7 +56,6 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
     });
 
     _controller.addListener(() {
-      // Impact detection (trigger pulse and increment when close to target)
       if (_controller.value >= 0.85 && !_hasImpacted) {
         _hasImpacted = true;
         context.read<HomeBloc>().add(IncrementAnimatedPuzzles(widget.incrementAmount));
@@ -84,48 +81,48 @@ class _PuzzleRewardAnimationState extends State<PuzzleRewardAnimation> with Tick
         final position = _moveAnimation.value;
         final opacity = _opacityAnimation.value;
 
-        return Positioned(
-          left: position.dx - 27,
-          top: position.dy - 27,
+        return Transform.translate(
+          offset: Offset(position.dx - 27, position.dy - 27),
           child: Opacity(
             opacity: opacity,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                const ShinyPuzzleIcon(size: 55),
-                if (widget.badgeValue != null)
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Stack(
-                      children: [
-                        Text(
-                          "+${widget.badgeValue}",
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            foreground: Paint()
-                              ..style = PaintingStyle.stroke
-                              ..strokeWidth = 4
-                              ..color = Colors.black,
-                          ),
-                        ),
-                        Text(
-                          "+${widget.badgeValue}",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 22,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
+            child: child,
           ),
         );
       },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const ShinyPuzzleIcon(size: 55),
+          if (widget.badgeValue != null)
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Stack(
+                children: [
+                  Text(
+                    "+${widget.badgeValue}",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      foreground: Paint()
+                        ..style = PaintingStyle.stroke
+                        ..strokeWidth = 4
+                        ..color = Colors.black,
+                    ),
+                  ),
+                  Text(
+                    "+${widget.badgeValue}",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 22,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

@@ -109,13 +109,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             context,
             MaterialPageRoute(
               builder: (context) {
-                if (hState.currentWorldIndex == 1) {
+                // Determine worldId based on slot index (currentWorldIndex)
+                String worldId = 'meadow';
+                if (hState.currentWorldIndex == 2) worldId = 'desert';
+                if (hState.currentWorldIndex == 3) worldId = 'ice';
+                if (hState.currentWorldIndex == 4) worldId = 'volcano';
+                if (hState.currentWorldIndex == 5) worldId = 'city';
+
+                if (worldId == 'meadow') {
                   return const MeadowGamePage(
                     level: 1,
                     difficulty: GameDifficulty.easy,
                     mode: FixItGameMode.dailySingle,
                   );
-                } else if (hState.currentWorldIndex == 2) {
+                } else if (worldId == 'desert') {
                   return DesertGamePage(
                     level: 1,
                     difficulty: GameDifficulty.easy,
@@ -158,13 +165,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             context,
             MaterialPageRoute(
               builder: (context) {
-                if (hState.currentWorldIndex == 1) {
+                String worldId = 'meadow';
+                if (hState.currentWorldIndex == 2) worldId = 'desert';
+                if (hState.currentWorldIndex == 3) worldId = 'ice';
+                if (hState.currentWorldIndex == 4) worldId = 'volcano';
+                if (hState.currentWorldIndex == 5) worldId = 'city';
+
+                if (worldId == 'meadow') {
                   return MeadowGamePage(
                     level: startLevel,
                     difficulty: GameDifficulty.easy,
                     mode: FixItGameMode.dailySeries,
                   );
-                } else if (hState.currentWorldIndex == 2) {
+                } else if (worldId == 'desert') {
                   return DesertGamePage(
                     level: startLevel,
                     difficulty: GameDifficulty.easy,
@@ -303,7 +316,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       Column(
                         children: [
                           TopNavBar(
-                            unlockedWorlds: state.unlockedWorlds,
+                            unlockedWorldIds: state.unlockedWorldIds,
                             currentWorldIndex: state.currentWorldIndex,
                             onDailyPressed: () async {
                               final authState = context.read<AuthBloc>().state;
@@ -356,7 +369,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                     );
                                                     return;
                                                   }
-                                                  if (state.currentWorldIndex == 1) {
+                                                  
+                                                  String worldId = 'meadow';
+                                                  if (state.currentWorldIndex == 2) worldId = 'desert';
+                                                  if (state.currentWorldIndex == 3) worldId = 'ice';
+                                                  if (state.currentWorldIndex == 4) worldId = 'volcano';
+                                                  if (state.currentWorldIndex == 5) worldId = 'city';
+
+                                                  // Find the progression step (1, 2, 3...) of this world
+                                                  final int step = state.unlockedWorldIds.indexOf(worldId) + 1;
+
+                                                  if (worldId == 'meadow') {
                                                     Navigator.of(context).push(
                                                       MaterialPageRoute(
                                                         builder: (context) => MeadowGamePage(
@@ -368,11 +391,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                         ),
                                                       ),
                                                     );
-                                                  } else if (state.currentWorldIndex == 2) {
+                                                  } else if (worldId == 'desert') {
+                                                    // Only use offset if this world IS the active progression one
+                                                    // or if we want to support replaying.
+                                                    // For now, let's assume world 2 always uses global 11-30.
+                                                    int displayLevel = state.currentLevel;
+                                                    if (step == 2) displayLevel = (state.currentLevel - 10).clamp(1, 20);
+                                                    if (step == 3) displayLevel = (state.currentLevel - 30).clamp(1, 30);
+
                                                     Navigator.of(context).push(
                                                       MaterialPageRoute(
                                                         builder: (context) => DesertGamePage(
-                                                          level: (state.currentLevel - 10).clamp(1, 20),
+                                                          level: displayLevel,
                                                           difficulty: state.difficulty,
                                                           invWaterBucket: state.itemWaterBucket,
                                                           invGoldenWrench: state.itemGoldenWrench,
@@ -380,11 +410,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                         ),
                                                       ),
                                                     );
-                                                  } else if (state.currentWorldIndex == 3) {
+                                                  } else {
+                                                    int displayLevel = state.currentLevel;
+                                                    if (step == 2) displayLevel = (state.currentLevel - 10).clamp(1, 20);
+                                                    if (step == 3) displayLevel = (state.currentLevel - 30).clamp(1, 30);
+
                                                     Navigator.of(context).push(
                                                       MaterialPageRoute(
                                                         builder: (context) => IceGamePage(
-                                                          level: (state.currentLevel - 30).clamp(1, 30),
+                                                          level: displayLevel,
                                                           difficulty: state.difficulty,
                                                         ),
                                                       ),
@@ -422,9 +456,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           worldIndex: _unlockingWorldIndex,
                           barKey: _experienceBarKey,
                           state: state,
-                          onTransition: () {
+                          onTransition: (chosenWorldIndex) {
                             setState(() => _showWorldUnlock = false);
-                            context.read<HomeBloc>().add(ChangeWorld(_unlockingWorldIndex, _unlockingWorldIndex == 2 ? 'desert' : 'ice'));
+                            
+                            // Determine worldId based on chosen index
+                            String wId = 'desert';
+                            if (chosenWorldIndex == 3) wId = 'ice';
+                            if (chosenWorldIndex == 4) wId = 'volcano';
+                            if (chosenWorldIndex == 5) wId = 'city';
+
+                            context.read<HomeBloc>().add(ChangeWorld(chosenWorldIndex, wId));
                           },
                         ),
                     ],
@@ -478,6 +519,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 onComplete: () {
                   setState(() => _showPuzzleReward = false);
                   context.read<HomeBloc>().add(SyncAnimatedPuzzles());
+                  context.read<HomeBloc>().add(ClearWinFlags());
                 },
               ),
           ],
