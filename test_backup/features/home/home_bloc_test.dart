@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bloc_test/bloc_test.dart';
-import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
+import 'package:fixit/features/home/bloc/home_bloc.dart';
 import 'package:fixit/core/database/app_database.dart';
 import 'package:drift/native.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;

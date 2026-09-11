@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:fixit/features/game/presentation/bloc/game_bloc.dart';
-import 'package:fixit/features/game/presentation/bloc/game_event.dart';
-import 'package:fixit/features/game/presentation/bloc/game_state.dart';
-import 'package:fixit/features/home/presentation/bloc/home_bloc.dart';
+import 'package:fixit/features/game/meadow/bloc/meadow_game_bloc.dart';
+import 'package:fixit/features/game/meadow/bloc/meadow_game_event.dart';
+import 'package:fixit/features/game/meadow/bloc/meadow_game_state.dart';
+import 'package:fixit/features/home/bloc/home_bloc.dart';
 import 'package:fixit/core/repositories/progression_repository.dart';
 import 'package:fixit/core/repositories/daily_repository.dart';
 import 'package:fixit/core/models/grid_offset.dart';
@@ -80,10 +80,10 @@ void main() {
     when(() => mockProgressionRepo.grantLevel1Reward(any())).thenAnswer((_) async => {});
   });
 
-  group('GameBloc Regression Tests', () {
-    blocTest<GameBloc, GameState>(
+  group('MeadowGameBloc Regression Tests', () {
+    blocTest<MeadowGameBloc, MeadowGameState>(
       'starts game correctly and sets initial state',
-      build: () => GameBloc(
+      build: () => MeadowGameBloc(
         progressionRepo: mockProgressionRepo,
         dailyRepo: mockDailyRepo,
         sessionRepo: mockSessionRepo,
@@ -96,15 +96,15 @@ void main() {
       )),
       wait: const Duration(milliseconds: 300),
       verify: (bloc) {
-        expect(bloc.state.status, equals(GameStatus.playing));
+        expect(bloc.state.status, equals(MeadowGameStatus.playing));
         expect(bloc.state.levelNumber, equals(1));
         expect(bloc.state.currentPath, isEmpty);
       },
     );
 
-    blocTest<GameBloc, GameState>(
+    blocTest<MeadowGameBloc, MeadowGameState>(
       'cell selection: only adjacent cells can be added',
-      build: () => GameBloc(
+      build: () => MeadowGameBloc(
         progressionRepo: mockProgressionRepo,
         dailyRepo: mockDailyRepo,
         sessionRepo: mockSessionRepo,
@@ -112,8 +112,8 @@ void main() {
       seed: () {
         final hints = List.generate(6, (_) => List<int?>.filled(6, null));
         hints[0][0] = 1;
-        return GameState(
-          status: GameStatus.playing,
+        return MeadowGameState(
+          status: MeadowGameStatus.playing,
           hints: hints,
           currentPath: [const GridOffset(0, 0)],
           walls: {},
@@ -124,13 +124,13 @@ void main() {
         bloc.add(const SelectCell(0, 1)); // Adjacent
       },
       expect: () => [
-        isA<GameState>().having((s) => s.currentPath, 'path', [const GridOffset(0, 0), const GridOffset(0, 1)]),
+        isA<MeadowGameState>().having((s) => s.currentPath, 'path', [const GridOffset(0, 0), const GridOffset(0, 1)]),
       ],
     );
 
-    blocTest<GameBloc, GameState>(
+    blocTest<MeadowGameBloc, MeadowGameState>(
       'walls: prevents moving through a bush',
-      build: () => GameBloc(
+      build: () => MeadowGameBloc(
         progressionRepo: mockProgressionRepo,
         dailyRepo: mockDailyRepo,
         sessionRepo: mockSessionRepo,
@@ -138,8 +138,8 @@ void main() {
       seed: () {
         final hints = List.generate(6, (_) => List<int?>.filled(6, null));
         hints[0][0] = 1;
-        return GameState(
-          status: GameStatus.playing,
+        return MeadowGameState(
+          status: MeadowGameStatus.playing,
           hints: hints,
           currentPath: [const GridOffset(0, 0)],
           walls: {'0,0-0,1'},
@@ -149,9 +149,9 @@ void main() {
       expect: () => [],
     );
 
-    blocTest<GameBloc, GameState>(
+    blocTest<MeadowGameBloc, MeadowGameState>(
       'Angry Snake: becomes angry when sequence is broken',
-      build: () => GameBloc(
+      build: () => MeadowGameBloc(
         progressionRepo: mockProgressionRepo,
         dailyRepo: mockDailyRepo,
         sessionRepo: mockSessionRepo,
@@ -160,8 +160,8 @@ void main() {
         final hints = List.generate(6, (_) => List<int?>.filled(6, null));
         hints[0][0] = 1;
         hints[0][2] = 3;
-        return GameState(
-          status: GameStatus.playing,
+        return MeadowGameState(
+          status: MeadowGameStatus.playing,
           hints: hints,
           currentPath: [const GridOffset(0, 0), const GridOffset(0, 1)],
           walls: {},
@@ -169,13 +169,13 @@ void main() {
       },
       act: (bloc) => bloc.add(const SelectCell(0, 2)),
       expect: () => [
-        isA<GameState>().having((s) => s.isAngry, 'angry', isTrue),
+        isA<MeadowGameState>().having((s) => s.isAngry, 'angry', isTrue),
       ],
     );
 
-    blocTest<GameBloc, GameState>(
+    blocTest<MeadowGameBloc, MeadowGameState>(
       'Dragging on body makes snake angry but does not reset position',
-      build: () => GameBloc(
+      build: () => MeadowGameBloc(
         progressionRepo: mockProgressionRepo,
         dailyRepo: mockDailyRepo,
         sessionRepo: mockSessionRepo,
@@ -183,8 +183,8 @@ void main() {
       seed: () {
         final hints = List.generate(6, (_) => List<int?>.filled(6, null));
         hints[0][0] = 1;
-        return GameState(
-          status: GameStatus.playing,
+        return MeadowGameState(
+          status: MeadowGameStatus.playing,
           hints: hints,
           currentPath: [const GridOffset(0, 0), const GridOffset(0, 1), const GridOffset(0, 2)],
           walls: {},
@@ -192,15 +192,15 @@ void main() {
       },
       act: (bloc) => bloc.add(const SelectCell(0, 1, isDrag: true)),
       expect: () => [
-        isA<GameState>()
+        isA<MeadowGameState>()
           .having((s) => s.isAngry, 'angry', isTrue)
           .having((s) => s.currentPath.length, 'path length', 3),
       ],
     );
 
-    blocTest<GameBloc, GameState>(
+    blocTest<MeadowGameBloc, MeadowGameState>(
       'Tapping on body resets position',
-      build: () => GameBloc(
+      build: () => MeadowGameBloc(
         progressionRepo: mockProgressionRepo,
         dailyRepo: mockDailyRepo,
         sessionRepo: mockSessionRepo,
@@ -208,8 +208,8 @@ void main() {
       seed: () {
         final hints = List.generate(6, (_) => List<int?>.filled(6, null));
         hints[0][0] = 1;
-        return GameState(
-          status: GameStatus.playing,
+        return MeadowGameState(
+          status: MeadowGameStatus.playing,
           hints: hints,
           currentPath: [const GridOffset(0, 0), const GridOffset(0, 1), const GridOffset(0, 2)],
           walls: {},
@@ -217,12 +217,12 @@ void main() {
       },
       act: (bloc) => bloc.add(const SelectCell(0, 1, isDrag: false)),
       expect: () => [
-        isA<GameState>()
+        isA<MeadowGameState>()
           .having((s) => s.currentPath.length, 'path length', 2),
       ],
     );
 
-    blocTest<GameBloc, GameState>(
+    blocTest<MeadowGameBloc, MeadowGameState>(
       'session restoration: loads saved path and time on start',
       build: () {
         // Specifically stub loadSession for this test
@@ -251,7 +251,7 @@ void main() {
                   solutionJson: '[]',
                   createdAt: DateTime.now(),
                 ));
-        return GameBloc(
+        return MeadowGameBloc(
           progressionRepo: mockProgressionRepo,
           dailyRepo: mockDailyRepo,
           sessionRepo: mockSessionRepo,
