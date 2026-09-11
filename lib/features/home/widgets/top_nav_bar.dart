@@ -272,25 +272,74 @@ class PuzzleIndicator extends StatefulWidget {
 class _PuzzleIndicatorState extends State<PuzzleIndicator> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+  
+  // Internal queue to handle rapid successive increments
+  final List<int> _incrementQueue = [];
+  late int _displayedCount;
+  bool _isPulsing = false;
 
   @override
   void initState() {
     super.initState();
+    _displayedCount = widget.state.animatedPuzzlePieces;
+    
+    // Snappier duration for sequential pulses
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 200),
     );
+
     _scaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3).chain(CurveTween(curve: Curves.easeOut)), weight: 50),
-      TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0).chain(CurveTween(curve: Curves.easeIn)), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.25).chain(CurveTween(curve: Curves.easeOut)), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.25, end: 1.0).chain(CurveTween(curve: Curves.easeIn)), weight: 50),
     ]).animate(_controller);
+
+    _controller.addListener(() {
+      // Update the number at the peak of the pulse (0.5 value)
+      if (_controller.value >= 0.5 && _isPulsing && _incrementQueue.isNotEmpty) {
+        if (_displayedCount != _incrementQueue.first) {
+          setState(() {
+            _displayedCount = _incrementQueue.first;
+          });
+        }
+      }
+    });
+
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        if (_incrementQueue.isNotEmpty) _incrementQueue.removeAt(0);
+        _controller.reset();
+        _isPulsing = false;
+        _processQueue();
+      }
+    });
+  }
+
+  void _processQueue() {
+    if (_incrementQueue.isEmpty || _isPulsing) return;
+    _isPulsing = true;
+    _controller.forward();
   }
 
   @override
   void didUpdateWidget(PuzzleIndicator oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.state.animatedPuzzlePieces > oldWidget.state.animatedPuzzlePieces) {
-      _controller.forward(from: 0.0);
+    
+    final int target = widget.state.animatedPuzzlePieces;
+    
+    if (target > _displayedCount) {
+      // Piece impact detected via animatedPuzzlePieces increment
+      if (!_incrementQueue.contains(target)) {
+        _incrementQueue.add(target);
+      }
+      _processQueue();
+    } 
+    else if (target < _displayedCount) {
+      // Purchase or reset
+      setState(() {
+        _displayedCount = target;
+        _incrementQueue.clear();
+      });
     }
   }
 
@@ -321,7 +370,7 @@ class _PuzzleIndicatorState extends State<PuzzleIndicator> with SingleTickerProv
             const ShinyPuzzleIcon(size: 24),
             const SizedBox(width: 8),
             Text(
-              '${widget.state.animatedPuzzlePieces}',
+              '$_displayedCount',
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w900,

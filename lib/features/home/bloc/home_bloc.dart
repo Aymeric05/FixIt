@@ -105,8 +105,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
   }
 
-  Future<void> _refreshProgression(Emitter<HomeState> emit, String? playerId, {int? finishedLevel}) async {
-    AppLogger.log('HomeBloc: Refreshing progression... FinishedLevel: $finishedLevel');
+  Future<void> _refreshProgression(Emitter<HomeState> emit, String? playerId, {int? finishedLevel, int gainedPieces = 0}) async {
+    AppLogger.log('HomeBloc: Refreshing progression... FinishedLevel: $finishedLevel, GainedPieces: $gainedPieces');
     // 1. Fetch player data
     List<Player> players = [];
     try {
@@ -221,11 +221,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
          effectiveJustUnlocked = null;
       }
 
+      // Only sync animated count if no new reward animation is about to start
+      final int newAnimatedCount = gainedPieces > 0 ? state.animatedPuzzlePieces : player.puzzlePieces;
+
       emit(state.copyWith(
         lives: lives,
         nextLifeTime: nextLifeTime,
         puzzlePieces: player.puzzlePieces,
-        animatedPuzzlePieces: player.puzzlePieces, 
+        animatedPuzzlePieces: newAnimatedCount, 
         itemPlusTime: player.itemPlusTime,
         itemMoreNumbers: player.itemMoreNumbers,
         itemRevealPath: player.itemRevealPath,
@@ -242,6 +245,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         unlockedWorldIds: unlockedIds,
         unlockedWorlds: unlocked,
         justUnlockedWorldIndex: effectiveJustUnlocked,
+        gainedPuzzlePieces: gainedPieces,
       ));
     } else {
       AppLogger.log('HomeBloc: No local player found yet. Resetting to initial state.');
@@ -463,7 +467,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     ));
 
     // Hard refresh from DB for the specific player
-    await _refreshProgression(emit, event.playerId, finishedLevel: event.level);
+    await _refreshProgression(emit, event.playerId, finishedLevel: event.level, gainedPieces: reward);
     
     // We NO LONGER clear flags here because _refreshProgression should handle the final state.
     // Actually, gainedPuzzlePieces should be cleared eventually.

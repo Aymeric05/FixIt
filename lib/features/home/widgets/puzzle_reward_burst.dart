@@ -56,18 +56,21 @@ class _PuzzleRewardBurstState extends State<PuzzleRewardBurst> {
   }
 
   Offset _stackedEnd(int index) {
+    // We center the burst around the target by offsetting based on total pieces
     final step = _stackStep;
+    final totalOffset = (widget.visualPieceCount - 1) * step;
     return Offset(
-      widget.endOffset.dx + index * step,
-      widget.endOffset.dy + index * step,
+      widget.endOffset.dx + (index * step) - (totalOffset / 2),
+      widget.endOffset.dy + (index * step) - (totalOffset / 2),
     );
   }
 
   Offset _stackedStart(int index) {
     final step = _stackStep;
+    final totalOffset = (widget.visualPieceCount - 1) * step;
     return Offset(
-      widget.startOffset.dx + index * step,
-      widget.startOffset.dy + index * step,
+      widget.startOffset.dx + (index * step) - (totalOffset / 2),
+      widget.startOffset.dy + (index * step) - (totalOffset / 2),
     );
   }
 
