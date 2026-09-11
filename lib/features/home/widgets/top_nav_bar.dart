@@ -24,13 +24,13 @@ import 'package:fixit/core/utils/app_notifications.dart';
 class TopNavBar extends StatelessWidget {
   static final GlobalKey puzzleKey = GlobalKey();
   final VoidCallback? onDailyPressed;
-  final Set<String> unlockedWorlds;
+  final List<String> unlockedWorldIds;
   final int currentWorldIndex;
 
   const TopNavBar({
-    super.key, 
-    this.onDailyPressed, 
-    this.unlockedWorlds = const {'meadow'},
+    super.key,
+    this.onDailyPressed,
+    this.unlockedWorldIds = const ['meadow'],
     required this.currentWorldIndex,
   });
 
@@ -71,28 +71,17 @@ class TopNavBar extends StatelessWidget {
                       onPressed: () => _showCandyDialog(
                         context,
                         MapDialog(
-                          unlockedWorldIds: unlockedWorlds,
-                          currentWorldId: currentWorldIndex == 2 ? 'desert' : (currentWorldIndex == 3 ? 'ice' : 'meadow'),
+                          unlockedWorldIds: unlockedWorldIds.toSet(),
+                          currentWorldId: unlockedWorldIds.length >= currentWorldIndex ? unlockedWorldIds[currentWorldIndex - 1] : 'meadow',
                           onWorldSelected: (worldId) {
-                            int index = 1;
-                            switch (worldId) {
-                              case 'meadow':
-                                index = 1;
-                                break;
-                              case 'desert':
-                                index = 2;
-                                break;
-                              case 'ice':
-                                index = 3;
-                                break;
-                              case 'volcano':
-                                index = 4;
-                                break;
-                              case 'city':
-                                index = 5;
-                                break;
-                            }
-                            context.read<HomeBloc>().add(ChangeWorld(index, worldId));
+                            // Find the map index (1 to 5) for this worldId
+                            int mapIndex = 1;
+                            if (worldId == 'desert') mapIndex = 2;
+                            if (worldId == 'ice') mapIndex = 3;
+                            if (worldId == 'volcano') mapIndex = 4;
+                            if (worldId == 'city') mapIndex = 5;
+
+                            context.read<HomeBloc>().add(ChangeWorld(mapIndex, worldId));
                           },
                         ),
                       ),
@@ -322,8 +311,8 @@ class _PuzzleIndicatorState extends State<PuzzleIndicator> with SingleTickerProv
           color: Colors.black38,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.white24, width: 2),
-          boxShadow: _controller.isAnimating 
-              ? [BoxShadow(color: Colors.orangeAccent.withValues(alpha: 0.5), blurRadius: 10, spreadRadius: 2)] 
+          boxShadow: _controller.isAnimating
+              ? [BoxShadow(color: Colors.orangeAccent.withValues(alpha: 0.5), blurRadius: 10, spreadRadius: 2)]
               : null,
         ),
         child: Row(

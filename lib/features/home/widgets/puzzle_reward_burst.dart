@@ -1,26 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-
 import 'puzzle_reward_animation.dart';
 
-/// Orchestrates a burst of duplicated [PuzzleRewardAnimation] pieces.
-///
-/// Example: totalReward=20, visualPieceCount=10 -> each piece impact adds +2
-/// to the total, but only the first piece displays the "+20" badge.
-///
-/// The pieces land in a neat stack: the first piece (badge) lands right on
-/// the target and stays visually on top; every following piece lands
-/// slightly offset toward the bottom-right and sits underneath it, like a
-/// small pile of puzzle pieces forming.
-///
-/// The total diagonal spread of the pile is kept constant regardless of how
-/// many pieces are in it (5 for a normal win, 10 for daily/series), so a
-/// bigger piece count results in a tighter per-piece offset instead of the
-/// whole pile stretching further away from the landing point.
 class PuzzleRewardBurst extends StatefulWidget {
   final Offset startOffset;
   final Offset endOffset;
-  final int totalReward; // e.g. 5 or 20
-  final int visualPieceCount; // e.g. 5 or 10
+  final int totalReward; 
+  final int visualPieceCount; 
   final VoidCallback onComplete;
 
   const PuzzleRewardBurst({
@@ -38,11 +24,6 @@ class PuzzleRewardBurst extends StatefulWidget {
 
 class _PuzzleRewardBurstState extends State<PuzzleRewardBurst> {
   static const Duration _stagger = Duration(milliseconds: 90);
-
-  // Total diagonal spread (in px) of the whole pile, from the first piece
-  // (unshifted, on top) to the very last one at the back. This stays fixed
-  // regardless of visualPieceCount, so more pieces means a tighter stack
-  // rather than a pile that stretches further to the bottom-right.
   static const double _maxStackSpread = 36.0;
 
   late final List<bool> _started;
@@ -68,17 +49,12 @@ class _PuzzleRewardBurstState extends State<PuzzleRewardBurst> {
     }
   }
 
-  /// Per-piece stacking step, recalculated so the pile's total spread stays
-  /// at [_maxStackSpread] no matter how many pieces there are.
   double get _stackStep {
     final int pieceCount = widget.visualPieceCount;
     if (pieceCount <= 1) return 0;
     return _maxStackSpread / (pieceCount - 1);
   }
 
-  /// Landing position for piece [index]: the first piece (index 0, the one
-  /// carrying the total badge) lands exactly on the target. Every following
-  /// piece lands a bit further down-right, so they visually stack under it.
   Offset _stackedEnd(int index) {
     final step = _stackStep;
     return Offset(
@@ -87,8 +63,6 @@ class _PuzzleRewardBurstState extends State<PuzzleRewardBurst> {
     );
   }
 
-  /// Start position mirrors the same stacking offset so each piece flies in
-  /// on its own parallel path instead of converging messily.
   Offset _stackedStart(int index) {
     final step = _stackStep;
     return Offset(
@@ -100,13 +74,8 @@ class _PuzzleRewardBurstState extends State<PuzzleRewardBurst> {
   @override
   Widget build(BuildContext context) {
     final int pieceCount = widget.visualPieceCount;
-    // Split the total reward evenly across the visual pieces so the sum
-    // still lands exactly on totalReward (e.g. 20 over 10 pieces = +2 each).
     final int incrementPerPiece = (widget.totalReward / pieceCount).round();
 
-    // Build children so the badge piece (index 0) is added LAST, which in a
-    // Stack means it's painted on top of every other piece — keeping it
-    // visually "above" the little pile formed by the rest.
     final List<Widget> pieces = [];
     for (int i = pieceCount - 1; i >= 0; i--) {
       if (!_started[i]) continue;
@@ -122,6 +91,12 @@ class _PuzzleRewardBurstState extends State<PuzzleRewardBurst> {
       );
     }
 
-    return Stack(children: pieces);
+    // Wrap in fill to ensure it takes whole screen space for absolute positioning of children
+    return Positioned.fill(
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: pieces,
+      ),
+    );
   }
 }

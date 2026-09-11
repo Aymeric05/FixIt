@@ -98,3 +98,5 @@ class IncrementAnimatedPuzzles extends HomeEvent {
   @override
   List<Object> get props => [count];
 }
+
+class ClearWinFlags extends HomeEvent {}

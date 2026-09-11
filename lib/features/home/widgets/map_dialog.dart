@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:fixit/core/theme/app_colors.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:fixit/features/home/widgets/candy_dialog.dart';
 
 class MapDialog extends StatefulWidget {
   final Set<String> unlockedWorldIds;
@@ -20,15 +22,44 @@ class MapDialog extends StatefulWidget {
 
 class _MapDialogState extends State<MapDialog> {
   final List<WorldData> worlds = [
-    WorldData(id: 'meadow', name: 'Meadow', asset: 'assets/images/world1.png', color: Colors.green),
-    WorldData(id: 'desert', name: 'Desert', asset: 'assets/images/world2.png', color: Colors.orange),
-    WorldData(id: 'ice', name: 'Ice', asset: 'assets/images/world3.png', color: Colors.blueAccent),
-    WorldData(id: 'volcano', name: 'Volcano', asset: 'assets/images/world4.png', color: Colors.red),
-    WorldData(id: 'city', name: 'City', asset: 'assets/images/world5.png', color: Colors.purple),
+    WorldData(
+      id: 'meadow', 
+      name: 'Meadow', 
+      asset: 'assets/images/world1.png', 
+      color: Colors.green,
+      previewText: "Connect the numbers to guide the serpent through the lush meadow!",
+    ),
+    WorldData(
+      id: 'desert', 
+      name: 'Desert', 
+      asset: 'assets/images/world2.png', 
+      color: Colors.orange,
+      previewText: "Rotate the pipes to guide the water and restore the oasis!",
+    ),
+    WorldData(
+      id: 'ice', 
+      name: 'Ice', 
+      asset: 'assets/images/world3.png', 
+      color: Colors.blueAccent,
+      previewText: "Slide through the frozen kingdom and solve icy puzzles!",
+    ),
+    WorldData(
+      id: 'volcano', 
+      name: 'Volcano', 
+      asset: 'assets/images/world4.png', 
+      color: Colors.red,
+      previewText: "Navigate dangerous lava flows in the heart of the volcano!",
+    ),
+    WorldData(
+      id: 'city', 
+      name: 'City', 
+      asset: 'assets/images/world5.png', 
+      color: Colors.purple,
+      previewText: "Restore power to the urban jungle and fix the city grid!",
+    ),
   ];
 
   late final PageController _rollController;
-  int _viewMode = 0; // 0: Roll, 1: Path
   
   // For infinite scroll
   static const int _infiniteFactor = 10000;
@@ -52,7 +83,7 @@ class _MapDialogState extends State<MapDialog> {
     super.dispose();
   }
 
-  bool _isUnlocked(String id) => widget.unlockedWorldIds.contains(id);
+  bool _isUnlocked(String id) => id == 'meadow' || widget.unlockedWorldIds.contains(id);
 
   @override
   Widget build(BuildContext context) {
@@ -93,25 +124,7 @@ class _MapDialogState extends State<MapDialog> {
                   // Content
                   Padding(
                     padding: const EdgeInsets.fromLTRB(0, 70, 0, 20),
-                    child: Column(
-                      children: [
-                        // Tabs
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildTab(0, 'ISLANDS'),
-                            const SizedBox(width: 30),
-                            _buildTab(1, 'MAP PATH'),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        
-                        // Switchable Views
-                        Expanded(
-                          child: _viewMode == 0 ? _buildIslandsRoll() : _buildPathView(),
-                        ),
-                      ],
-                    ),
+                    child: _buildIslandsRoll(),
                   ),
                 ],
               ),
@@ -123,37 +136,6 @@ class _MapDialogState extends State<MapDialog> {
           
           // Close Button
           _buildCloseButton(context),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTab(int mode, String label) {
-    final active = _viewMode == mode;
-    return GestureDetector(
-      onTap: () => setState(() => _viewMode = mode),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w900,
-              color: active ? Colors.white : Colors.white60,
-              fontSize: 16,
-              letterSpacing: 1.2,
-              shadows: active ? [const Shadow(color: Colors.black45, blurRadius: 4)] : null,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Container(
-            height: 4,
-            width: 50,
-            decoration: BoxDecoration(
-              color: active ? AppColors.candyPink : Colors.transparent,
-              borderRadius: BorderRadius.circular(2),
-              boxShadow: active ? [const BoxShadow(color: Colors.black26, blurRadius: 2)] : null,
-            ),
-          ),
         ],
       ),
     );
@@ -194,6 +176,7 @@ class _MapDialogState extends State<MapDialog> {
                       children: [
                         Stack(
                           alignment: Alignment.center,
+                          clipBehavior: Clip.none,
                           children: [
                             ColorFiltered(
                               colorFilter: unlocked 
@@ -206,11 +189,11 @@ class _MapDialogState extends State<MapDialog> {
                                   ]),
                               child: Image.asset(
                                 world.asset,
-                                height: 200, // Enlarged
+                                height: 200, 
                                 fit: BoxFit.contain,
                               ),
                             ),
-                            if (!unlocked)
+                            if (!unlocked) ...[
                               Container(
                                 width: 90,
                                 height: 90,
@@ -220,6 +203,27 @@ class _MapDialogState extends State<MapDialog> {
                                 ),
                                 child: const Icon(Icons.lock, color: Colors.white, size: 45),
                               ),
+                              Positioned(
+                                top: 0,
+                                right: -10,
+                                child: CandyButton(
+                                  width: 44,
+                                  height: 44,
+                                  borderRadius: 22,
+                                  color: AppColors.candyBlue,
+                                  darkColor: AppColors.candyBlueDark,
+                                  onPressed: () => _showPreview(world),
+                                  child: Text(
+                                    "?",
+                                    style: GoogleFonts.luckiestGuy(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                         const SizedBox(height: 10),
@@ -252,150 +256,52 @@ class _MapDialogState extends State<MapDialog> {
     );
   }
 
-  Widget _buildPathView() {
-    final hasWorld4 = worlds.length > 3;
-    final hasWorld5 = worlds.length > 4;
-    final hasWorld6 = worlds.length > 5;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          // Row 2: (6) -- 5 -- 4
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildEmptyNode(),
-              hasWorld6 ? _buildDashedLine() : const SizedBox(width: 40),
-              _buildPathIsland(4), // World 5
-              hasWorld5 ? _buildDashedLine() : const SizedBox(width: 40),
-              _buildPathIsland(3), // World 4
-            ],
-          ),
-          // Vertical connector on the RIGHT (between 3 and 4)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(width: 85), // island 6
-              const SizedBox(width: 40), // line
-              const SizedBox(width: 85), // island 5
-              const SizedBox(width: 40), // line
-              hasWorld4 ? _buildVerticalDashedLine() : const SizedBox(width: 85, height: 40),
-            ],
-          ),
-          // Row 1: 1 -- 2 -- 3
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildPathIsland(0), // World 1
-              worlds.length > 1 ? _buildDashedLine() : const SizedBox(width: 40),
-              _buildPathIsland(1), // World 2
-              worlds.length > 2 ? _buildDashedLine() : const SizedBox(width: 40),
-              _buildPathIsland(2), // World 3
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPathIsland(int index) {
-    if (index >= worlds.length) return _buildEmptyNode();
-    final world = worlds[index];
-    final unlocked = _isUnlocked(world.id);
-
-    return GestureDetector(
-      onTap: () {
-        if (unlocked) {
-          Navigator.of(context).pop();
-          widget.onWorldSelected?.call(world.id);
-        }
-      },
-      child: SizedBox(
-        width: 85,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+  void _showPreview(WorldData world) {
+    showDialog(
+      context: context,
+      builder: (ctx) => CandyDialog(
+        title: world.name.toUpperCase(),
+        content: Column(
           children: [
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                ColorFiltered(
-                  colorFilter: unlocked 
-                    ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
-                    : const ColorFilter.matrix([
-                        0.2126, 0.7152, 0.0722, 0, 0,
-                        0.2126, 0.7152, 0.0722, 0, 0,
-                        0.2126, 0.7152, 0.0722, 0, 0,
-                        0,      0,      0,      1, 0,
-                      ]),
-                  child: Image.asset(
-                    world.asset,
-                    width: 80,
-                    height: 80,
-                    fit: BoxFit.contain,
-                  ),
+            Container(
+              height: 150,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.asset(
+                  world.asset,
+                  fit: BoxFit.contain,
                 ),
-                if (!unlocked)
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.lock, color: Colors.white, size: 20),
-                  ),
-              ],
+              ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 20),
             Text(
-              "${index + 1}",
+              world.previewText,
+              textAlign: TextAlign.center,
               style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 14,
-                shadows: [Shadow(color: Colors.black45, blurRadius: 2)],
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyNode() {
-    return const SizedBox(width: 85, height: 85);
-  }
-
-  Widget _buildDashedLine() {
-    const dashColor = Color(0xFF8D6E63); // Slightly browner
-    return SizedBox(
-      width: 40,
-      height: 4,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: List.generate(3, (index) => Container(
-          width: 8,
-          height: 4,
-          decoration: BoxDecoration(
-            color: dashColor,
-            borderRadius: BorderRadius.circular(2),
+        actions: [
+          CandyButton(
+            width: 150,
+            height: 50,
+            color: AppColors.candyGreen,
+            darkColor: AppColors.candyGreenDark,
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              "GOT IT!",
+              style: GoogleFonts.luckiestGuy(color: Colors.white, fontWeight: FontWeight.w900),
+            ),
           ),
-        )),
-      ),
-    );
-  }
-
-  Widget _buildVerticalDashedLine() {
-    return SizedBox(
-      width: 85,
-      height: 40,
-      child: Center(
-        child: RotatedBox(
-          quarterTurns: 1,
-          child: _buildDashedLine(),
-        ),
+        ],
       ),
     );
   }
@@ -465,11 +371,13 @@ class WorldData {
   final String name;
   final String asset;
   final Color color;
+  final String previewText;
 
   WorldData({
     required this.id, 
     required this.name, 
     required this.asset,
     required this.color,
+    required this.previewText,
   });
 }

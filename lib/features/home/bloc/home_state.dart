@@ -39,7 +39,8 @@ class HomeState extends Equatable {
   final DateTime? lastDailyPuzzleAt;
   final bool isDailyCompleted;
   final bool isSeriesCompleted;
-  final Set<String> unlockedWorlds; 
+  final List<String> unlockedWorldIds; 
+  final Set<String> unlockedWorlds; // Keep set for fast lookup
   final bool isDebugLevelActive;
   final int? justUnlockedWorldIndex; 
   final int animatedPuzzlePieces; // Field for UI-synced puzzle count
@@ -74,6 +75,7 @@ class HomeState extends Equatable {
     this.lastDailyPuzzleAt,
     this.isDailyCompleted = false,
     this.isSeriesCompleted = false,
+    this.unlockedWorldIds = const ['meadow'],
     this.unlockedWorlds = const {'meadow'},
     this.isDebugLevelActive = false,
     this.justUnlockedWorldIndex,
@@ -109,6 +111,7 @@ class HomeState extends Equatable {
     DateTime? lastDailyPuzzleAt,
     bool? isDailyCompleted,
     bool? isSeriesCompleted,
+    List<String>? unlockedWorldIds,
     Set<String>? unlockedWorlds,
     bool? isDebugLevelActive,
     int? justUnlockedWorldIndex,
@@ -143,6 +146,7 @@ class HomeState extends Equatable {
       lastDailyPuzzleAt: lastDailyPuzzleAt ?? this.lastDailyPuzzleAt,
       isDailyCompleted: isDailyCompleted ?? this.isDailyCompleted,
       isSeriesCompleted: isSeriesCompleted ?? this.isSeriesCompleted,
+      unlockedWorldIds: unlockedWorldIds ?? this.unlockedWorldIds,
       unlockedWorlds: unlockedWorlds ?? this.unlockedWorlds,
       isDebugLevelActive: isDebugLevelActive ?? this.isDebugLevelActive,
       justUnlockedWorldIndex: justUnlockedWorldIndex,
@@ -180,6 +184,7 @@ class HomeState extends Equatable {
         lastDailyPuzzleAt,
         isDailyCompleted,
         isSeriesCompleted,
+        unlockedWorldIds,
         unlockedWorlds,
         isDebugLevelActive,
         justUnlockedWorldIndex,

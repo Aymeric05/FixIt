@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:fixit/core/theme/app_colors.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:fixit/core/widgets/scintillating_wrapper.dart';
 
 class CandyDialog extends StatelessWidget {
@@ -71,12 +72,12 @@ class CandyDialog extends StatelessWidget {
                     child: Text(
                       title,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: GoogleFonts.luckiestGuy(
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
                         letterSpacing: 1.5,
-                        shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
+                        shadows: [const Shadow(color: Colors.black45, blurRadius: 4)],
                       ),
                     ),
                   ),
