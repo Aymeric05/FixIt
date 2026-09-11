@@ -35,10 +35,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<CompleteLevel>(_onCompleteLevel);
     on<LoseLife>(_onLoseLife);
     on<ChangeWorld>(_onChangeWorld);
+    on<FinishWorldLoading>(_onFinishWorldLoading);
     on<MidnightReached>(_onMidnightReached);
     on<DebugSetLevel>(_onDebugSetLevel);
     on<SyncAnimatedPuzzles>(_onSyncAnimatedPuzzles);
     on<IncrementAnimatedPuzzles>(_onIncrementAnimatedPuzzles);
+    on<AppResumed>(_onAppResumed);
   }
 
   Future<void> _onLoadHomeData(LoadHomeData event, Emitter<HomeState> emit) async {
@@ -170,7 +172,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         nextLifeTime = null;
       }
 
-      unawaited(_progressionRepo.ensureNextLevelsExist('world_1', progression?.currentLevel ?? 1));
+      final String currentWorldId = state.currentWorldIndex == 2 ? 'desert' : (state.currentWorldIndex == 3 ? 'ice' : 'world_1');
+      unawaited(_progressionRepo.ensureNextLevelsExist(currentWorldId, progression?.currentLevel ?? 1));
 
       // Fetch Daily Status
       final dailyStatus = await _dailyRepo.getDailyStatus(playerSupabaseId);
@@ -185,41 +188,54 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       int? justUnlocked;
       if (state.lastAction == HomeLastAction.win) {
          if (progression != null && progression.currentLevel == 11 && !state.unlockedWorlds.contains('desert')) justUnlocked = 2;
-         if (progression != null && progression.currentLevel == 21 && !state.unlockedWorlds.contains('ice')) justUnlocked = 3;
+         if (progression != null && progression.currentLevel == 31 && !state.unlockedWorlds.contains('ice')) justUnlocked = 3;
       }
 
-      // Progression calculation logic:
-      // World 1 (Meadow): Levels 1-10
-      // World 2 (Desert): Levels 1-10 (offset from global 11)
-      // We use currentWorldIndex to filter logic in the UI
-      
+      int currentGlobalLevel = progression?.currentLevel ?? 1;
       int levelsInWorld = 0;
       int maxLevelsInWorld = 10;
-      if (progression != null) {
-        if (state.currentWorldIndex == 1) {
-          levelsInWorld = min(10, progression.currentLevel - 1);
-          maxLevelsInWorld = 10;
-        } else if (state.currentWorldIndex == 2) {
-          levelsInWorld = progression.currentLevel > 10 ? (progression.currentLevel - 11) : 0;
-          maxLevelsInWorld = 20; // World 2 now requires 20 levels
-        } else if (state.currentWorldIndex == 3) {
-          levelsInWorld = progression.currentLevel > 30 ? (progression.currentLevel - 31) : 0;
-          maxLevelsInWorld = 30;
+
+      // The bar reflects the progression based on the highest unlocked world milestone.
+      if (currentGlobalLevel > 30 || justUnlocked == 3) {
+        if (justUnlocked == 3) {
+          levelsInWorld = 20;
+          maxLevelsInWorld = 20;
+        } else {
+          levelsInWorld = currentGlobalLevel - 31;
+          maxLevelsInWorld = 30; // Next world in 30
         }
+      } else if (currentGlobalLevel > 10 || justUnlocked == 2) {
+        if (justUnlocked == 2) {
+          levelsInWorld = 10;
+          maxLevelsInWorld = 10;
+        } else {
+          levelsInWorld = currentGlobalLevel - 11;
+          maxLevelsInWorld = 20; // Next world in 20
+        }
+      } else {
+        levelsInWorld = currentGlobalLevel - 1;
+        maxLevelsInWorld = 10;
+      }
+
+      // Clear transition flag ONLY if we are now viewing/playing a world 
+      // that is equal or higher than the one we just unlocked.
+      int? effectiveJustUnlocked = justUnlocked ?? state.justUnlockedWorldIndex;
+      if (state.currentWorldIndex >= (effectiveJustUnlocked ?? 0) && state.lastAction != HomeLastAction.win) {
+         effectiveJustUnlocked = null;
       }
 
       emit(state.copyWith(
         lives: lives,
         nextLifeTime: nextLifeTime,
         puzzlePieces: player.puzzlePieces,
-        animatedPuzzlePieces: player.puzzlePieces, // Keep in sync on load
+        animatedPuzzlePieces: player.puzzlePieces, 
         itemPlusTime: player.itemPlusTime,
         itemMoreNumbers: player.itemMoreNumbers,
         itemRevealPath: player.itemRevealPath,
         itemWaterBucket: player.itemWaterBucket,
         itemGoldenWrench: player.itemGoldenWrench,
         itemSandShovel: player.itemSandShovel,
-        currentLevel: progression?.currentLevel ?? 1,
+        currentLevel: currentGlobalLevel,
         levelsCompletedInWorld: levelsInWorld,
         maxLevelsInWorld: maxLevelsInWorld,
         isLoading: false,
@@ -227,13 +243,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         isDailyCompleted: dailyStatus?.isDailyLevelCompleted ?? false,
         isSeriesCompleted: dailyStatus?.isSeriesCompleted ?? false,
         unlockedWorlds: unlocked,
-        justUnlockedWorldIndex: justUnlocked,
+        justUnlockedWorldIndex: effectiveJustUnlocked,
       ));
-
-      // Reset justUnlockedWorldIndex after emitting once
-      if (justUnlocked != null) {
-        emit(state.copyWith(justUnlockedWorldIndex: null));
-      }
     } else {
       AppLogger.log('HomeBloc: No local player found yet. Resetting to initial state.');
       emit(const HomeState());
@@ -499,11 +510,17 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     await _refreshProgression(emit, user?.id);
   }
 
-  void _onChangeWorld(ChangeWorld event, Emitter<HomeState> emit) {
+  void _onChangeWorld(ChangeWorld event, Emitter<HomeState> emit) async {
+    // We update the world index and show the loading screen, 
+    // but we don't clear justUnlockedWorldIndex yet to keep the UI state (bar color/text)
+    // consistent until the new progression data is fully calculated.
     emit(state.copyWith(
       currentWorldIndex: event.worldIndex,
       isWorldLoading: true,
     ));
+    
+    final user = DatabaseService().supabase.auth.currentUser;
+    await _refreshProgression(emit, user?.id);
   }
 
   void _onFinishWorldLoading(FinishWorldLoading event, Emitter<HomeState> emit) {

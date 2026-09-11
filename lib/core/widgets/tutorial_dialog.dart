@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,37 +9,51 @@ import 'package:fixit/core/models/grid_offset.dart';
 import 'package:fixit/features/game/meadow/pages/meadow_game_page.dart';
 import 'package:fixit/features/game/meadow/bloc/meadow_game_bloc.dart';
 import 'package:fixit/features/game/meadow/bloc/meadow_game_event.dart';
+import 'package:fixit/features/game/desert/bloc/desert_game_bloc.dart';
+import 'package:fixit/features/game/desert/bloc/desert_game_event.dart';
 
 class TutorialDialog extends StatefulWidget {
   final String tutorialKey;
+  final int worldIndex;
 
   const TutorialDialog({
     super.key,
     required this.tutorialKey,
+    required this.worldIndex,
   });
 
   static Future<void> showIfFirstTime(
     BuildContext context, {
     required String tutorialKey,
+    required int worldIndex,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final hasSeen = prefs.getBool(tutorialKey) ?? false;
 
     if (!hasSeen && context.mounted) {
-      context.read<MeadowGameBloc>().add(PauseTimer());
+      if (worldIndex == 1) {
+        context.read<MeadowGameBloc>().add(PauseTimer());
+      } else if (worldIndex == 2) {
+        context.read<DesertGameBloc>().add(PauseDesertTimer());
+      }
 
       await showDialog(
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) => TutorialDialog(
           tutorialKey: tutorialKey,
+          worldIndex: worldIndex,
         ),
       );
       
       await prefs.setBool(tutorialKey, true);
       
       if (context.mounted) {
-        context.read<MeadowGameBloc>().add(ResumeTimer());
+        if (worldIndex == 1) {
+          context.read<MeadowGameBloc>().add(ResumeTimer());
+        } else if (worldIndex == 2) {
+          context.read<DesertGameBloc>().add(ResumeDesertTimer());
+        }
       }
     }
   }
@@ -102,18 +117,20 @@ class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProvid
     _timer = Timer.periodic(const Duration(milliseconds: 200), (timer) {
       if (!mounted) return;
       setState(() {
-        if (_currentStep == 1) {
-          _handleStep1();
-        } else {
-          _handleStep2();
+        if (widget.worldIndex == 1) {
+          if (_currentStep == 1) {
+            _handleMeadowStep1();
+          } else {
+            _handleMeadowStep2();
+          }
+        } else if (widget.worldIndex == 2) {
+          _handleDesertStep();
         }
       });
     });
   }
 
-
-
-  void _handleStep1() {
+  void _handleMeadowStep1() {
     if (_animSubStep < _errorPath.length) {
       _currentDrawingPath.add(_errorPath[_animSubStep]);
       _animSubStep++;
@@ -131,7 +148,7 @@ class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProvid
     }
   }
 
-  void _handleStep2() {
+  void _handleMeadowStep2() {
     if (_animSubStep < _fullPath.length) {
       _currentDrawingPath.add(_fullPath[_animSubStep]);
       _animSubStep++;
@@ -146,6 +163,29 @@ class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProvid
           });
         }
       });
+    }
+  }
+
+  int _desertRotation = 0;
+  void _handleDesertStep() {
+    if (_animSubStep < 4) {
+      _animSubStep++;
+    } else {
+      _animSubStep = 0;
+      _desertRotation = (_desertRotation + 1) % 4;
+      if (_desertRotation == 1) { // 90 deg is correct for this demo
+         _showYellowSuccess = true;
+         _timer?.cancel();
+         Future.delayed(const Duration(seconds: 3), () {
+            if (mounted) {
+              setState(() {
+                _showYellowSuccess = false;
+                _desertRotation = 0;
+                _startAnimation();
+              });
+            }
+         });
+      }
     }
   }
 
@@ -164,18 +204,26 @@ class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProvid
     String badgeText;
     Color badgeColor;
 
-    if (_currentStep == 1) {
-      titleText = "DON'T MISS ANY!";
-      description = "Skipping cells causes failure!";
-      pathColor = Colors.red;
-      badgeText = "WRONG";
-      badgeColor = Colors.red;
+    if (widget.worldIndex == 1) {
+      if (_currentStep == 1) {
+        titleText = "DON'T MISS ANY!";
+        description = "Skipping cells causes failure!";
+        pathColor = Colors.red;
+        badgeText = "WRONG";
+        badgeColor = Colors.red;
+      } else {
+        titleText = "FILL EVERYTHING!";
+        description = "Complete the grid to win!";
+        pathColor = AppColors.candyGreen;
+        badgeText = "CORRECT";
+        badgeColor = AppColors.candyGreen;
+      }
     } else {
-      titleText = "FILL EVERYTHING!";
-      description = "Complete the grid to win!";
-      pathColor = AppColors.candyGreen;
-      badgeText = "CORRECT";
-      badgeColor = AppColors.candyGreen;
+      titleText = "RESTORE THE OASIS!";
+      description = "Rotate pipes to water all cacti!";
+      pathColor = Colors.blue;
+      badgeText = _showYellowSuccess ? "CONNECTED" : "TAP TO ROTATE";
+      badgeColor = _showYellowSuccess ? AppColors.candyGreen : AppColors.candyBlue;
     }
 
     return Dialog(
@@ -213,89 +261,11 @@ class _TutorialDialogState extends State<TutorialDialog> with SingleTickerProvid
                   ),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final cellSize = constraints.maxWidth / 3;
-                      return AnimatedBuilder(
-                        animation: _flashController,
-                        builder: (context, child) {
-                          return Stack(
-                            children: [
-                              GridView.builder(
-                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3),
-                                itemCount: 9,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemBuilder: (context, index) {
-                                  final r = index ~/ 3;
-                                  final c = index % 3;
-                                  final pos = GridOffset(r, c);
-                                  final val = _hints[r][c];
-                                  
-                                  final isVisited = _currentDrawingPath.contains(pos);
-                                  Color cellColor = Colors.transparent;
-                                  if (_showYellowSuccess) {
-                                    cellColor = Colors.yellow.withValues(alpha: 0.6);
-                                  } else if (_showRedAlert && !isVisited) {
-                                    cellColor = Colors.red.withValues(alpha: _flashController.value * 0.6);
-                                  }
-
-                                  return Container(
-                                    decoration: BoxDecoration(
-                                      color: cellColor,
-                                      border: Border.all(color: Colors.white10, width: 0.5),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: val == null ? null : Text(
-                                      '$val',
-                                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20),
-                                    ),
-                                  );
-                                },
-                              ),
-                              CustomPaint(
-                                size: Size(constraints.maxWidth, constraints.maxWidth),
-                                painter: PathLinePainter(
-                                  path: _currentDrawingPath,
-                                  cellSize: cellSize,
-                                  color: pathColor,
-                                  isAngry: _showRedAlert,
-                                ),
-                              ),
-                              if (_currentDrawingPath.isNotEmpty)
-                                Positioned(
-                                  left: _currentDrawingPath.last.col * cellSize,
-                                  top: _currentDrawingPath.last.row * cellSize,
-                                  width: cellSize,
-                                  height: cellSize,
-                                  child: CustomPaint(
-                                    painter: HeadPainter(isAngry: _showRedAlert, cellSize: cellSize),
-                                  ),
-                                ),
-                              // BAD/GOOD Badge overlay
-                              Center(
-                                child: Transform.rotate(
-                                  angle: -0.2,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: badgeColor.withValues(alpha: 0.9),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Colors.white, width: 2),
-                                    ),
-                                    child: Text(
-                                      badgeText,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 24,
-                                        letterSpacing: 2,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      );
+                      if (widget.worldIndex == 1) {
+                        return _buildMeadowTutorial(constraints, pathColor, badgeColor, badgeText);
+                      } else {
+                        return _buildDesertTutorial(constraints, badgeColor, badgeText);
+                      }
                     },
                   ),
                 ),
@@ -427,4 +397,144 @@ class HeadPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant HeadPainter oldDelegate) => 
       oldDelegate.isAngry != isAngry || oldDelegate.cellSize != cellSize;
+}
+
+extension on _TutorialDialogState {
+  Widget _buildMeadowTutorial(BoxConstraints constraints, Color pathColor, Color badgeColor, String badgeText) {
+    final cellSize = constraints.maxWidth / 3;
+    return AnimatedBuilder(
+      animation: _flashController,
+      builder: (context, child) {
+        return Stack(
+          children: [
+            GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3),
+              itemCount: 9,
+              physics: const NeverScrollableScrollPhysics(),
+              itemBuilder: (context, index) {
+                final r = index ~/ 3;
+                final c = index % 3;
+                final pos = GridOffset(r, c);
+                final val = _hints[r][c];
+
+                final isVisited = _currentDrawingPath.contains(pos);
+                Color cellColor = Colors.transparent;
+                if (_showYellowSuccess) {
+                  cellColor = Colors.yellow.withValues(alpha: 0.6);
+                } else if (_showRedAlert && !isVisited) {
+                  cellColor = Colors.red.withValues(alpha: _flashController.value * 0.6);
+                }
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: cellColor,
+                    border: Border.all(color: Colors.white10, width: 0.5),
+                  ),
+                  alignment: Alignment.center,
+                  child: val == null
+                      ? null
+                      : Text(
+                          '$val',
+                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20),
+                        ),
+                );
+              },
+            ),
+            CustomPaint(
+              size: Size(constraints.maxWidth, constraints.maxWidth),
+              painter: PathLinePainter(
+                path: _currentDrawingPath,
+                cellSize: cellSize,
+                color: pathColor,
+                isAngry: _showRedAlert,
+              ),
+            ),
+            if (_currentDrawingPath.isNotEmpty)
+              Positioned(
+                left: _currentDrawingPath.last.col * cellSize,
+                top: _currentDrawingPath.last.row * cellSize,
+                width: cellSize,
+                height: cellSize,
+                child: CustomPaint(
+                  painter: HeadPainter(isAngry: _showRedAlert, cellSize: cellSize),
+                ),
+              ),
+            _buildTutorialBadge(badgeColor, badgeText),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDesertTutorial(BoxConstraints constraints, Color badgeColor, String badgeText) {
+    final cellSize = constraints.maxWidth / 2;
+    return AnimatedBuilder(
+      animation: _flashController,
+      builder: (context, child) {
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Source
+                Container(
+                  width: cellSize,
+                  height: cellSize,
+                  decoration: BoxDecoration(border: Border.all(color: Colors.white10)),
+                  child: const Icon(Icons.waves, color: Colors.blue, size: 50),
+                ),
+                // Pipe
+                Container(
+                  width: cellSize,
+                  height: cellSize,
+                  decoration: BoxDecoration(
+                    color: _showYellowSuccess ? Colors.blue.withValues(alpha: 0.3) : Colors.transparent,
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: Transform.rotate(
+                    angle: _desertRotation * pi / 2,
+                    child: Icon(Icons.remove, color: _showYellowSuccess ? Colors.blue : Colors.grey, size: 60),
+                  ),
+                ),
+              ],
+            ),
+            if (!_showYellowSuccess)
+              Positioned(
+                right: cellSize / 4,
+                top: cellSize / 2,
+                child: Icon(Icons.touch_app, color: Colors.white, size: 40 + (_flashController.value * 10)),
+              ),
+            _buildTutorialBadge(badgeColor, badgeText),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTutorialBadge(Color color, String text) {
+    return Center(
+      child: Transform.rotate(
+        angle: -0.2,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white, width: 2),
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+          ),
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 22,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -7,6 +7,7 @@ import 'package:fixit/features/home/widgets/main_play_button.dart';
 import 'package:fixit/features/home/widgets/lives_store_dialog.dart';
 import 'package:fixit/features/home/pages/loading_screen.dart';
 import 'package:fixit/features/game/meadow/pages/meadow_game_page.dart';
+import 'package:fixit/features/game/ice/pages/ice_game_page.dart';
 import 'package:fixit/features/auth/bloc/auth_bloc.dart';
 import 'package:fixit/features/auth/bloc/auth_state.dart';
 import 'package:fixit/features/friends/bloc/friends_bloc.dart';
@@ -107,20 +108,29 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => hState.currentWorldIndex == 1
-                  ? const MeadowGamePage(
-                level: 1,
-                difficulty: GameDifficulty.easy,
-                mode: FixItGameMode.dailySingle,
-              )
-                  : DesertGamePage(
-                level: 1,
-                difficulty: GameDifficulty.easy,
-                mode: FixItGameMode.dailySingle,
-                invWaterBucket: hState.itemWaterBucket,
-                invGoldenWrench: hState.itemGoldenWrench,
-                invSandShovel: hState.itemSandShovel,
-              ),
+              builder: (context) {
+                if (hState.currentWorldIndex == 1) {
+                  return const MeadowGamePage(
+                    level: 1,
+                    difficulty: GameDifficulty.easy,
+                    mode: FixItGameMode.dailySingle,
+                  );
+                } else if (hState.currentWorldIndex == 2) {
+                  return DesertGamePage(
+                    level: 1,
+                    difficulty: GameDifficulty.easy,
+                    mode: FixItGameMode.dailySingle,
+                    invWaterBucket: hState.itemWaterBucket,
+                    invGoldenWrench: hState.itemGoldenWrench,
+                    invSandShovel: hState.itemSandShovel,
+                  );
+                } else {
+                  return IceGamePage(
+                    level: 1,
+                    difficulty: GameDifficulty.easy,
+                  );
+                }
+              },
             ),
           ).then((_) {
             if (mounted) {
@@ -147,20 +157,29 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => hState.currentWorldIndex == 1
-                  ? MeadowGamePage(
-                level: startLevel,
-                difficulty: GameDifficulty.easy,
-                mode: FixItGameMode.dailySeries,
-              )
-                  : DesertGamePage(
-                level: startLevel,
-                difficulty: GameDifficulty.easy,
-                mode: FixItGameMode.dailySeries,
-                invWaterBucket: hState.itemWaterBucket,
-                invGoldenWrench: hState.itemGoldenWrench,
-                invSandShovel: hState.itemSandShovel,
-              ),
+              builder: (context) {
+                if (hState.currentWorldIndex == 1) {
+                  return MeadowGamePage(
+                    level: startLevel,
+                    difficulty: GameDifficulty.easy,
+                    mode: FixItGameMode.dailySeries,
+                  );
+                } else if (hState.currentWorldIndex == 2) {
+                  return DesertGamePage(
+                    level: startLevel,
+                    difficulty: GameDifficulty.easy,
+                    mode: FixItGameMode.dailySeries,
+                    invWaterBucket: hState.itemWaterBucket,
+                    invGoldenWrench: hState.itemGoldenWrench,
+                    invSandShovel: hState.itemSandShovel,
+                  );
+                } else {
+                  return IceGamePage(
+                    level: startLevel,
+                    difficulty: GameDifficulty.easy,
+                  );
+                }
+              },
             ),
           ).then((_) {
             if (mounted) {
@@ -269,170 +288,185 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
             ),
             Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 1.5, sigmaY: 1.5),
-                child: Container(color: Colors.transparent),
+              child: IgnorePointer(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 1.5, sigmaY: 1.5),
+                  child: const SizedBox.shrink(),
+                ),
               ),
             ),
-            BlocBuilder<HomeBloc, HomeState>(
-              builder: (context, state) {
-                return Stack(
-                  children: [
-                    Column(
-                      children: [
-                        TopNavBar(
-                          unlockedWorlds: state.unlockedWorlds,
-                          currentWorldIndex: state.currentWorldIndex,
-                          onDailyPressed: () async {
-                            final authState = context.read<AuthBloc>().state;
-                            if (authState is AuthAuthenticated) {
-                              final homeBloc = context.read<HomeBloc>();
-                              final repo = DailyRepository();
-                              final status = await repo.getDailyStatus(authState.user.id);
-                              if (!mounted) return;
+            Positioned.fill(
+              child: BlocBuilder<HomeBloc, HomeState>(
+                builder: (context, state) {
+                  return Stack(
+                    children: [
+                      Column(
+                        children: [
+                          TopNavBar(
+                            unlockedWorlds: state.unlockedWorlds,
+                            currentWorldIndex: state.currentWorldIndex,
+                            onDailyPressed: () async {
+                              final authState = context.read<AuthBloc>().state;
+                              if (authState is AuthAuthenticated) {
+                                final homeBloc = context.read<HomeBloc>();
+                                final repo = DailyRepository();
+                                final status = await repo.getDailyStatus(authState.user.id);
+                                if (!mounted) return;
 
-                              _showDailyPopup(
-                                isDailyCompleted: homeBloc.state.isDailyCompleted,
-                                isSeriesCompleted: homeBloc.state.isSeriesCompleted,
-                                status: status,
-                              );
-                            }
-                          },
-                        ),
-                        Expanded(
-                          child: Stack(
-                            children: [
-                              Align(
-                                alignment: Alignment.bottomCenter,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(bottom: 20.0),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        width: double.infinity,
-                                        height: 100,
-                                        child: Stack(
-                                          alignment: Alignment.center,
-                                          children: [
-                                            MainPlayButton(
-                                              level: state.currentWorldIndex == 2
-                                                  ? (state.currentLevel - 10).clamp(1, 10)
-                                                  : (state.currentWorldIndex == 3
-                                                  ? (state.currentLevel - 20).clamp(1, 10)
-                                                  : state.currentLevel),
-                                              color: state.currentWorldIndex == 2 ? AppColors.candyGreen : null,
-                                              darkColor: state.currentWorldIndex == 2 ? AppColors.candyGreenDark : null,
-                                              onTap: () {
-                                                if (state.lives <= 0) {
-                                                  showDialog(
-                                                    context: context,
-                                                    builder: (dialogContext) => BlocProvider.value(
-                                                      value: BlocProvider.of<HomeBloc>(context),
-                                                      child: const NoLivesDialog(),
-                                                    ),
-                                                  );
-                                                  return;
-                                                }
-                                                if (state.currentWorldIndex == 1) {
-                                                  Navigator.of(context).push(
-                                                    MaterialPageRoute(
-                                                      builder: (context) => MeadowGamePage(
-                                                        level: state.currentLevel,
-                                                        difficulty: state.difficulty,
-                                                        invPlusTime: state.itemPlusTime,
-                                                        invMoreNumbers: state.itemMoreNumbers,
-                                                        invRevealPath: state.itemRevealPath,
+                                _showDailyPopup(
+                                  isDailyCompleted: homeBloc.state.isDailyCompleted,
+                                  isSeriesCompleted: homeBloc.state.isSeriesCompleted,
+                                  status: status,
+                                );
+                              }
+                            },
+                          ),
+                          Expanded(
+                            child: Stack(
+                              children: [
+                                Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(bottom: 20.0),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        SizedBox(
+                                          width: double.infinity,
+                                          height: 100,
+                                          child: Stack(
+                                            alignment: Alignment.center,
+                                            children: [
+                                              MainPlayButton(
+                                                level: state.currentWorldIndex == 2
+                                                    ? (state.currentLevel - 10).clamp(1, 20)
+                                                    : (state.currentWorldIndex == 3
+                                                    ? (state.currentLevel - 30).clamp(1, 30)
+                                                    : state.currentLevel),
+                                                color: state.currentWorldIndex == 2 ? AppColors.candyGreen : null,
+                                                darkColor: state.currentWorldIndex == 2 ? AppColors.candyGreenDark : null,
+                                                onTap: () {
+                                                  if (state.lives <= 0) {
+                                                    showDialog(
+                                                      context: context,
+                                                      builder: (dialogContext) => BlocProvider.value(
+                                                        value: BlocProvider.of<HomeBloc>(context),
+                                                        child: const NoLivesDialog(),
                                                       ),
-                                                    ),
-                                                  );
-                                                } else if (state.currentWorldIndex == 2) {
-                                                  Navigator.of(context).push(
-                                                    MaterialPageRoute(
-                                                      builder: (context) => DesertGamePage(
-                                                        level: (state.currentLevel - 10).clamp(1, 10),
-                                                        difficulty: state.difficulty,
-                                                        invWaterBucket: state.itemWaterBucket,
-                                                        invGoldenWrench: state.itemGoldenWrench,
-                                                        invSandShovel: state.itemSandShovel,
+                                                    );
+                                                    return;
+                                                  }
+                                                  if (state.currentWorldIndex == 1) {
+                                                    Navigator.of(context).push(
+                                                      MaterialPageRoute(
+                                                        builder: (context) => MeadowGamePage(
+                                                          level: state.currentLevel,
+                                                          difficulty: state.difficulty,
+                                                          invPlusTime: state.itemPlusTime,
+                                                          invMoreNumbers: state.itemMoreNumbers,
+                                                          invRevealPath: state.itemRevealPath,
+                                                        ),
                                                       ),
-                                                    ),
-                                                  );
-                                                }
-                                              },
-                                            ),
-                                            Positioned(
-                                              right: 20,
-                                              child: _FloatingBuyButton(),
-                                            ),
-                                          ],
+                                                    );
+                                                  } else if (state.currentWorldIndex == 2) {
+                                                    Navigator.of(context).push(
+                                                      MaterialPageRoute(
+                                                        builder: (context) => DesertGamePage(
+                                                          level: (state.currentLevel - 10).clamp(1, 20),
+                                                          difficulty: state.difficulty,
+                                                          invWaterBucket: state.itemWaterBucket,
+                                                          invGoldenWrench: state.itemGoldenWrench,
+                                                          invSandShovel: state.itemSandShovel,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  } else if (state.currentWorldIndex == 3) {
+                                                    Navigator.of(context).push(
+                                                      MaterialPageRoute(
+                                                        builder: (context) => IceGamePage(
+                                                          level: (state.currentLevel - 30).clamp(1, 30),
+                                                          difficulty: state.difficulty,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }
+                                                },
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 30),
-                                      ExperienceBar(state: state, barKey: _experienceBarKey),
-                                      const SizedBox(height: 10),
-                                    ],
+                                        const SizedBox(height: 30),
+                                        ExperienceBar(state: state, barKey: _experienceBarKey),
+                                        const SizedBox(height: 10),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (state.isWorldLoading)
+                        Positioned.fill(
+                          child: LoadingScreen(
+                            isDataLoading: false,
+                            duration: const Duration(milliseconds: 800),
+                            onComplete: () {
+                              context.read<HomeBloc>().add(FinishWorldLoading());
+                            },
                           ),
                         ),
-                      ],
-                    ),
-                    if (state.isWorldLoading)
-                      Positioned.fill(
-                        child: LoadingScreen(
-                          isDataLoading: false,
-                          duration: const Duration(milliseconds: 800),
-                          onComplete: () {
-                            context.read<HomeBloc>().add(FinishWorldLoading());
+                      if (_showWorldUnlock)
+                        WorldUnlockOverlay(
+                          worldIndex: _unlockingWorldIndex,
+                          barKey: _experienceBarKey,
+                          state: state,
+                          onTransition: () {
+                            setState(() => _showWorldUnlock = false);
+                            context.read<HomeBloc>().add(ChangeWorld(_unlockingWorldIndex, _unlockingWorldIndex == 2 ? 'desert' : 'ice'));
                           },
                         ),
-                      ),
-                    if (_showWorldUnlock)
-                      WorldUnlockOverlay(
-                        worldIndex: _unlockingWorldIndex,
-                        barKey: _experienceBarKey,
-                        state: state,
-                        onTransition: () {
-                          setState(() => _showWorldUnlock = false);
-                          context.read<HomeBloc>().add(ChangeWorld(_unlockingWorldIndex, _unlockingWorldIndex == 2 ? 'desert' : 'ice'));
-                        },
-                      ),
-                  ],
-                );
-              },
+                    ],
+                  );
+                },
+              ),
             ),
             Align(
               alignment: Alignment.topCenter,
-              child: ConfettiWidget(
-                confettiController: _confettiController,
-                blastDirectionality: BlastDirectionality.explosive,
-                shouldLoop: false,
-                colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple, Colors.yellow, Colors.red],
-                numberOfParticles: 60,
-                gravity: 0.1,
+              child: IgnorePointer(
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirectionality: BlastDirectionality.explosive,
+                  shouldLoop: false,
+                  colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple, Colors.yellow, Colors.red],
+                  numberOfParticles: 60,
+                  gravity: 0.1,
+                ),
               ),
             ),
             Align(
               alignment: const Alignment(-0.8, -1.0),
-              child: ConfettiWidget(
-                confettiController: _confettiController,
-                blastDirectionality: BlastDirectionality.explosive,
-                shouldLoop: false,
-                numberOfParticles: 20,
-                gravity: 0.1,
+              child: IgnorePointer(
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirectionality: BlastDirectionality.explosive,
+                  shouldLoop: false,
+                  numberOfParticles: 20,
+                  gravity: 0.1,
+                ),
               ),
             ),
             Align(
               alignment: const Alignment(0.8, -1.0),
-              child: ConfettiWidget(
-                confettiController: _confettiController,
-                blastDirectionality: BlastDirectionality.explosive,
-                shouldLoop: false,
-                numberOfParticles: 20,
-                gravity: 0.1,
+              child: IgnorePointer(
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirectionality: BlastDirectionality.explosive,
+                  shouldLoop: false,
+                  numberOfParticles: 20,
+                  gravity: 0.1,
+                ),
               ),
             ),
             if (_showPuzzleReward)
@@ -446,78 +480,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   context.read<HomeBloc>().add(SyncAnimatedPuzzles());
                 },
               ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FloatingBuyButton extends StatefulWidget {
-  @override
-  State<_FloatingBuyButton> createState() => _FloatingBuyButtonState();
-}
-
-class _FloatingBuyButtonState extends State<_FloatingBuyButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    )..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0, end: 15).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, -_animation.value),
-          child: child,
-        );
-      },
-      child: CandyButton(
-        width: 60,
-        height: 60,
-        color: AppColors.candyPink,
-        darkColor: AppColors.candyPinkDark,
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (dialogContext) => BlocProvider.value(
-              value: BlocProvider.of<HomeBloc>(context),
-              child: const LivesStoreDialog(),
-            ),
-          );
-        },
-        child: const Stack(
-          alignment: Alignment.center,
-          children: [
-            Icon(Icons.favorite, color: Colors.white, size: 30),
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: CircleAvatar(
-                radius: 10,
-                backgroundColor: AppColors.candyGreen,
-                child: Icon(Icons.add, color: Colors.white, size: 14),
-              ),
-            ),
           ],
         ),
       ),

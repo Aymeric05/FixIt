@@ -15,15 +15,24 @@ class ExperienceBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double progress = forceFull ? 1.0 : (state.levelsCompletedInWorld / state.maxLevelsInWorld);
-    int levelsLeft = forceFull ? 0 : (state.maxLevelsInWorld - state.levelsCompletedInWorld);
+    final bool isWorld1Transition = state.currentLevel == 11 && state.justUnlockedWorldIndex == 2;
+    final bool isWorld2Transition = state.currentLevel == 31 && state.justUnlockedWorldIndex == 3;
+    final bool isTransitioning = isWorld1Transition || isWorld2Transition;
+
+    double progress = (forceFull || isTransitioning) ? 1.0 : (state.levelsCompletedInWorld / state.maxLevelsInWorld);
+    int levelsLeft = (forceFull || isTransitioning) ? 0 : (state.maxLevelsInWorld - state.levelsCompletedInWorld);
     
+    // The color strictly follows the maxLevelsInWorld logic:
+    // 10 levels target (Meadow completion) = Yellow
+    // 20 levels target (Desert completion) = Blue
+    final Color barColor = (state.maxLevelsInWorld == 10) ? Colors.yellow : Colors.blue;
+
     return Container(
       key: barKey,
       width: 320,
       height: 40,
       decoration: BoxDecoration(
-        color: Colors.blue.withValues(alpha: 0.3),
+        color: barColor.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white, width: 3),
         boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 8)],
@@ -39,14 +48,14 @@ class ExperienceBar extends StatelessWidget {
                 widthFactor: progress.clamp(0.0, 1.0),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.yellow,
-                    boxShadow: [BoxShadow(color: Colors.yellow.withValues(alpha: 0.5), blurRadius: 6)],
+                    color: barColor,
+                    boxShadow: [BoxShadow(color: barColor.withValues(alpha: 0.5), blurRadius: 6)],
                   ),
                 ),
               ),
             ),
             Text(
-              'NEXT WORLD IN $levelsLeft LEVELS',
+              (levelsLeft <= 0 || isTransitioning) ? 'NEXT WORLD UNLOCKED!' : 'NEXT WORLD IN $levelsLeft LEVELS',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 14,

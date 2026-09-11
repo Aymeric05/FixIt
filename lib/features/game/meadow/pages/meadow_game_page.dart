@@ -5,21 +5,22 @@ import 'package:fixit/features/game/meadow/bloc/meadow_game_bloc.dart';
 import 'package:fixit/features/game/meadow/bloc/meadow_game_event.dart';
 import 'package:fixit/features/game/meadow/bloc/meadow_game_state.dart';
 import 'package:fixit/features/home/bloc/home_bloc.dart';
+import 'package:fixit/features/game/widgets/game_header.dart';
+import 'package:fixit/features/game/widgets/game_inventory.dart';
 import 'package:fixit/core/models/grid_offset.dart';
 import 'package:fixit/features/auth/bloc/auth_bloc.dart';
 import 'package:fixit/features/auth/bloc/auth_state.dart';
 import 'package:fixit/core/repositories/progression_repository.dart';
-import 'package:fixit/features/home/widgets/settings_dialog.dart';
-import 'package:fixit/features/home/widgets/candy_dialog.dart';
-import 'package:fixit/core/widgets/candy_button.dart';
 import 'package:fixit/core/theme/app_colors.dart';
 import 'package:confetti/confetti.dart';
 import 'package:fixit/core/widgets/tutorial_dialog.dart';
 import 'package:fixit/core/utils/app_logger.dart';
-import 'package:fixit/features/game/widgets/friends_leaderboard_dialog.dart';
 import 'package:fixit/core/models/level_win_summary.dart';
 import 'package:fixit/core/models/daily_mode.dart';
 import 'package:fixit/core/widgets/breaking_heart_animation.dart';
+import 'package:fixit/features/home/widgets/candy_dialog.dart';
+import 'package:fixit/core/widgets/candy_button.dart';
+import 'package:fixit/features/home/widgets/friends_leaderboard_dialog.dart';
 import 'package:flutter/services.dart';
 
 class MeadowGamePage extends StatefulWidget {
@@ -47,6 +48,7 @@ class MeadowGamePage extends StatefulWidget {
 class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStateMixin {
   late ConfettiController _confettiController;
   late AnimationController _blinkController;
+  bool _tutorialShown = false;
 
   @override
   void initState() {
@@ -81,461 +83,227 @@ class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStat
           invMoreNumbers: widget.invMoreNumbers,
           invRevealPath: widget.invRevealPath,
         )),
-      child: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) {
-          if (didPop) return;
-          
-          final gameStatus = context.read<MeadowGameBloc>().state.status;
-          final authStateInner = context.read<AuthBloc>().state;
-          final playerIdInner = authStateInner is AuthAuthenticated ? authStateInner.user.id : null;
-
-          if (gameStatus == MeadowGameStatus.won) {
-            context.read<HomeBloc>().add(CompleteLevel(playerId: playerIdInner, mode: widget.mode, level: widget.level));
-            Navigator.pop(context);
-          } else {
-            final currentLives = context.read<HomeBloc>().state.lives;
-            _showQuitConfirmationDialog(context, currentLives, playerIdInner);
-          }
-        },
-        child: Scaffold(
-          body: BlocListener<MeadowGameBloc, MeadowGameState>(
-            listenWhen: (previous, current) => previous.status != current.status || (current.isDizzy && !previous.isDizzy),
-            listener: (context, state) async {
-              if (state.isDizzy) {
-                HapticFeedback.vibrate();
-              }
-              
-              if (state.status == MeadowGameStatus.playing && widget.level == 1) {
-                TutorialDialog.showIfFirstTime(
-                  context,
-                  tutorialKey: 'snake_tutorial_seen',
-                );
-              }
-
-              if (state.status == MeadowGameStatus.lost) {
-                final authStateInner = context.read<AuthBloc>().state;
-                final playerIdInner = authStateInner is AuthAuthenticated ? authStateInner.user.id : null;
-                final currentLives = context.read<HomeBloc>().state.lives;
-                if (!context.mounted) return;
-                _showGameOverDialog(context, currentLives, playerIdInner);
-              } else if (state.status == MeadowGameStatus.won) {
-                final authStateInner = context.read<AuthBloc>().state;
-                if (authStateInner is AuthAuthenticated) {
-                  final currentUserId = authStateInner.user.id;
-                  if (widget.mode == FixItGameMode.story) {
-                    final repo = ProgressionRepository();
-                    try {
-                      await repo.markLevelAsCompleted(
-                        playerSupabaseId: currentUserId,
-                        worldId: 'world_1',
-                        levelNumber: widget.level,
-                        timeSeconds: max(1, state.initialSeconds - state.remainingSeconds),
-                      );
-                    } catch (e) {
-                      AppLogger.error('Error saving completion', e);
-                    }
-                  }
-                  if (!context.mounted) return;
-                  _confettiController.play();
-                  _showWinDialog(context, state, currentUserId);
+      child: Builder(builder: (providerContext) {
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+            _handleBackPress(providerContext, playerId);
+          },
+          child: Scaffold(
+            body: BlocListener<MeadowGameBloc, MeadowGameState>(
+              listenWhen: (previous, current) => previous.status != current.status || (current.isDizzy && !previous.isDizzy),
+              listener: (context, state) async {
+                if (state.isDizzy) {
+                  HapticFeedback.vibrate();
                 }
-              }
-            },
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/images/monde1_background.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                SafeArea(
-                  child: BlocBuilder<MeadowGameBloc, MeadowGameState>(
-                    builder: (context, state) {
-                      return Column(
-                        children: [
-                          _buildHeader(context),
-                          const SizedBox(height: 10),
-                          _buildItemsRow(context),
-                          const Spacer(),
-                          _buildGridContainer(context),
-                          const Spacer(),
-                          // Trophy Button after win
-                          if (state.status == MeadowGameStatus.won)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 20),
-                              child: CandyButton(
-                                width: 80,
-                                height: 80,
-                                borderRadius: 40,
-                                color: Colors.amber,
-                                darkColor: Colors.orange.shade900,
-                      onPressed: () {
-                        context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode, level: widget.level));
-                        _showWinDialog(context, state, playerId);
-                      },
-                      child: const Icon(Icons.emoji_events, color: Colors.white, size: 40),
-                    ),
-                            ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+                
+                if (state.status == MeadowGameStatus.playing && widget.level == 1 && !_tutorialShown) {
+                  _tutorialShown = true;
+                  TutorialDialog.showIfFirstTime(
+                    context,
+                    tutorialKey: 'snake_tutorial_seen',
+                    worldIndex: 1,
+                  );
+                }
 
-  Widget _buildHeader(BuildContext context) {
-    final authState = context.read<AuthBloc>().state;
-    final playerId = authState is AuthAuthenticated ? authState.user.id : null;
-
-    return BlocBuilder<MeadowGameBloc, MeadowGameState>(
-      builder: (context, state) {
-        final totalSeconds = state.mode == FixItGameMode.dailySeries 
-            ? state.seriesAccumulatedTime + (state.initialSeconds - state.remainingSeconds)
-            : state.remainingSeconds;
-        
-        final minutes = (totalSeconds / 60).floor();
-        final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
-        
-        final isCountingUp = state.mode != FixItGameMode.story;
-
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  // Settings Button
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 2),
-                    child: CandyButton(
-                      width: 52,
-                      height: 52,
-                      borderRadius: 12,
-                      depth: 4,
-                      color: Colors.grey,
-                      darkColor: Colors.grey.shade700,
-                      onPressed: () async {
-                        context.read<MeadowGameBloc>().add(PauseTimer());
-                        await showDialog(
-                          context: context,
-                          builder: (dialogContext) => BlocProvider.value(
-                            value: BlocProvider.of<HomeBloc>(context),
-                            child: const SettingsDialog(),
-                          ),
+                if (state.status == MeadowGameStatus.lost) {
+                  _showGameOverDialog(context, playerId);
+                } else if (state.status == MeadowGameStatus.won) {
+                  final authStateInner = context.read<AuthBloc>().state;
+                  if (authStateInner is AuthAuthenticated) {
+                    final currentUserId = authStateInner.user.id;
+                    if (widget.mode == FixItGameMode.story) {
+                      final repo = ProgressionRepository();
+                      try {
+                        await repo.markLevelAsCompleted(
+                          playerSupabaseId: currentUserId,
+                          worldId: 'world_1',
+                          levelNumber: widget.level,
+                          timeSeconds: max(1, state.initialSeconds - state.remainingSeconds),
                         );
-                        if (context.mounted) {
-                          context.read<MeadowGameBloc>().add(ResumeTimer());
-                        }
-                      },
-                      child: const Icon(Icons.settings, color: Colors.white, size: 28),
+                      } catch (e) {
+                        AppLogger.error('Error saving completion', e);
+                      }
+                    }
+                    if (!context.mounted) return;
+                    _confettiController.play();
+                    _showWinDialog(context, state, currentUserId);
+                  }
+                }
+              },
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Image.asset(
+                      'assets/images/monde1_background.png',
+                      fit: BoxFit.cover,
                     ),
                   ),
-
-                  // Level Banner
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Container(
-                        height: 55,
-                        width: 220,
-                        decoration: BoxDecoration(
-                          color: AppColors.candyBlueDark,
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                      ),
-                      Transform.translate(
-                        offset: const Offset(0, -4),
-                        child: Container(
-                          height: 50,
-                          width: 220,
-                          decoration: BoxDecoration(
-                            gradient: const RadialGradient(
-                              colors: [AppColors.candyBlue, AppColors.candyBlueDark],
-                              center: Alignment(-0.3, -0.3),
-                              radius: 0.8,
+                  SafeArea(
+                    child: BlocBuilder<MeadowGameBloc, MeadowGameState>(
+                      builder: (context, state) {
+                        return Column(
+                          children: [
+                            GameHeader(
+                              level: widget.level,
+                              mode: widget.mode,
+                              remainingSeconds: state.remainingSeconds,
+                              onPause: () => context.read<MeadowGameBloc>().add(PauseTimer()),
+                              onResume: () => context.read<MeadowGameBloc>().add(ResumeTimer()),
+                              onClose: () => _handleBackPress(context, playerId),
                             ),
-                            borderRadius: BorderRadius.circular(28),
-                            border: Border.all(color: Colors.white, width: 3),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            state.mode == FixItGameMode.dailySeries 
-                                ? 'SERIES ${widget.level}/3' 
-                                : state.mode == FixItGameMode.dailySingle 
-                                    ? 'DAILY LEVEL' 
-                                    : 'LEVEL ${widget.level}',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              letterSpacing: 1.5,
-                              shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
+                            const SizedBox(height: 10),
+                            GameInventory(
+                              items: [
+                                GameItemData(
+                                  icon: Icons.alarm_add,
+                                  color: Colors.orangeAccent,
+                                  count: state.inventoryPlusTime,
+                                  isUsed: state.usedItems.contains('plus_time'),
+                                  onTap: () => context.read<MeadowGameBloc>().add(UseItemPlusTime()),
+                                ),
+                                GameItemData(
+                                  icon: Icons.plus_one,
+                                  color: Colors.lightBlueAccent,
+                                  count: state.inventoryMoreNumbers,
+                                  isUsed: state.usedItems.contains('more_numbers'),
+                                  onTap: () => context.read<MeadowGameBloc>().add(UseItemMoreNumbers()),
+                                ),
+                                GameItemData(
+                                  icon: Icons.flare,
+                                  color: Colors.amber,
+                                  count: state.inventoryRevealPath,
+                                  isUsed: state.usedItems.contains('reveal_path'),
+                                  onTap: () => context.read<MeadowGameBloc>().add(UseItemRevealPath()),
+                                ),
+                              ],
                             ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // Close Button
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 2),
-                       child: CandyButton(
-                      width: 52,
-                      height: 52,
-                      borderRadius: 26,
-                      depth: 4,
-                      color: Colors.redAccent,
-                      darkColor: Colors.red.shade900,
-                      onPressed: () {
-                        if (state.status == MeadowGameStatus.won) {
-                          context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode, level: widget.level));
-                          Navigator.pop(context);
-                        } else {
-                          final currentLives = context.read<HomeBloc>().state.lives;
-                          _showQuitConfirmationDialog(context, currentLives, playerId);
-                        }
+                            const Spacer(),
+                            _buildGridContainer(context, state),
+                            const Spacer(),
+                            if (state.status == MeadowGameStatus.won)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 20),
+                                child: CandyButton(
+                                  width: 80,
+                                  height: 80,
+                                  borderRadius: 40,
+                                  color: Colors.amber,
+                                  darkColor: Colors.orange.shade900,
+                                  onPressed: () {
+                                    context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode, level: widget.level));
+                                    _showWinDialog(context, state, playerId);
+                                  },
+                                  child: const Icon(Icons.emoji_events, color: Colors.white, size: 40),
+                                ),
+                              ),
+                          ],
+                        );
                       },
-                      child: const Icon(Icons.close, color: Colors.white, size: 30),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: IgnorePointer(
+                      child: ConfettiWidget(
+                        confettiController: _confettiController,
+                        blastDirectionality: BlastDirectionality.explosive,
+                        shouldLoop: false,
+                        createParticlePath: drawFireworkSparkle, 
+                        colors: const [Colors.yellow, Colors.white, Colors.amber, Colors.orangeAccent],
+                        numberOfParticles: 12,
+                        gravity: 0.1,
+                        minBlastForce: 15,
+                        maxBlastForce: 30,
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.black45,
-                  borderRadius: BorderRadius.circular(25),
-                  border: Border.all(color: Colors.white24, width: 2),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(isCountingUp ? Icons.timer_outlined : Icons.timer, color: Colors.white, size: 22),
-                    const SizedBox(width: 8),
-                    Text(
-                      '$minutes:$seconds',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         );
-      },
+      }),
     );
   }
 
-  Widget _buildItemsRow(BuildContext context) {
-    return BlocBuilder<MeadowGameBloc, MeadowGameState>(
-      builder: (context, state) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildItemButton(
-                context,
-                icon: Icons.alarm_add,
-                color: Colors.orangeAccent,
-                count: state.inventoryPlusTime,
-                isUsed: state.usedItems.contains('plus_time'),
-                onTap: () => context.read<MeadowGameBloc>().add(UseItemPlusTime()),
-              ),
-              const SizedBox(width: 25),
-              _buildItemButton(
-                context,
-                icon: Icons.plus_one,
-                color: Colors.lightBlueAccent,
-                count: state.inventoryMoreNumbers,
-                isUsed: state.usedItems.contains('more_numbers'),
-                onTap: () => context.read<MeadowGameBloc>().add(UseItemMoreNumbers()),
-              ),
-              const SizedBox(width: 25),
-              _buildItemButton(
-                context,
-                icon: Icons.flare,
-                color: Colors.amber,
-                count: state.inventoryRevealPath,
-                isUsed: state.usedItems.contains('reveal_path'),
-                onTap: () => context.read<MeadowGameBloc>().add(UseItemRevealPath()),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+  void _handleBackPress(BuildContext context, String playerId) {
+    final state = context.read<MeadowGameBloc>().state;
+    if (state.status == MeadowGameStatus.won) {
+      context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode, level: widget.level));
+      Navigator.pop(context);
+    } else {
+      final currentLives = context.read<HomeBloc>().state.lives;
+      _showQuitConfirmationDialog(context, currentLives, playerId);
+    }
   }
 
-  Widget _buildItemButton(
-    BuildContext context, {
-    required IconData icon,
-    required Color color,
-    required int count,
-    required bool isUsed,
-    required VoidCallback onTap,
-  }) {
-    final bool canUse = count > 0 && !isUsed;
+  Widget _buildGridContainer(BuildContext context, MeadowGameState state) {
+    if (state.hints.isEmpty) return const SizedBox.shrink();
 
-    return GestureDetector(
-      onTap: canUse ? onTap : null,
+    return AspectRatio(
+      aspectRatio: 1,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          ColorFiltered(
-            colorFilter: isUsed
-                ? const ColorFilter.matrix([
-                    0.2126, 0.7152, 0.0722, 0, 0,
-                    0.2126, 0.7152, 0.0722, 0, 0,
-                    0.2126, 0.7152, 0.0722, 0, 0,
-                    0, 0, 0, 1, 0,
-                  ])
-                : const ColorFilter.mode(Colors.transparent, BlendMode.multiply),
-            child: Container(
-              width: 55,
-              height: 55,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [color.withValues(alpha: 0.8), color],
-                  center: const Alignment(-0.3, -0.3),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.4),
-                    blurRadius: 10,
-                    spreadRadius: 2,
-                  )
-                ],
-                border: Border.all(color: Colors.white, width: 2),
-              ),
-              child: Icon(icon, color: Colors.white, size: 30),
-            ),
-          ),
-          // Inventory Badge
-          Positioned(
-            right: -8,
-            bottom: -2,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.candyPurple,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white, width: 1.5),
-                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
-              ),
-              constraints: const BoxConstraints(minWidth: 22),
-              child: Text(
-                "$count",
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                ),
+          Positioned.fill(
+            child: Transform.scale(
+              scale: 1.08,
+              child: Image.asset(
+                'assets/images/jeu_serpent_contour_pas_ouf.png',
+                fit: BoxFit.fill,
               ),
             ),
           ),
-          if (isUsed)
-            const Positioned(
-              top: -5,
-              left: -5,
-              child: Icon(Icons.block, color: Colors.redAccent, size: 20),
-            ),
-        ],
-      ),
-    );
-  }
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final cellSize = constraints.maxWidth / 6;
 
-  Widget _buildGridContainer(BuildContext context) {
-    return BlocBuilder<MeadowGameBloc, MeadowGameState>(
-      builder: (context, state) {
-        if (state.hints.isEmpty) return const SizedBox.shrink();
+                return GestureDetector(
+                  onPanStart: (details) => _handleDrag(context, details.localPosition, cellSize, isDrag: false),
+                  onPanUpdate: (details) => _handleDrag(context, details.localPosition, cellSize, isDrag: true),
+                  child: _ShakeWrapper(
+                    isShaking: state.isDizzy,
+                    child: Container(
+                      width: constraints.maxWidth,
+                      height: constraints.maxWidth,
+                      color: Colors.transparent,
+                      child: Stack(
+                        children: [
+                          _buildGridLines(state, cellSize),
+                          ..._buildWalls(state, cellSize),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 6,
+                            ),
+                            itemCount: 36,
+                            itemBuilder: (context, index) {
+                              final row = index ~/ 6;
+                              final col = index % 6;
+                              final pos = GridOffset(row, col);
+                              final value = state.hints[row][col];
+                              final isHighlighted = state.highlightedCells.contains(pos);
+                              
+                              int maxNumInHints = 0;
+                              for (var r in state.hints) {
+                                for (var v in r) {
+                                  if (v != null && v > maxNumInHints) maxNumInHints = v;
+                                }
+                              }
+                              
+                              final bool isLastNumberReached = state.currentPath.isNotEmpty && 
+                                state.hints[state.currentPath.last.row][state.currentPath.last.col] == maxNumInHints;
+                              
+                              final bool isMissingCell = state.status == MeadowGameStatus.playing && 
+                                isLastNumberReached && 
+                                !state.currentPath.contains(pos);
 
-        return AspectRatio(
-          aspectRatio: 1,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Positioned.fill(
-                child: Transform.scale(
-                  scale: 1.08,
-                  child: Image.asset(
-                    'assets/images/jeu_serpent_contour_pas_ouf.png',
-                    fit: BoxFit.fill,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final cellSize = constraints.maxWidth / 6;
-
-                    return GestureDetector(
-                      onPanStart: (details) => _handleDrag(context, details.localPosition, cellSize, isDrag: false),
-                      onPanUpdate: (details) => _handleDrag(context, details.localPosition, cellSize, isDrag: true),
-                      child: _ShakeWrapper(
-                        isShaking: state.isDizzy,
-                        child: Container(
-                          width: constraints.maxWidth,
-                          height: constraints.maxWidth,
-                          color: Colors.transparent,
-                          child: Stack(
-                            children: [
-                              _buildGridLines(state, cellSize),
-                              ..._buildWalls(state, cellSize),
-                              GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 6,
-                                ),
-                                itemCount: 36,
-                                itemBuilder: (context, index) {
-                                  final row = index ~/ 6;
-                                  final col = index % 6;
-                                  final pos = GridOffset(row, col);
-                                  final value = state.hints[row][col];
-                                  final isHighlighted = state.highlightedCells.contains(pos);
-                                  
-                                  // Flash red if last number reached but grid not full
-                                  int maxNumInHints = 0;
-                                  for (var r in state.hints) {
-                                    for (var v in r) {
-                                      if (v != null && v > maxNumInHints) maxNumInHints = v;
-                                    }
-                                  }
-                                  
-                                  final bool isLastNumberReached = state.currentPath.isNotEmpty && 
-                                    state.hints[state.currentPath.last.row][state.currentPath.last.col] == maxNumInHints;
-                                  
-                                  final bool isMissingCell = state.status == MeadowGameStatus.playing && 
-                                    isLastNumberReached && 
-                                    !state.currentPath.contains(pos);
-
-                                  return AnimatedBuilder(
+                              return AnimatedBuilder(
                                 animation: _blinkController,
                                 builder: (context, child) {
                                   return Container(
@@ -577,21 +345,19 @@ class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStat
                                   );
                                 },
                               );
-                                },
-                              ),
-                              _buildSerpentHead(state, cellSize),
-                            ],
+                            },
                           ),
-                        ),
+                          _buildSerpentHead(state, cellSize),
+                        ],
                       ),
-                    );
-                  },
-                ),
-              ),
-            ],
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
@@ -654,7 +420,6 @@ class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStat
     double offsetY = 0;
 
     if (state.isDizzy && state.collisionOffset != null) {
-      // Small visual bump
       offsetX = state.collisionOffset!.col * (cellSize * 0.2);
       offsetY = state.collisionOffset!.row * (cellSize * 0.2);
     }
@@ -780,7 +545,8 @@ class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStat
     }
   }
 
-  void _showGameOverDialog(BuildContext context, int currentLives, String? playerId) {
+  void _showGameOverDialog(BuildContext context, String? playerId) {
+    final currentLives = context.read<HomeBloc>().state.lives;
     Future.delayed(Duration.zero, () {
       if (!context.mounted) return;
       showDialog(
@@ -897,7 +663,6 @@ class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStat
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      // PERSONAL TIME BLOCK
                       Container(
                         padding: const EdgeInsets.all(12),
                         width: double.infinity,
@@ -930,9 +695,7 @@ class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStat
                       ),
                       const SizedBox(height: 15),
 
-                      // STATS BLOCK - Only show if not intermediate series level
                       if (state.mode != FixItGameMode.dailySeries || widget.level == 3) ...[
-                        // GLOBAL STATS BLOCK
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -959,7 +722,6 @@ class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStat
                         ),
                         const Divider(height: 25),
 
-                        // FRIENDS MINI LEADERBOARD
                         const Text("FRIENDS RANKING", style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.candyPurple, fontSize: 14)),
                         const SizedBox(height: 8),
                         
@@ -1021,7 +783,6 @@ class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStat
                 ),
               ),
             ),
-            // Confetti
             IgnorePointer(
               child: ConfettiWidget(
                 confettiController: _confettiController,
@@ -1123,7 +884,6 @@ void _paintHead(Canvas canvas, Size size, bool isAngry, bool isDizzy, double cel
   canvas.drawCircle(center + Offset(eyeSize, -eyeSize / 2), eyeSize, eyePaint);
 
   if (isDizzy) {
-    // Spiral eyes
     final spiralPaint = Paint()
       ..color = Colors.black
       ..style = PaintingStyle.stroke
@@ -1132,7 +892,6 @@ void _paintHead(Canvas canvas, Size size, bool isAngry, bool isDizzy, double cel
     for (var eyeOffset in [Offset(-eyeSize, -eyeSize / 2), Offset(eyeSize, -eyeSize / 2)]) {
       final eyeCenter = center + eyeOffset;
       final path = Path();
-      // Draw a dizzy spiral
       for (double angle = 0; angle < 3 * pi; angle += 0.2) {
         double r = (angle / (3 * pi)) * eyeSize;
         double x = eyeCenter.dx + r * cos(angle);
@@ -1155,7 +914,6 @@ void _paintHead(Canvas canvas, Size size, bool isAngry, bool isDizzy, double cel
       ..color = Colors.black
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
-    // Wavy mouth for dizzy
     final mouthPath = Path();
     mouthPath.moveTo(center.dx - eyeSize, center.dy + eyeSize);
     mouthPath.quadraticBezierTo(center.dx - eyeSize/2, center.dy + eyeSize*1.5, center.dx, center.dy + eyeSize);

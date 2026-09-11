@@ -36,7 +36,9 @@ class ShopDialog extends StatelessWidget {
                     physics: const BouncingScrollPhysics(),
                     child: Column(
                       children: [
-                        _buildSectionTitle(state.currentWorldIndex == 1 ? "MEADOW SPECIALS" : "DESERT SPECIALS"),
+                        _buildSectionTitle(state.currentWorldIndex == 1 
+                            ? "MEADOW SPECIALS" 
+                            : (state.currentWorldIndex == 2 ? "DESERT SPECIALS" : "ICE SPECIALS")),
                         if (state.currentWorldIndex == 1) ...[
                           _buildShopItem(
                             context,
@@ -73,7 +75,7 @@ class ShopDialog extends StatelessWidget {
                             onBuyPuzzles: () => context.read<HomeBloc>().add(const BuyItem('reveal_path', 50)),
                             onBuyMoney: () => context.read<HomeBloc>().add(const BuyItem('reveal_path', 0, isRealMoney: true)),
                           ),
-                        ] else ...[
+                        ] else if (state.currentWorldIndex == 2) ...[
                           _buildShopItem(
                             context,
                             icon: Icons.opacity,
@@ -108,6 +110,18 @@ class ShopDialog extends StatelessWidget {
                             moneyCost: 1.29,
                             onBuyPuzzles: () => context.read<HomeBloc>().add(const BuyItem('sand_shovel', 60)),
                             onBuyMoney: () => context.read<HomeBloc>().add(const BuyItem('sand_shovel', 0, isRealMoney: true)),
+                          ),
+                        ] else ...[
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: Text(
+                              "ICE ITEMS COMING SOON!",
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                              ),
+                            ),
                           ),
                         ],
                         

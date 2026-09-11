@@ -24,14 +24,13 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
   
   int _dotCount = 0;
   Timer? _dotTimer;
-  bool _timerFinished = false;
 
   @override
   void initState() {
     super.initState();
     _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 500),
     );
     _fadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(_fadeController);
 
@@ -40,15 +39,8 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
       duration: widget.duration,
     );
 
-    // Pre-cache background images to avoid flicker
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      precacheImage(const AssetImage('assets/images/monde1_background.png'), context);
-      precacheImage(const AssetImage('assets/images/loading_ecran.png'), context);
-    });
-
     _progressController.forward().then((_) {
-      setState(() => _timerFinished = true);
-      _checkCompletion();
+      _startFadeOut();
     });
 
     _dotTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
@@ -60,25 +52,11 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
     });
   }
 
-  @override
-  void didUpdateWidget(LoadingScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _checkCompletion();
-  }
-
-  void _checkCompletion() {
-    // Only fade out and complete if BOTH:
-    // 1. The progress bar reached 100% (_timerFinished)
-    // 2. The app has finished loading data (!widget.isDataLoading)
-    if (_timerFinished && !widget.isDataLoading && !_fadeController.isAnimating && _fadeController.value == 0) {
-      Future.delayed(const Duration(milliseconds: 200), () {
-        if (mounted) {
-          _fadeController.forward().then((_) {
-            widget.onComplete();
-          });
-        }
-      });
-    }
+  void _startFadeOut() {
+    if (!mounted) return;
+    _fadeController.forward().then((_) {
+      widget.onComplete();
+    });
   }
 
   @override
@@ -101,15 +79,12 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
       child: Scaffold(
         body: Stack(
           children: [
-            // Background
             Positioned.fill(
               child: Image.asset(
                 'assets/images/loading_ecran.png',
                 fit: BoxFit.cover,
               ),
             ),
-            
-            // Loading Bar at the bottom
             Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
@@ -129,16 +104,15 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
       height: 46,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFF5D4037), // Dark brown background
+        color: const Color(0xFF5D4037),
         borderRadius: BorderRadius.circular(23),
-        border: Border.all(color: const Color(0xFF8D6E63), width: 3), // Wooden border
+        border: Border.all(color: const Color(0xFF8D6E63), width: 3),
         boxShadow: const [
           BoxShadow(color: Colors.black45, blurRadius: 8, offset: Offset(0, 4))
         ],
       ),
       child: Stack(
         children: [
-          // Progress Fill
           AnimatedBuilder(
             animation: _progressController,
             builder: (context, child) {
@@ -157,8 +131,6 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
               );
             },
           ),
-          
-          // Glossy highlight
           Positioned(
             left: 10,
             top: 6,
@@ -171,8 +143,6 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
               ),
             ),
           ),
-
-          // Loading Text
           Center(
             child: Text(
               "LOADING$dots",
