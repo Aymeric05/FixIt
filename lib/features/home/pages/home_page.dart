@@ -225,10 +225,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       if (key.currentContext != null) {
         final box = key.currentContext!.findRenderObject() as RenderBox;
         final position = box.localToGlobal(Offset.zero);
+        final screenWidth = MediaQuery.of(context).size.width;
+
         setState(() {
-          // Centered landing
-          _puzzleTargetOffset = Offset(position.dx + box.size.width / 2, position.dy + box.size.height / 2 + 25);
-          _puzzleRewardTotal = gainedPieces; // 5 (story) or 20 (daily/series)
+          // Use the absolute screen center for X to ensure perfect horizontal alignment
+          // for both +5 and +20 rewards, regardless of indicator measurement.
+          _puzzleTargetOffset = Offset(
+            screenWidth / 2,
+            position.dy + box.size.height / 2 + 25,
+          );
+          _puzzleRewardTotal = gainedPieces;
           _showPuzzleReward = true;
         });
       }
@@ -253,7 +259,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ),
         BlocListener<HomeBloc, HomeState>(
           listenWhen: (previous, current) {
-            return current.gainedPuzzlePieces > 0 || current.justUnlockedWorldIndex != null;
+            final gainedRewardTriggered = current.gainedPuzzlePieces > 0 && previous.gainedPuzzlePieces == 0;
+            final worldUnlockTriggered = current.justUnlockedWorldIndex != null && previous.justUnlockedWorldIndex == null;
+            return gainedRewardTriggered || worldUnlockTriggered;
           },
           listener: (context, state) {
             if (state.gainedPuzzlePieces > 0) {
