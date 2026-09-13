@@ -286,16 +286,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           },
         ),
       ],
-      child: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) {
-          // System back button neutralized
-          if (didPop) return;
-        },
-        child: Scaffold(
-          body: Stack(
-            children: [
-              Positioned.fill(
+      child: Scaffold(
+        body: Stack(
+          children: [
+            Positioned.fill(
               child: BlocBuilder<HomeBloc, HomeState>(
                 buildWhen: (prev, curr) => prev.currentWorldIndex != curr.currentWorldIndex,
                 builder: (context, state) {
