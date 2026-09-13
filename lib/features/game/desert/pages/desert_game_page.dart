@@ -75,8 +75,8 @@ class _DesertGamePageState extends State<DesertGamePage> with TickerProviderStat
         return PopScope(
           canPop: false,
           onPopInvokedWithResult: (didPop, result) {
+            // System back button neutralized
             if (didPop) return;
-            _handleBackPress(providerContext, playerId);
           },
           child: Scaffold(
             body: BlocConsumer<DesertGameBloc, DesertGameState>(

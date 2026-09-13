@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fixit/core/theme/app_theme.dart';
 import 'package:fixit/core/services/database_service.dart';
@@ -18,6 +19,9 @@ void main() async {
   try {
     // Ensure Flutter bindings are initialized
     WidgetsFlutterBinding.ensureInitialized();
+    
+    // Enable Immersive Mode (Hide status bar and navigation bar)
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     
     AppLogger.log('App starting...');
     // Initialize Databases

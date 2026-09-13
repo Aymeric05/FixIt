@@ -18,7 +18,8 @@ Le mini-jeu principal consiste à relier des numéros en séquence (1, 2, 3...) 
 *   **Vibrations & Sons :** Feedbacks haptiques lors de la connexion réussie de cellules.
 *   **Célébration :** Animation de confettis (fireworks style) lors de la victoire d'un niveau.
 *   **Tutoriel :** Un dialogue d'aide s'affiche automatiquement lors du premier lancement du niveau 1 pour expliquer la mécanique de glissement (drag).
-*   **Dialogue "Plus de Vies" :** Si le joueur tente de lancer une partie avec 0 vie, un dialogue triste avec une animation de cœur brisé s'affiche, proposant un bouton rouge stylisé pour accéder directement à la boutique de vies.
+*   **Dialogue "Plus de Vies" :** Si le joueur tente de lancer une partie en mode Histoire avec 0 vie, un dialogue triste avec une animation de cœur brisé s'affiche, proposant un bouton rouge stylisé pour accéder directement à la boutique de vies. Les Défis Quotidiens restent accessibles même avec 0 vie.
+*   **Bouton Retour Système :** Le bouton retour d'Android/Samsung est harmonisé avec les actions du jeu. En pleine partie, il déclenche le dialogue d'abandon. Sur les overlays (déblocage de monde, récompenses), il agit comme une fermeture ("croix").
 
 ## 4. Modes de Jeu
 ### 3.1 Mode Histoire (Progression Principale)
@@ -33,8 +34,8 @@ Une suite de niveaux de difficulté croissante organisée par "Mondes". Chaque m
 *   **Notification :** Un badge rouge apparaît sur le bouton tant qu'au moins un défi du jour n'a pas été complété.
 
 ## 4. Économie du Jeu
-*   **Système de Vies :** Le joueur commence avec 5 vies. Une vie est perdue en cas d'échec ou d'abandon. Les vies se rechargent automatiquement toutes les 60 minutes.
-*   **Persistance du Timer :** Le décompte de recharge des vies est persistant. Il continue de s'écouler même si l'application est fermée ou en arrière-plan. Au retour dans le jeu, les vies gagnées sont automatiquement créditées (implémenté dans la branche `fix/persistent-lives-timer`).
+*   **Système de Vies :** Le joueur commence avec 5 vies. Une vie est perdue en cas d'échec ou d'abandon volontaire. Les vies se rechargent automatiquement toutes les 60 minutes.
+*   **Persistance du Timer :** Le décompte de recharge des vies est persistant. Il continue de s'écouler même si l'application est fermée ou en arrière-plan. La perte d'une vie supplémentaire n'affecte pas le timer de la recharge déjà en cours (implémenté dans la branche `feat/systeme-vies-et-sessions`).
 *   **Items (Boosters) :** 
     *   *Plus Time* : Ajoute du temps au chrono.
     *   *More Numbers* : Révèle des chiffres supplémentaires dans la grille.
@@ -50,7 +51,7 @@ Une suite de niveaux de difficulté croissante organisée par "Mondes". Chaque m
 *   **Mémoire de Jeu** : Si un joueur quitte une partie en cours (fermeture de l'application ou retour au menu), son avancement est automatiquement sauvegardé localement.
 *   **Données sauvegardées** : Le temps restant et le tracé actuel du serpent sont conservés.
 *   **Reprise** : Au prochain lancement du même niveau, la session est restaurée instantanément.
-*   **Nettoyage** : La sauvegarde est effacée dès que le niveau est terminé (victoire ou temps écoulé) pour garantir une nouvelle partie propre par la suite.
+*   **Nettoyage** : La sauvegarde est effacée dès que le niveau est terminé (victoire ou temps écoulé) ou si le joueur abandonne volontairement la partie (bouton "Quit" ou retour à l'accueil après un échec), garantissant un nouveau départ au prochain essai.
 
 ## 7. Authentification & Profil
 *   **Login Anonyme** : Chaque nouveau joueur est automatiquement connecté avec un compte anonyme Supabase au premier lancement.
