@@ -22,6 +22,9 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
+      - name: Configuration de l'Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Configuration de Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -55,22 +58,22 @@ jobs:
           if [ -z "${{ secrets.KEY_PASSWORD }}" ]; then echo "Erreur: KEY_PASSWORD est vide"; exit 1; fi
 
       - name: Signer l'application (AAB)
-        uses: ilharp/sign-android-release@v1
+        uses: r0adkll/sign-android-release@v1
         id: sign_aab
         with:
-          releaseDir: build/app/outputs/bundle/release
-          signingKey: ${{ secrets.KEYSTORE_BASE64 }}
-          keyAlias: ${{ secrets.KEY_ALIAS }}
+          releaseDirectory: build/app/outputs/bundle/release
+          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
+          alias: ${{ secrets.KEY_ALIAS }}
           keyStorePassword: ${{ secrets.STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
       - name: Signer l'application (APK)
-        uses: ilharp/sign-android-release@v1
+        uses: r0adkll/sign-android-release@v1
         id: sign_apk
         with:
-          releaseDir: build/app/outputs/flutter-apk
-          signingKey: ${{ secrets.KEYSTORE_BASE64 }}
-          keyAlias: ${{ secrets.KEY_ALIAS }}
+          releaseDirectory: build/app/outputs/flutter-apk
+          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
+          alias: ${{ secrets.KEY_ALIAS }}
           keyStorePassword: ${{ secrets.STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
