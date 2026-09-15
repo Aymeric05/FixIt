@@ -89,15 +89,19 @@ class _AppStartupWrapperState extends State<_AppStartupWrapper> {
 
   Future<void> _precacheAssets() async {
     final assets = [
-      'Monde_1.png',
-      'jeu_serpent_contour_pas_ouf.png',
-      'buisson.png',
-      'ciel.png',
-      'world1.png',
-      'world2.png',
-      'world3.png',
-      'world4.png',
-      'world5.png',
+      'assets/images/Monde_1.png',
+      'assets/images/Monde_2.png',
+      'assets/images/Monde_3.png',
+      'assets/images/Monde_4.png',
+      'assets/images/Monde_5.png',
+      'assets/images/jeu_serpent_contour_pas_ouf.png',
+      'assets/images/buisson.png',
+      'assets/images/ciel.png',
+      'assets/images/world1.png',
+      'assets/images/world2.png',
+      'assets/images/world3.png',
+      'assets/images/world4.png',
+      'assets/images/world5.png',
     ];
     
     // Parallelize pre-caching

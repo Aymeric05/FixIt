@@ -94,7 +94,7 @@ class MeadowGameBloc extends Bloc<MeadowGameEvent, MeadowGameState> {
     Map<GridOffset, int> hintSteps = {};
 
     final String worldId = event.mode == FixItGameMode.story 
-        ? 'world_1' 
+        ? 'meadow' 
         : event.mode == FixItGameMode.dailySeries 
             ? _dailyRepo.getTodaySeriesWorldId() 
             : _dailyRepo.getTodayWorldId();
@@ -128,7 +128,7 @@ class MeadowGameBloc extends Bloc<MeadowGameEvent, MeadowGameState> {
         }
       }
     } else {
-      final worldId = 'world_1';
+      final worldId = 'meadow';
       try {
         final globalLevel = await _progressionRepo.getGlobalLevel(worldId, event.level)
             .timeout(const Duration(seconds: 3));
@@ -260,7 +260,7 @@ class MeadowGameBloc extends Bloc<MeadowGameEvent, MeadowGameState> {
     }
     
     if (event.mode == FixItGameMode.story) {
-      unawaited(_progressionRepo.ensureNextLevelsExist('world_1', event.level));
+      unawaited(_progressionRepo.ensureNextLevelsExist('meadow', event.level));
     }
   }
 
@@ -339,7 +339,7 @@ class MeadowGameBloc extends Bloc<MeadowGameEvent, MeadowGameState> {
               emit(state.copyWith(currentPath: newPath, isAngry: false));
 
               final timeTaken = max(1, state.initialSeconds - state.remainingSeconds);
-              final worldId = state.mode == FixItGameMode.story ? 'world_1' : _dailyRepo.getTodayWorldId();
+              final worldId = state.mode == FixItGameMode.story ? 'meadow' : _dailyRepo.getTodayWorldId();
 
               int displayTime = timeTaken;
               if (state.mode == FixItGameMode.dailySingle && _playerId != null) {
@@ -353,7 +353,7 @@ class MeadowGameBloc extends Bloc<MeadowGameEvent, MeadowGameState> {
 
               LevelWinSummary? summary;
               if (state.mode == FixItGameMode.story) {
-                 summary = await _progressionRepo.getLevelWinSummary(worldId: 'world_1', levelNumber: state.levelNumber, playerId: _playerId ?? '', playerTime: timeTaken);
+                 summary = await _progressionRepo.getLevelWinSummary(worldId: 'meadow', levelNumber: state.levelNumber, playerId: _playerId ?? '', playerTime: timeTaken);
               } else if (state.mode == FixItGameMode.dailySingle) {
                  summary = await _progressionRepo.getLevelWinSummary(worldId: _dailyRepo.getTodayWorldId(), levelNumber: state.levelNumber, playerId: _playerId ?? '', playerTime: timeTaken);
               } else if (state.mode == FixItGameMode.dailySeries) {
@@ -426,7 +426,7 @@ class MeadowGameBloc extends Bloc<MeadowGameEvent, MeadowGameState> {
 
   Future<void> _onLoadFriendsLeaderboard(LoadFriendsLeaderboard event, Emitter<MeadowGameState> emit) async {
     final worldId = state.mode == FixItGameMode.story 
-        ? 'world_1' 
+        ? 'meadow' 
         : state.mode == FixItGameMode.dailySeries 
             ? _dailyRepo.getTodaySeriesWorldId() 
             : _dailyRepo.getTodayWorldId();
@@ -638,7 +638,7 @@ class MeadowGameBloc extends Bloc<MeadowGameEvent, MeadowGameState> {
     if (_playerId == null || _playerId!.isEmpty || state.status != MeadowGameStatus.playing) return;
 
     final String worldId = state.mode == FixItGameMode.story 
-        ? 'world_1' 
+        ? 'meadow' 
         : state.mode == FixItGameMode.dailySeries 
             ? _dailyRepo.getTodaySeriesWorldId() 
             : _dailyRepo.getTodayWorldId();
@@ -657,7 +657,7 @@ class MeadowGameBloc extends Bloc<MeadowGameEvent, MeadowGameState> {
     if (_playerId == null || _playerId!.isEmpty) return;
 
     final String worldId = state.mode == FixItGameMode.story 
-        ? 'world_1' 
+        ? 'meadow' 
         : state.mode == FixItGameMode.dailySeries 
             ? _dailyRepo.getTodaySeriesWorldId() 
             : _dailyRepo.getTodayWorldId();

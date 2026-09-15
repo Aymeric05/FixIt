@@ -19,6 +19,8 @@ import 'package:fixit/features/home/widgets/puzzle_reward_burst.dart';
 import 'package:fixit/features/home/widgets/world_unlock_overlay.dart';
 import 'package:fixit/features/home/widgets/experience_bar.dart';
 import 'package:fixit/features/game/desert/pages/desert_game_page.dart';
+import 'package:fixit/features/game/volcano/pages/volcano_game_page.dart';
+import 'package:fixit/features/game/city/pages/city_game_page.dart';
 
 import 'package:fixit/features/home/widgets/daily_popup.dart';
 import 'package:fixit/features/home/widgets/no_lives_dialog.dart';
@@ -131,8 +133,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     invGoldenWrench: hState.itemGoldenWrench,
                     invSandShovel: hState.itemSandShovel,
                   );
-                } else {
+                } else if (worldId == 'ice') {
                   return IceGamePage(
+                    level: 1,
+                    difficulty: GameDifficulty.easy,
+                  );
+                } else if (worldId == 'volcano') {
+                  return VolcanoGamePage(
+                    level: 1,
+                    difficulty: GameDifficulty.easy,
+                  );
+                } else {
+                  return CityGamePage(
                     level: 1,
                     difficulty: GameDifficulty.easy,
                   );
@@ -186,8 +198,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     invGoldenWrench: hState.itemGoldenWrench,
                     invSandShovel: hState.itemSandShovel,
                   );
-                } else {
+                } else if (worldId == 'ice') {
                   return IceGamePage(
+                    level: startLevel,
+                    difficulty: GameDifficulty.easy,
+                  );
+                } else if (worldId == 'volcano') {
+                  return VolcanoGamePage(
+                    level: startLevel,
+                    difficulty: GameDifficulty.easy,
+                  );
+                } else {
+                  return CityGamePage(
                     level: startLevel,
                     difficulty: GameDifficulty.easy,
                   );
@@ -296,6 +318,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   String bg = 'assets/images/Monde_1.png';
                   if (state.currentWorldIndex == 2) bg = 'assets/images/Monde_2.png';
                   if (state.currentWorldIndex == 3) bg = 'assets/images/Monde_3.png';
+                  if (state.currentWorldIndex == 4) bg = 'assets/images/Monde_4.png';
+                  if (state.currentWorldIndex == 5) bg = 'assets/images/Monde_5.png';
 
                   return Image.asset(
                     bg,
@@ -387,11 +411,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                   // Find the progression step (1, 2, 3...) of this world
                                                   final int step = state.unlockedWorldIds.indexOf(worldId) + 1;
 
+                                                  int displayLevel = state.currentLevel;
+                                                  if (step == 2) displayLevel = (state.currentLevel - 10).clamp(1, 20);
+                                                  if (step == 3) displayLevel = (state.currentLevel - 30).clamp(1, 30);
+                                                  if (step == 4) displayLevel = (state.currentLevel - 60).clamp(1, 40);
+                                                  if (step == 5) displayLevel = (state.currentLevel - 100).clamp(1, 50);
+
                                                   if (worldId == 'meadow') {
                                                     Navigator.of(context).push(
                                                       MaterialPageRoute(
                                                         builder: (context) => MeadowGamePage(
-                                                          level: state.currentLevel,
+                                                          level: displayLevel,
                                                           difficulty: state.difficulty,
                                                           invPlusTime: state.itemPlusTime,
                                                           invMoreNumbers: state.itemMoreNumbers,
@@ -400,13 +430,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                       ),
                                                     );
                                                   } else if (worldId == 'desert') {
-                                                    // Only use offset if this world IS the active progression one
-                                                    // or if we want to support replaying.
-                                                    // For now, let's assume world 2 always uses global 11-30.
-                                                    int displayLevel = state.currentLevel;
-                                                    if (step == 2) displayLevel = (state.currentLevel - 10).clamp(1, 20);
-                                                    if (step == 3) displayLevel = (state.currentLevel - 30).clamp(1, 30);
-
                                                     Navigator.of(context).push(
                                                       MaterialPageRoute(
                                                         builder: (context) => DesertGamePage(
@@ -418,14 +441,28 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                         ),
                                                       ),
                                                     );
-                                                  } else {
-                                                    int displayLevel = state.currentLevel;
-                                                    if (step == 2) displayLevel = (state.currentLevel - 10).clamp(1, 20);
-                                                    if (step == 3) displayLevel = (state.currentLevel - 30).clamp(1, 30);
-
+                                                  } else if (worldId == 'ice') {
                                                     Navigator.of(context).push(
                                                       MaterialPageRoute(
                                                         builder: (context) => IceGamePage(
+                                                          level: displayLevel,
+                                                          difficulty: state.difficulty,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  } else if (worldId == 'volcano') {
+                                                    Navigator.of(context).push(
+                                                      MaterialPageRoute(
+                                                        builder: (context) => VolcanoGamePage(
+                                                          level: displayLevel,
+                                                          difficulty: state.difficulty,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  } else {
+                                                    Navigator.of(context).push(
+                                                      MaterialPageRoute(
+                                                        builder: (context) => CityGamePage(
                                                           level: displayLevel,
                                                           difficulty: state.difficulty,
                                                         ),

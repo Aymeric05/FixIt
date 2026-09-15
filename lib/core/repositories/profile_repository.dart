@@ -104,12 +104,12 @@ class ProfileRepository {
         ProgressionsCompanion.insert(
           playerSupabaseId: Value(supabaseId),
           currentLevel: const Value(1),
-          unlockedWorlds: const ['world_1'],
+          unlockedWorlds: const ['meadow'],
         ),
         onConflict: DoUpdate((_) => ProgressionsCompanion.insert(
           playerSupabaseId: Value(supabaseId),
           currentLevel: const Value(1),
-          unlockedWorlds: const ['world_1'],
+          unlockedWorlds: const ['meadow'],
         ), target: [_db.progressions.playerSupabaseId]),
       );
 

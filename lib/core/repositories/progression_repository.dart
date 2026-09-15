@@ -320,7 +320,7 @@ class ProgressionRepository {
       final levelNum = currentLevel + i;
       final existing = await getGlobalLevel(worldId, levelNum);
       if (existing == null) {
-        AppLogger.log('Background Pre-generating level $levelNum...');
+        AppLogger.log('Background Pre-generating level $levelNum for $worldId...');
         final result = LevelGenerator.generate(12);
         await saveGlobalLevel(
           worldId: worldId,

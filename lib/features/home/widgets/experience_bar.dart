@@ -15,17 +15,21 @@ class ExperienceBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isWorld1Transition = state.currentLevel == 11 && state.justUnlockedWorldIndex == 2;
-    final bool isWorld2Transition = state.currentLevel == 31 && state.justUnlockedWorldIndex == 3;
-    final bool isTransitioning = isWorld1Transition || isWorld2Transition;
+    // A transition is occurring if we just unlocked a world and are at the milestone level.
+    final bool isTransitioning = state.justUnlockedWorldIndex != null;
 
     double progress = (forceFull || isTransitioning) ? 1.0 : (state.levelsCompletedInWorld / state.maxLevelsInWorld);
     int levelsLeft = (forceFull || isTransitioning) ? 0 : (state.maxLevelsInWorld - state.levelsCompletedInWorld);
     
-    // The color strictly follows the maxLevelsInWorld logic:
-    // 10 levels target (Meadow completion) = Yellow
-    // 20 levels target (Desert completion) = Blue
-    final Color barColor = (state.maxLevelsInWorld == 10) ? Colors.yellow : Colors.blue;
+    // The color follows the world progression:
+    // Meadow (10 levels) = Yellow
+    // Desert (20 levels) = Blue
+    // Ice (30 levels) = Green (new)
+    // Volcano (40 levels) = Orange (new)
+    Color barColor = Colors.yellow;
+    if (state.maxLevelsInWorld == 20) barColor = Colors.blue;
+    if (state.maxLevelsInWorld == 30) barColor = Colors.green;
+    if (state.maxLevelsInWorld == 40) barColor = Colors.orange;
 
     return Container(
       key: barKey,

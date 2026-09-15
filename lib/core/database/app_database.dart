@@ -229,7 +229,7 @@ class AppDatabase extends _$AppDatabase {
           await customStatement('''
             UPDATE progressions SET
               current_level = COALESCE(current_level, 1),
-              unlocked_worlds = COALESCE(unlocked_worlds, 'world_1')
+              unlocked_worlds = COALESCE(unlocked_worlds, 'meadow')
             WHERE current_level IS NULL OR unlocked_worlds IS NULL;
           ''');
         } catch (e) {
