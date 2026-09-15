@@ -64,7 +64,7 @@ jobs:
           if [ -z "${{ secrets.KEY_PASSWORD }}" ]; then echo "Erreur: KEY_PASSWORD est vide"; exit 1; fi
 
       - name: Signer l'application (AAB)
-        uses: r0adkll/sign-android-release@v1.1.3
+        uses: r0adkll/sign-android-release@v1
         id: sign_aab
         with:
           releaseDirectory: build/app/outputs/bundle/release
@@ -72,10 +72,11 @@ jobs:
           alias: ${{ secrets.KEY_ALIAS }}
           keyStorePassword: ${{ secrets.STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
-          buildToolsVersion: ${{ steps.build_tools.outputs.version }}
+        env:
+          BUILD_TOOLS_VERSION: ${{ steps.build_tools.outputs.version }}
 
       - name: Signer l'application (APK)
-        uses: r0adkll/sign-android-release@v1.1.3
+        uses: r0adkll/sign-android-release@v1
         id: sign_apk
         with:
           releaseDirectory: build/app/outputs/flutter-apk
@@ -83,7 +84,8 @@ jobs:
           alias: ${{ secrets.KEY_ALIAS }}
           keyStorePassword: ${{ secrets.STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
-          buildToolsVersion: ${{ steps.build_tools.outputs.version }}
+        env:
+          BUILD_TOOLS_VERSION: ${{ steps.build_tools.outputs.version }}
 
       - name: Créer le tag de version
         id: create_tag
