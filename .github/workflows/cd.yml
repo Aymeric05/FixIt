@@ -31,10 +31,12 @@ jobs:
       - name: Installation des dépendances
         run: flutter pub get
 
-      - name: Ajouter Android Build Tools au PATH
+      - name: Detecter Android Build Tools
+        id: build_tools
         run: |
-          BUILD_TOOLS_VERSION=$(ls /usr/local/lib/android/sdk/build-tools/ | tail -n 1)
-          echo "/usr/local/lib/android/sdk/build-tools/$BUILD_TOOLS_VERSION" >> $GITHUB_PATH
+          VERSION=$(ls /usr/local/lib/android/sdk/build-tools/ | tail -n 1)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "/usr/local/lib/android/sdk/build-tools/$VERSION" >> $GITHUB_PATH
 
       - name: Creer env.json depuis les secrets
         run: |
@@ -68,6 +70,7 @@ jobs:
           alias: ${{ secrets.KEY_ALIAS }}
           keyStorePassword: ${{ secrets.STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
+          buildToolsVersion: ${{ steps.build_tools.outputs.version }}
 
       - name: Signer l'application (APK)
         uses: r0adkll/sign-android-release@v1
@@ -78,6 +81,7 @@ jobs:
           alias: ${{ secrets.KEY_ALIAS }}
           keyStorePassword: ${{ secrets.STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
+          buildToolsVersion: ${{ steps.build_tools.outputs.version }}
 
       - name: Créer le tag de version
         id: create_tag
