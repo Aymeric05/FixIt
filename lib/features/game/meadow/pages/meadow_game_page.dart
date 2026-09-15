@@ -136,7 +136,7 @@ class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStat
                 children: [
                   Positioned.fill(
                     child: Image.asset(
-                      'assets/images/monde1_background.png',
+                      'assets/images/Monde_1.png',
                       fit: BoxFit.cover,
                     ),
                   ),

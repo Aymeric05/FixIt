@@ -293,7 +293,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               child: BlocBuilder<HomeBloc, HomeState>(
                 buildWhen: (prev, curr) => prev.currentWorldIndex != curr.currentWorldIndex,
                 builder: (context, state) {
-                  String bg = 'assets/images/monde1_background.png';
+                  String bg = 'assets/images/Monde_1.png';
                   if (state.currentWorldIndex == 2) bg = 'assets/images/Monde_2.png';
                   if (state.currentWorldIndex == 3) bg = 'assets/images/Monde_3.png';
 

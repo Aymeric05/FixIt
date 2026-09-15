@@ -89,7 +89,7 @@ class _AppStartupWrapperState extends State<_AppStartupWrapper> {
 
   Future<void> _precacheAssets() async {
     final assets = [
-      'monde1_background.png',
+      'Monde_1.png',
       'jeu_serpent_contour_pas_ouf.png',
       'buisson.png',
       'ciel.png',
