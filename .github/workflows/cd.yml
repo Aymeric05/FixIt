@@ -22,9 +22,6 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Configuration de l'Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Configuration de Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -33,6 +30,11 @@ jobs:
 
       - name: Installation des dépendances
         run: flutter pub get
+
+      - name: Ajouter Android Build Tools au PATH
+        run: |
+          BUILD_TOOLS_VERSION=$(ls /usr/local/lib/android/sdk/build-tools/ | tail -n 1)
+          echo "/usr/local/lib/android/sdk/build-tools/$BUILD_TOOLS_VERSION" >> $GITHUB_PATH
 
       - name: Creer env.json depuis les secrets
         run: |
