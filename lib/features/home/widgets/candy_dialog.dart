@@ -72,7 +72,7 @@ class CandyDialog extends StatelessWidget {
                     child: Text(
                       title,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.luckiestGuy(
+                      style: GoogleFonts.lilitaOne(
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,

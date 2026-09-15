@@ -50,6 +50,7 @@ class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStat
   late ConfettiController _confettiController;
   late AnimationController _blinkController;
   bool _tutorialShown = false;
+  bool _victoryDialogShown = false;
 
   @override
   void initState() {
@@ -129,7 +130,14 @@ class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStat
                     }
                     if (!context.mounted) return;
                     _confettiController.play();
+                    
+                    // Show the win dialog immediately upon winning
                     _showWinDialog(context, state, currentUserId);
+                    
+                    // Mark dialog as shown so the review button can appear if they close the dialog via 'X'
+                    setState(() {
+                      _victoryDialogShown = true;
+                    });
                   }
                 }
               },
@@ -201,7 +209,6 @@ class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStat
                                   color: Colors.amber,
                                   darkColor: Colors.orange.shade900,
                                   onPressed: () {
-                                    context.read<HomeBloc>().add(CompleteLevel(playerId: playerId, mode: widget.mode, level: widget.level));
                                     _showWinDialog(context, state, playerId);
                                   },
                                   child: const Icon(Icons.emoji_events, color: Colors.white, size: 40),
@@ -312,6 +319,8 @@ class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStat
                                 isLastNumberReached && 
                                 !state.currentPath.contains(pos);
 
+                              final bool isSnakeHeadOnCell = state.currentPath.isNotEmpty && state.currentPath.last == pos;
+
                               return AnimatedBuilder(
                                 animation: _blinkController,
                                 builder: (context, child) {
@@ -325,7 +334,7 @@ class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStat
                                               : null,
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: value != null
+                                    child: (value != null && !isSnakeHeadOnCell)
                                         ? Stack(
                                             alignment: Alignment.center,
                                             children: [

@@ -215,7 +215,7 @@ class _MapDialogState extends State<MapDialog> {
                                   onPressed: () => _showPreview(world),
                                   child: Text(
                                     "?",
-                                    style: GoogleFonts.luckiestGuy(
+                                    style: GoogleFonts.lilitaOne(
                                       color: Colors.white,
                                       fontSize: 22,
                                       fontWeight: FontWeight.w900,
@@ -298,7 +298,7 @@ class _MapDialogState extends State<MapDialog> {
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               "GOT IT!",
-              style: GoogleFonts.luckiestGuy(color: Colors.white, fontWeight: FontWeight.w900),
+              style: GoogleFonts.lilitaOne(color: Colors.white, fontWeight: FontWeight.w900),
             ),
           ),
         ],

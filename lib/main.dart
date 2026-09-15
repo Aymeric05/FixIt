@@ -108,7 +108,7 @@ class _AppStartupWrapperState extends State<_AppStartupWrapper> {
     await Future.wait([
       ...assets.map((asset) => precacheImage(AssetImage(asset), context).catchError((e) => AppLogger.error('Precache failed: $asset', e))),
       GoogleFonts.pendingFonts([
-        GoogleFonts.luckiestGuy(),
+        GoogleFonts.lilitaOne(),
       ]),
     ]);
   }

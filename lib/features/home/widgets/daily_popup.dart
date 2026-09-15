@@ -22,7 +22,7 @@ class DailyPopup extends StatelessWidget {
     final bool isAllCompleted = isDailyCompleted && isSeriesCompleted;
 
     return CandyDialog(
-      title: "DAILY CHALLENGES",
+      title: "DAILY CHALLENGE",
       borderColor: AppColors.candyYellow,
       isScintillating: !isAllCompleted,
       content: SizedBox(
@@ -31,7 +31,7 @@ class DailyPopup extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              "Daily challenges are available once per day with no time limit.",
+              "Daily challenge is available once per day with no time limit.",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,

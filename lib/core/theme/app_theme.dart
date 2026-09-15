@@ -11,7 +11,7 @@ class AppTheme {
         primary: AppColors.primaryGreen,
         secondary: AppColors.secondaryOrange,
       ),
-      textTheme: GoogleFonts.luckiestGuyTextTheme(),
+      textTheme: GoogleFonts.lilitaOneTextTheme(),
     );
   }
 }

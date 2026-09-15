@@ -214,7 +214,7 @@ class _WorldUnlockOverlayState extends State<WorldUnlockOverlay> with TickerProv
                 children: [
                   Text(
                     'NEW WORLD UNLOCKED!',
-                    style: GoogleFonts.luckiestGuy(
+                    style: GoogleFonts.lilitaOne(
                       color: Colors.white,
                       fontSize: 26,
                       fontWeight: FontWeight.w900,
@@ -270,7 +270,7 @@ class _WorldUnlockOverlayState extends State<WorldUnlockOverlay> with TickerProv
                           onPressed: () => _showPreview(context, currentChoice.name, currentChoice.asset, currentChoice.previewText),
                           child: Text(
                             "?",
-                            style: GoogleFonts.luckiestGuy(
+                            style: GoogleFonts.lilitaOne(
                               color: Colors.white,
                               fontSize: 22,
                               fontWeight: FontWeight.w900,
@@ -291,7 +291,7 @@ class _WorldUnlockOverlayState extends State<WorldUnlockOverlay> with TickerProv
                           ),
                           child: Text(
                             currentChoice.name,
-                            style: GoogleFonts.luckiestGuy(
+                            style: GoogleFonts.lilitaOne(
                               color: Colors.white, 
                               fontSize: 28, 
                               fontWeight: FontWeight.w900
@@ -367,7 +367,7 @@ class _WorldUnlockOverlayState extends State<WorldUnlockOverlay> with TickerProv
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               "GOT IT!",
-              style: GoogleFonts.luckiestGuy(color: Colors.white, fontWeight: FontWeight.w900),
+              style: GoogleFonts.lilitaOne(color: Colors.white, fontWeight: FontWeight.w900),
             ),
           ),
         ],

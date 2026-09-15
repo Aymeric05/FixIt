@@ -47,36 +47,10 @@ class NoAdsIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: const BoxDecoration(
-        color: Colors.redAccent,
-        shape: BoxShape.circle,
-        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
-      ),
-      alignment: Alignment.center,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          const Text(
-            'ADS',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 10,
-            ),
-          ),
-          Transform.rotate(
-            angle: -0.78,
-            child: Container(
-              width: size * 0.8,
-              height: 4,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
+    return Icon(
+      Icons.movie_creation_outlined,
+      size: size,
+      color: Colors.white,
     );
   }
 }
