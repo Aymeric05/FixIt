@@ -5,11 +5,11 @@ import 'package:fixit/features/game/widgets/game_header.dart';
 import 'package:fixit/core/models/daily_mode.dart';
 import 'package:fixit/features/home/bloc/home_bloc.dart';
 
-class IceGamePage extends StatelessWidget {
+class CityGamePage extends StatelessWidget {
   final int level;
   final GameDifficulty difficulty;
 
-  const IceGamePage({
+  const CityGamePage({
     super.key,
     required this.level,
     required this.difficulty,
@@ -22,7 +22,7 @@ class IceGamePage extends StatelessWidget {
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/Monde_3.png',
+              'assets/images/Monde_5.png',
               fit: BoxFit.cover,
             ),
           ),
@@ -44,11 +44,11 @@ class IceGamePage extends StatelessWidget {
                   onPause: () {},
                   onResume: () {},
                   onClose: () => Navigator.pop(context),
-                  titleOverride: "ICE WORLD (WIP)",
+                  titleOverride: "CITY WORLD (WIP)",
                 ),
                 const Spacer(),
-                const Icon(Icons.ac_unit, size: 100, color: Colors.white),
-                const Text("STAY TUNED!", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blue)),
+                const Icon(Icons.location_city, size: 100, color: Colors.blueGrey),
+                const Text("STAY TUNED!", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
                 const Spacer(),
               ],
             ),

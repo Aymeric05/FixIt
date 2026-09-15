@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fixit/features/game/meadow/bloc/meadow_game_bloc.dart';
@@ -118,7 +119,7 @@ class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStat
                       try {
                         await repo.markLevelAsCompleted(
                           playerSupabaseId: currentUserId,
-                          worldId: 'world_1',
+                          worldId: 'meadow',
                           levelNumber: widget.level,
                           timeSeconds: max(1, state.initialSeconds - state.remainingSeconds),
                         );
@@ -136,8 +137,16 @@ class _MeadowGamePageState extends State<MeadowGamePage> with TickerProviderStat
                 children: [
                   Positioned.fill(
                     child: Image.asset(
-                      'assets/images/monde1_background.png',
+                      'assets/images/Monde_1.png',
                       fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 1.5, sigmaY: 1.5),
+                        child: const SizedBox.shrink(),
+                      ),
                     ),
                   ),
                   SafeArea(

@@ -173,7 +173,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         nextLifeTime = null;
       }
 
-      final String currentWorldId = state.currentWorldIndex == 2 ? 'desert' : (state.currentWorldIndex == 3 ? 'ice' : 'world_1');
+      String currentWorldId = 'meadow';
+      if (state.currentWorldIndex == 2) currentWorldId = 'desert';
+      if (state.currentWorldIndex == 3) currentWorldId = 'ice';
+      if (state.currentWorldIndex == 4) currentWorldId = 'volcano';
+      if (state.currentWorldIndex == 5) currentWorldId = 'city';
+
       unawaited(_progressionRepo.ensureNextLevelsExist(currentWorldId, progression?.currentLevel ?? 1));
 
       // Fetch Daily Status
@@ -187,13 +192,26 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       int? justUnlocked;
       if (finishedLevel == 10 && !unlocked.contains('desert')) justUnlocked = 2;
       if (finishedLevel == 30 && !unlocked.contains('ice')) justUnlocked = 3;
+      if (finishedLevel == 60 && !unlocked.contains('volcano')) justUnlocked = 4;
+      if (finishedLevel == 100 && !unlocked.contains('city')) justUnlocked = 5;
 
       int currentGlobalLevel = progression?.currentLevel ?? 1;
       int levelsInWorld = 0;
       int maxLevelsInWorld = 10;
 
       // The bar reflects the progression based on the highest unlocked world milestone.
-      if (currentGlobalLevel > 30 || justUnlocked == 3) {
+      if (currentGlobalLevel > 60 || justUnlocked == 4 || justUnlocked == 5) {
+        if (justUnlocked == 4) {
+          levelsInWorld = 30;
+          maxLevelsInWorld = 30;
+        } else if (justUnlocked == 5) {
+          levelsInWorld = 40;
+          maxLevelsInWorld = 40;
+        } else {
+          levelsInWorld = currentGlobalLevel - 61;
+          maxLevelsInWorld = 40; // Next world in 40 (City)
+        }
+      } else if (currentGlobalLevel > 30 || justUnlocked == 3) {
         if (justUnlocked == 3) {
           levelsInWorld = 20;
           maxLevelsInWorld = 20;
@@ -563,7 +581,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         // Force update the DB locally so the refresh sees it
         await _progressionRepo.markLevelAsCompleted(
           playerSupabaseId: user.id,
-          worldId: 'world_1',
+          worldId: 'meadow',
           levelNumber: event.level - 1,
           timeSeconds: 0,
         );

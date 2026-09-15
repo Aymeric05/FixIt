@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fixit/features/game/desert/bloc/desert_game_bloc.dart';
@@ -103,6 +104,14 @@ class _DesertGamePageState extends State<DesertGamePage> with TickerProviderStat
                       child: Image.asset(
                         'assets/images/Monde_2.png',
                         fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 1.5, sigmaY: 1.5),
+                          child: const SizedBox.shrink(),
+                        ),
                       ),
                     ),
                     SafeArea(

@@ -18,9 +18,17 @@ L'objectif est d'offrir une expérience de jeu fluide et multiplateforme (Androi
 
 ## 🏗️ Architecture
 Le projet suit une architecture modulaire découpée par fonctionnalités (`features/`). Chaque module est généralement structuré ainsi :
-*   `data/` : Modèles et sources de données.
+*   `data/` : Modèles et sources de données (optionnel pour les petits modules).
 *   `domain/` : Logique métier pure (Repositories).
 *   `presentation/` : UI (Widgets) et gestion d'état (BLoC).
+
+### 🎮 Structure du Module Game
+Le module `game/` est subdivisé par "Mondes", chacun ayant ses propres spécificités :
+*   `lib/features/game/{world_name}/`
+    *   `bloc/` : Logique métier et gestion d'état spécifique au monde (ex: rotation des tuyaux pour le Désert).
+    *   `pages/` : Écrans de jeu du monde.
+    *   `widgets/` : Composants UI réutilisables uniquement au sein de ce monde.
+*   `lib/features/game/widgets/` : Widgets génériques utilisés par tous les mondes (Header, Inventory).
 
 ## 🚀 Installation et Démarrage
 1.  S'assurer d'avoir le SDK Flutter installé (`flutter doctor`).
